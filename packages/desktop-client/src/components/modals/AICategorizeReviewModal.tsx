@@ -196,7 +196,7 @@ export function AICategorizeReviewModal({
                         <span style={{ fontWeight: 600 }}>
                           {t('Confidence')}:
                         </span>{' '}
-                        {Math.round(result.confidence * 100)}%
+                        <span style={{ textTransform: 'capitalize' }}>{result.confidence}</span>
                       </Text>
                       <Text>
                         <span style={{ fontWeight: 600 }}>

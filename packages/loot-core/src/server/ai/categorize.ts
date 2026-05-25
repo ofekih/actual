@@ -11,7 +11,7 @@ export type CategorizeResult = {
   suggested_standard_category_group_id: string | null;
   suggested_new_csp_category: string | null;
   suggested_csp_category_group_id: string | null;
-  confidence: number;
+  confidence: 'high' | 'medium' | 'low';
   suggest_rule: boolean;
   reasoning: string;
 }
@@ -92,7 +92,7 @@ Instructions:
             type: Type.STRING,
             nullable: true,
           },
-          confidence: { type: Type.NUMBER },
+          confidence: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
           suggest_rule: { type: Type.BOOLEAN },
           reasoning: { type: Type.STRING },
         },
