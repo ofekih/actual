@@ -95,3 +95,6 @@ storybook-static
 .actualrc.yaml
 .actualrc.yml
 actual.config.js
+
+# SimpleFIN Mock Data for local testing
+packages/loot-core/src/server/accounts/simplefin-mock-data.json
