@@ -186,6 +186,16 @@ export function TransactionMenu({
           case 'create-rule':
             onCreateRule(selectedIds);
             break;
+          case 'ai-categorize':
+            dispatch(
+              pushModal({
+                modal: {
+                  name: 'ai-categorize-review',
+                  options: { transactionId: selectedIds[0] },
+                },
+              }),
+            );
+            break;
           default:
             throw new Error(`Unrecognized menu option: ${name}`);
         }
@@ -231,6 +241,15 @@ export function TransactionMenu({
                       text: t('Create rule'),
                     },
                   ]),
+              ...(selectedIds.length === 1 && !ambiguousDuplication && !types.preview
+                ? [
+                    Menu.line as any,
+                    {
+                      name: 'ai-categorize',
+                      text: '✨ ' + t('AI Categorize'),
+                    },
+                  ]
+                : []),
               ...(canUnsplitTransactions
                 ? [
                     {

@@ -94,6 +94,12 @@ export type Modal =
       };
     }
   | {
+      name: 'ai-categorize-review';
+      options: {
+        transactionId: string;
+      };
+    }
+  | {
       name: 'manage-rules';
       options: { payeeId?: string };
     }
