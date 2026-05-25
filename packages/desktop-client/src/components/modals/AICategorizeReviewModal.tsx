@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
+import { SvgExpandArrow } from '@actual-app/components/icons/v0';
 import { Text } from '@actual-app/components/text';
 import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
@@ -46,6 +47,7 @@ export function AICategorizeReviewModal({
   const [selectedStandardId, setSelectedStandardId] = useState<string | null>(null);
   const [selectedCspId, setSelectedCspId] = useState<string | null>(null);
   const [createRule, setCreateRule] = useState<boolean>(false);
+  const [ruleExpanded, setRuleExpanded] = useState(false);
 
   useEffect(() => {
     async function fetchCategorization() {
@@ -205,26 +207,108 @@ export function AICategorizeReviewModal({
 
                     {result.suggest_rule && (
                       <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
                         backgroundColor: theme.pillBackgroundSelected,
-                        padding: 10,
                         borderRadius: 4,
-                        gap: 10
+                        overflow: 'hidden',
                       }}>
-                        <Checkbox
-                          id="create-rule"
-                          checked={createRule}
-                          onChange={(e) => setCreateRule(e.target.checked)}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <label htmlFor="create-rule" style={{ fontWeight: 600, userSelect: 'none', cursor: 'pointer' }}>
-                            ✨ {t('Create a rule for this payee')}
-                          </label>
-                          <Text style={{ fontSize: 12, color: theme.pageTextLight, marginTop: 2 }}>
-                            {t('Automatically categorize future transactions for')} "{transactionInfo['payee.name']}"
-                          </Text>
+                        <View style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: 10,
+                          gap: 10,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                        }}
+                          onClick={() => setRuleExpanded(!ruleExpanded)}
+                        >
+                          <Checkbox
+                            id="create-rule"
+                            checked={createRule}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setCreateRule(e.target.checked);
+                            }}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <label htmlFor="create-rule" style={{ fontWeight: 600, userSelect: 'none', cursor: 'pointer' }}>
+                              ✨ {t('Create a rule for this payee')}
+                            </label>
+                            <Text style={{ fontSize: 12, color: theme.pageTextLight, marginTop: 2 }}>
+                              {t('Automatically categorize future transactions for')} "{transactionInfo['payee.name']}"
+                            </Text>
+                          </View>
+                          <SvgExpandArrow
+                            style={{
+                              width: 10,
+                              height: 10,
+                              color: theme.pageTextLight,
+                              transform: ruleExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                              transition: 'transform 0.15s ease',
+                              flexShrink: 0,
+                            }}
+                          />
                         </View>
+
+                        {ruleExpanded && (
+                          <View style={{
+                            padding: '0 15px 15px 15px',
+                            gap: 12,
+                            borderTop: `1px solid ${theme.tableBorder}`,
+                            paddingTop: 12,
+                          }}>
+                            <View>
+                              <Text style={{ fontWeight: 600, fontSize: 12, color: theme.pageTextLight, marginBottom: 6 }}>
+                                {t('Conditions')}
+                              </Text>
+                              <View style={{
+                                backgroundColor: theme.tableBackground,
+                                border: `1px solid ${theme.tableBorder}`,
+                                borderRadius: 4,
+                                padding: '8px 12px',
+                                gap: 4,
+                              }}>
+                                <Text style={{ fontSize: 13 }}>
+                                  {t('If')} <span style={{ fontWeight: 600 }}>{t('payee')}</span> {t('is')} "<span style={{ fontStyle: 'italic' }}>{transactionInfo['payee.name']}</span>"
+                                </Text>
+                              </View>
+                            </View>
+
+                            <View>
+                              <Text style={{ fontWeight: 600, fontSize: 12, color: theme.pageTextLight, marginBottom: 6 }}>
+                                {t('Actions')}
+                              </Text>
+                              <View style={{
+                                backgroundColor: theme.tableBackground,
+                                border: `1px solid ${theme.tableBorder}`,
+                                borderRadius: 4,
+                                padding: '8px 12px',
+                                gap: 4,
+                              }}>
+                                {selectedStandardId && (() => {
+                                  const cat = categories.find(c => c.id === selectedStandardId);
+                                  return (
+                                    <Text style={{ fontSize: 13 }}>
+                                      {t('Set')} <span style={{ fontWeight: 600 }}>{t('category')}</span> {t('to')} "<span style={{ fontStyle: 'italic' }}>{cat?.name ?? selectedStandardId}</span>"
+                                    </Text>
+                                  );
+                                })()}
+                                {selectedCspId && (() => {
+                                  const cat = cspCategories.find(c => c.id === selectedCspId);
+                                  return (
+                                    <Text style={{ fontSize: 13 }}>
+                                      {t('Set')} <span style={{ fontWeight: 600 }}>{t('CSP category')}</span> {t('to')} "<span style={{ fontStyle: 'italic' }}>{cat?.name ?? selectedCspId}</span>"
+                                    </Text>
+                                  );
+                                })()}
+                                {!selectedStandardId && !selectedCspId && (
+                                  <Text style={{ fontSize: 13, color: theme.pageTextLight, fontStyle: 'italic' }}>
+                                    {t('No actions — select at least one category above')}
+                                  </Text>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                        )}
                       </View>
                     )}
 
