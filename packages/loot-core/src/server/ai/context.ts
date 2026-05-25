@@ -4,10 +4,12 @@ import { aqlQuery } from '../aql';
 
 export interface TaxonomyContext {
   standard: Array<{
+    groupId: string;
     groupName: string;
     categories: Array<{ id: string; name: string; isIncome: boolean }>;
   }>;
   csp: Array<{
+    groupId: string;
     groupName: string;
     categories: Array<{ id: string; name: string }>;
   }>;
@@ -21,6 +23,7 @@ export async function getTaxonomies(): Promise<TaxonomyContext> {
   const { data: cspCategories } = (await aqlQuery(q('csp_categories').select('*'))) as { data: Array<{ id: string; name: string; group?: string }> };
 
   const standard = groups.map((g) => ({
+    groupId: g.id,
     groupName: g.name,
     categories: categories
       .filter((c) => c.group === g.id)
@@ -28,6 +31,7 @@ export async function getTaxonomies(): Promise<TaxonomyContext> {
   }));
 
   const csp = cspGroups.map((g) => ({
+    groupId: g.id,
     groupName: g.name,
     categories: cspCategories
       .filter((c) => c.group === g.id)

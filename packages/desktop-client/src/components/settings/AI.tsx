@@ -45,8 +45,10 @@ export function AISettings() {
       setTestResult(
         `Transaction: ${result.transactionInfo}\n\n` +
         `Categorization Result:\n` +
-        `- Standard Category ID: ${result.standard_category_id}\n` +
-        `- CSP Category ID: ${result.csp_category_id}\n` +
+        `- Standard Category ID: ${result.standard_category_id || 'None'}\n` +
+        `- CSP Category ID: ${result.csp_category_id || 'None'}\n` +
+        `- Suggested Standard Category: ${result.suggested_new_standard_category || 'None'} (Group ID: ${result.suggested_standard_category_group_id || 'None'})\n` +
+        `- Suggested CSP Category: ${result.suggested_new_csp_category || 'None'} (Group ID: ${result.suggested_csp_category_group_id || 'None'})\n` +
         `- Confidence: ${result.confidence}\n` +
         `- Reasoning: ${result.reasoning}\n` +
         `- Suggest Rule: ${result.suggest_rule}`
