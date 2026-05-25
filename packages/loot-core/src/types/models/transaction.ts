@@ -12,6 +12,7 @@ export type TransactionEntity = {
   parent_id?: TransactionEntity['id'];
   account: AccountEntity['id'];
   category?: CategoryEntity['id'];
+  csp_category?: import('./csp-category').CSPCategoryEntity['id'];
   amount: IntegerAmount;
   payee?: PayeeEntity['id'] | null;
   notes?: string;

@@ -27,6 +27,7 @@ import { useSyncedPref } from '#hooks/useSyncedPref';
 import { loadPrefs } from '#prefs/prefsSlice';
 import { useDispatch, useSelector } from '#redux';
 
+import { AISettings } from './AI';
 import { AuthSettings } from './AuthSettings';
 import { Backups } from './Backups';
 import { BudgetTypeSettings } from './BudgetTypeSettings';
@@ -238,6 +239,7 @@ export function Settings() {
         )}
         <About />
         <ThemeSettings />
+        <AISettings />
         <FormatSettings />
         {isCurrencyExperimentalEnabled && <CurrencySettings />}
         <LanguageSettings />

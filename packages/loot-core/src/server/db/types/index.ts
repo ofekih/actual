@@ -55,6 +55,21 @@ export type DbCategoryGroup = {
   tombstone: 1 | 0;
 };
 
+export type DbCspCategory = {
+  id: string;
+  name: string;
+  cat_group: DbCspCategoryGroup['id'];
+  sort_order: number;
+  tombstone: 1 | 0;
+};
+
+export type DbCspCategoryGroup = {
+  id: string;
+  name: string;
+  sort_order: number;
+  tombstone: 1 | 0;
+};
+
 export type DbCleanupGroup = {
   id: string;
   name: string;
@@ -167,6 +182,7 @@ export type DbTransaction = {
   sort_order: number;
   parent_id?: DbTransaction['id'] | null;
   category?: DbCategory['id'] | null;
+  csp_category?: DbCspCategory['id'] | null;
   description?: string | null;
   notes?: string | null;
   financial_id?: string | null;
@@ -275,6 +291,7 @@ export type DbViewTransactionInternal = {
   amount: DbTransaction['amount'];
   parent_id: DbTransaction['parent_id'] | null;
   category: DbCategory['id'] | null;
+  csp_category: DbCspCategory['id'] | null;
   payee: DbPayee['id'] | null;
   notes: DbTransaction['notes'] | null;
   imported_id: DbTransaction['financial_id'] | null;
