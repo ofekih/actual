@@ -17,6 +17,7 @@ export function AISettings() {
   const [apiKey, setApiKey] = useSyncedPref('geminiApiKey');
   const [isTesting, setIsTesting] = React.useState(false);
   const [isCategorizing, setIsCategorizing] = React.useState(false);
+  const [isSeeding, setIsSeeding] = React.useState(false);
   const [testResult, setTestResult] = React.useState<string | null>(null);
 
   const onTestConnection = async () => {
@@ -57,6 +58,19 @@ export function AISettings() {
     }
   };
 
+  const onSeedCategories = async () => {
+    setIsSeeding(true);
+    try {
+      setTestResult(null);
+      await send('ai-seed-categories');
+      setTestResult('Successfully seeded default Standard and CSP categories! (Note: existing categories were cleared)');
+    } catch (e: any) {
+      setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <Setting
       primaryAction={
@@ -73,9 +87,12 @@ export function AISettings() {
               <Trans>Test Connection</Trans>
             </Button>
           </View>
-          <View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
             <Button onPress={onTestCategorize} /* isLoading={isCategorizing} */>
               <Trans>Test Categorization</Trans>
+            </Button>
+            <Button onPress={onSeedCategories} /* isLoading={isSeeding} */>
+              <Trans>Seed Default Categories</Trans>
             </Button>
           </View>
           {testResult && (

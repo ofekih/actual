@@ -585,6 +585,25 @@ async function _loadBudget(id: Budget['id']): Promise<{
     await prefs.savePrefs({ resetClock: false });
   }
 
+  // --- RECOVERY BLOCK ---
+  // If a previous AI Seed attempt crashed during Phase 2, all category groups
+  // will be tombstoned locally, causing the frontend to crash on startup.
+  // We recover by un-tombstoning them so the user can open the app.
+  try {
+    const aliveGroups = await db.all(
+      'SELECT id FROM category_groups WHERE tombstone = 0 LIMIT 1',
+    );
+    if (aliveGroups.length === 0) {
+      await db.runQuery('UPDATE category_groups SET tombstone = 0');
+      await db.runQuery('UPDATE categories SET tombstone = 0');
+    }
+    // Also ensure any Income group has is_income = 1
+    await db.runQuery("UPDATE category_groups SET is_income = 1 WHERE name = 'Income'");
+  } catch (e) {
+    // ignore
+  }
+  // ----------------------
+
   if (!Platform.isBrowser && process.env.NODE_ENV !== 'test') {
     startBackupService(id);
   }
