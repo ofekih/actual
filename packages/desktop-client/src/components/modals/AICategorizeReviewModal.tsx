@@ -14,6 +14,12 @@ import {
   ModalHeader,
   ModalTitle,
 } from '#components/common/Modal';
+import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
+import { Select } from '@actual-app/components/select';
+import { theme } from '@actual-app/components/theme';
+import { Checkbox } from '#components/forms';
+import { SheetNameProvider } from '#hooks/useSheetName';
+import * as monthUtils from '@actual-app/core/shared/months';
 import { useCategories } from '#hooks/useCategories';
 import { useCspCategories } from '#hooks/useCspCategories';
 import { useFormat } from '#hooks/useFormat';
@@ -28,7 +34,7 @@ export function AICategorizeReviewModal({
   transactionId,
 }: AICategorizeReviewModalProps) {
   const { t } = useTranslation();
-  const { data: { list: categories } = { list: [] } } = useCategories();
+  const { data: { list: categories, grouped: categoryGroups } = { list: [], grouped: [] } } = useCategories();
   const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const format = useFormat();
 
@@ -36,6 +42,10 @@ export function AICategorizeReviewModal({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CategorizeResult | null>(null);
   const [transactionInfo, setTransactionInfo] = useState<any>(null);
+
+  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(null);
+  const [selectedCspId, setSelectedCspId] = useState<string | null>(null);
+  const [createRule, setCreateRule] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchCategorization() {
@@ -55,6 +65,9 @@ export function AICategorizeReviewModal({
             payeeName: data[0]['payee.name'],
           });
           setResult(res);
+          setSelectedStandardId(res.standard_category_id);
+          setSelectedCspId(res.csp_category_id);
+          setCreateRule(res.suggest_rule);
         } else {
           setError(t('Transaction not found.'));
         }
@@ -74,8 +87,8 @@ export function AICategorizeReviewModal({
       const { standard_category_id, csp_category_id } = await send(
         'ai-apply-categorization',
         {
-          standard_category_id: result.standard_category_id,
-          csp_category_id: result.csp_category_id,
+          standard_category_id: selectedStandardId,
+          csp_category_id: selectedCspId,
           is_income: transactionInfo?.amount > 0,
           suggested_new_standard_category:
             result.suggested_new_standard_category
@@ -108,28 +121,6 @@ export function AICategorizeReviewModal({
     }
   };
 
-  const getStandardName = () => {
-    if (result?.suggested_new_standard_category) {
-      return `✨ New: ${result.suggested_new_standard_category}`;
-    }
-    if (result?.standard_category_id) {
-      const cat = categories.find(c => c.id === result.standard_category_id);
-      return cat ? cat.name : result.standard_category_id;
-    }
-    return 'None';
-  };
-
-  const getCspName = () => {
-    if (result?.suggested_new_csp_category) {
-      return `✨ New: ${result.suggested_new_csp_category}`;
-    }
-    if (result?.csp_category_id) {
-      const cat = cspCategories.find(c => c.id === result.csp_category_id);
-      return cat ? cat.name : result.csp_category_id;
-    }
-    return 'None';
-  };
-
   return (
     <Modal name="ai-categorize-review" isLoading={isLoading}>
       {({ state }) => (
@@ -143,96 +134,110 @@ export function AICategorizeReviewModal({
             }
             rightContent={<ModalCloseButton onPress={() => state.close()} />}
           />
-          <View style={{ gap: 15, padding: 5, minWidth: 400 }}>
+          <View style={{ gap: 15, padding: 15, minWidth: 650 }}>
             {error ? (
-              <Text style={{ color: 'var(--color-error)' }}>{error}</Text>
+              <Text style={{ color: theme.errorText }}>{error}</Text>
             ) : (
               <>
-                {transactionInfo && (
-                  <View
-                    style={{
-                      backgroundColor: 'var(--color-background)',
-                      padding: 15,
-                      borderRadius: 4,
-                      gap: 5,
-                    }}
-                  >
-                    <Text style={{ fontWeight: 'bold' }}>
-                      {<Trans>Transaction</Trans>}
-                    </Text>
-                    <Text>
-                      {t('Payee')}:{' '}
-                      {transactionInfo['payee.name'] || t('Unknown')}
-                    </Text>
-                    <Text>
-                      {t('Amount')}:{' '}
-                      {format(transactionInfo.amount, 'financial')}
-                    </Text>
-                    <Text>
-                      {t('Date')}: {transactionInfo.date}
-                    </Text>
-                  </View>
-                )}
-
-                {result && (
-                  <>
-                    <View style={{ gap: 10 }}>
-                      <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
-                        {t('AI Suggestion')}
-                      </Text>
-                      <Text>
-                        <span style={{ fontWeight: 600 }}>
-                          {t('Standard Category')}:
-                        </span>{' '}
-                        {getStandardName()}
-                      </Text>
-                      <Text>
-                        <span style={{ fontWeight: 600 }}>
-                          {t('CSP Category')}:
-                        </span>{' '}
-                        {getCspName()}
-                      </Text>
-                      <Text>
-                        <span style={{ fontWeight: 600 }}>
-                          {t('Confidence')}:
-                        </span>{' '}
-                        <span style={{ textTransform: 'capitalize' }}>{result.confidence}</span>
-                      </Text>
-                      <Text>
-                        <span style={{ fontWeight: 600 }}>
-                          {t('Reasoning')}:
-                        </span>{' '}
-                        {result.reasoning}
-                      </Text>
-                      {result.suggest_rule && (
-                        <Text style={{ color: 'var(--color-upcomingText)' }}>
-                          ✨ {t('AI suggests creating a rule for this payee.')}
-                        </Text>
-                      )}
-                    </View>
-
+                {transactionInfo && result && (
+                  <View style={{ gap: 15 }}>
                     <View
                       style={{
                         flexDirection: 'row',
-                        justifyContent: 'flex-end',
-                        gap: 10,
-                        marginTop: 10,
+                        backgroundColor: theme.tableBackground,
+                        border: `1px solid ${theme.tableBorder}`,
+                        borderRadius: 4,
+                        borderLeft: `4px solid ${
+                          result.confidence === 'high'
+                            ? theme.noticeTextLight
+                            : result.confidence === 'medium'
+                              ? theme.warningText
+                              : theme.errorText
+                        }`,
+                        alignItems: 'center',
+                        padding: '10px 15px',
+                        gap: 15,
                       }}
                     >
-                      <Button onPress={() => state.close()}>
-                        {t('Cancel')}
-                      </Button>
-                      <Button
-                        variant="primary"
-                        onPress={async () => {
-                          await onAccept();
-                          state.close();
-                        }}
-                      >
+                      <View style={{ flex: 1, minWidth: 80 }}>
+                        <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Date')}</Text>
+                        <Text>{transactionInfo.date}</Text>
+                      </View>
+                      
+                      <View style={{ flex: 2, minWidth: 120 }}>
+                        <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Payee')}</Text>
+                        <Text style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{transactionInfo['payee.name'] || t('Unknown')}</Text>
+                      </View>
+                      
+                      <View style={{ flex: 1, minWidth: 80, alignItems: 'flex-end' }}>
+                        <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Amount')}</Text>
+                        <Text>{format(transactionInfo.amount, 'financial')}</Text>
+                      </View>
+
+                      <View style={{ width: 1, height: 30, backgroundColor: theme.tableBorder, marginHorizontal: 5 }} />
+
+                      <View style={{ flex: 2, minWidth: 150 }}>
+                        <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Category')}</Text>
+                        <SheetNameProvider name={monthUtils.sheetForMonth(monthUtils.monthFromDate(transactionInfo.date))}>
+                          <CategoryAutocomplete
+                            categoryGroups={categoryGroups}
+                            value={selectedStandardId}
+                            onSelect={(id) => setSelectedStandardId(id)}
+                            showSplitOption={false}
+                            inputProps={{ placeholder: t('Select category...') }}
+                          />
+                        </SheetNameProvider>
+                      </View>
+
+                      <View style={{ flex: 2, minWidth: 150 }}>
+                        <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('CSP Category')}</Text>
+                        <Select
+                          options={[['', t('Uncategorized')], ...cspCategories.map(c => [c.id, c.name] as [string, string])]}
+                          value={selectedCspId || ''}
+                          onChange={(val) => setSelectedCspId(val === '' ? null : val)}
+                        />
+                      </View>
+                    </View>
+
+                    <Text style={{ fontSize: 13, color: theme.pageTextLight, fontStyle: 'italic' }}>
+                      <span style={{ fontWeight: 600 }}>{t('Reasoning')}:</span> {result.reasoning}
+                    </Text>
+
+                    {result.suggest_rule && (
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: theme.pillBackgroundSelected,
+                        padding: 10,
+                        borderRadius: 4,
+                        gap: 10
+                      }}>
+                        <Checkbox
+                          id="create-rule"
+                          checked={createRule}
+                          onChange={(e) => setCreateRule(e.target.checked)}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <label htmlFor="create-rule" style={{ fontWeight: 600, userSelect: 'none', cursor: 'pointer' }}>
+                            ✨ {t('Create a rule for this payee')}
+                          </label>
+                          <Text style={{ fontSize: 12, color: theme.pageTextLight, marginTop: 2 }}>
+                            {t('Automatically categorize future transactions for')} "{transactionInfo['payee.name']}"
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                      <Button onPress={() => state.close()}>{t('Cancel')}</Button>
+                      <Button variant="primary" onPress={async () => {
+                        await onAccept();
+                        state.close();
+                      }}>
                         {t('Accept & Save')}
                       </Button>
                     </View>
-                  </>
+                  </View>
                 )}
               </>
             )}
