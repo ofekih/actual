@@ -27,7 +27,10 @@ export async function requireGeminiApiKey(): Promise<string> {
 /**
  * Tests the Gemini API connection.
  */
-export async function testGeminiConnection(): Promise<{ success: boolean; message: string }> {
+export async function testGeminiConnection(): Promise<{
+  success: boolean;
+  message: string;
+}> {
   try {
     const apiKey = await requireGeminiApiKey();
     const ai = new GoogleGenAI({ apiKey });
@@ -35,10 +38,11 @@ export async function testGeminiConnection(): Promise<{ success: boolean; messag
       model: 'gemini-3.5-flash',
       contents: 'Respond with exactly one word: "Success".',
     });
-    
+
     return {
       success: true,
-      message: response.text || 'Connection successful, but no text was returned.',
+      message:
+        response.text || 'Connection successful, but no text was returned.',
     };
   } catch (error) {
     return {

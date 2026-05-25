@@ -598,7 +598,9 @@ async function _loadBudget(id: Budget['id']): Promise<{
       await db.runQuery('UPDATE categories SET tombstone = 0');
     }
     // Also ensure any Income group has is_income = 1
-    await db.runQuery("UPDATE category_groups SET is_income = 1 WHERE name = 'Income'");
+    await db.runQuery(
+      "UPDATE category_groups SET is_income = 1 WHERE name = 'Income'",
+    );
   } catch (e) {
     // ignore
   }

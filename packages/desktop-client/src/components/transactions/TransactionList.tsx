@@ -32,6 +32,9 @@ import type {
 
 import { FeatureErrorFallback } from '#components/FeatureErrorFallback';
 import type { TableHandleRef } from '#components/table';
+import { useCategories } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
+import { useDateFormat } from '#hooks/useDateFormat';
 import { isValidBoundaryDrop } from '#hooks/useDragDrop';
 import type { DropPosition } from '#hooks/useDragDrop';
 import { useNavigate } from '#hooks/useNavigate';
@@ -327,6 +330,7 @@ export function TransactionList({
   onMakeAsNonSplitTransactions,
 }: TransactionListProps) {
   const { t } = useTranslation();
+  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -731,6 +735,7 @@ export function TransactionList({
         loadMoreTransactions={loadMoreTransactions}
         accounts={accounts}
         categoryGroups={categoryGroups}
+        cspCategories={cspCategories}
         payees={payees}
         balances={balances}
         showBalances={showBalances}

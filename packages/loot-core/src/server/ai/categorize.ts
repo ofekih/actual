@@ -1,9 +1,10 @@
 import { GoogleGenAI, Type } from '@google/genai';
 
-import { requireGeminiApiKey } from './index';
 import { getAccountHistory, getPayeeHistory, getTaxonomies } from './context';
 
-export interface CategorizeResult {
+import { requireGeminiApiKey } from './index';
+
+export type CategorizeResult = {
   standard_category_id: string | null;
   csp_category_id: string | null;
   suggested_new_standard_category: string | null;
@@ -16,14 +17,23 @@ export interface CategorizeResult {
 }
 
 export async function categorizeTransaction(
-  transaction: { id: string; payee: string | null; account: string; amount: number; notes: string | null; date: string },
+  transaction: {
+    id: string;
+    payee: string | null;
+    account: string;
+    amount: number;
+    notes: string | null;
+    date: string;
+  },
   payeeName?: string,
 ): Promise<CategorizeResult> {
   const apiKey = await requireGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
   const taxonomies = await getTaxonomies();
-  const payeeHistory = transaction.payee ? await getPayeeHistory(transaction.payee) : [];
+  const payeeHistory = transaction.payee
+    ? await getPayeeHistory(transaction.payee)
+    : [];
   const accountHistory = await getAccountHistory(transaction.account);
 
   const systemPrompt = `You are an AI assistant integrated into Actual Budget, a local-first personal finance app.
@@ -69,10 +79,19 @@ Instructions:
         properties: {
           standard_category_id: { type: Type.STRING, nullable: true },
           csp_category_id: { type: Type.STRING, nullable: true },
-          suggested_new_standard_category: { type: Type.STRING, nullable: true },
-          suggested_standard_category_group_id: { type: Type.STRING, nullable: true },
+          suggested_new_standard_category: {
+            type: Type.STRING,
+            nullable: true,
+          },
+          suggested_standard_category_group_id: {
+            type: Type.STRING,
+            nullable: true,
+          },
           suggested_new_csp_category: { type: Type.STRING, nullable: true },
-          suggested_csp_category_group_id: { type: Type.STRING, nullable: true },
+          suggested_csp_category_group_id: {
+            type: Type.STRING,
+            nullable: true,
+          },
           confidence: { type: Type.NUMBER },
           suggest_rule: { type: Type.BOOLEAN },
           reasoning: { type: Type.STRING },

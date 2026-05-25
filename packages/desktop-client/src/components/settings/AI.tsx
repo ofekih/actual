@@ -5,7 +5,6 @@ import { Button } from '@actual-app/components/button';
 import { Input } from '@actual-app/components/input';
 import { Text } from '@actual-app/components/text';
 import { View } from '@actual-app/components/view';
-
 import { send } from '@actual-app/core/platform/client/connection';
 
 import { useSyncedPref } from '#hooks/useSyncedPref';
@@ -26,7 +25,9 @@ export function AISettings() {
       setTestResult(null);
       const response = await send('ai-test-connection');
       if (response.success) {
-        setTestResult('Connection Successful! Gemini says: ' + response.message);
+        setTestResult(
+          'Connection Successful! Gemini says: ' + response.message,
+        );
       } else {
         setTestResult('Connection Failed: ' + response.message);
       }
@@ -44,14 +45,14 @@ export function AISettings() {
       const result = await send('ai-test-categorize-random');
       setTestResult(
         `Transaction: ${result.transactionInfo}\n\n` +
-        `Categorization Result:\n` +
-        `- Standard Category ID: ${result.standard_category_id || 'None'}\n` +
-        `- CSP Category ID: ${result.csp_category_id || 'None'}\n` +
-        `- Suggested Standard Category: ${result.suggested_new_standard_category || 'None'} (Group ID: ${result.suggested_standard_category_group_id || 'None'})\n` +
-        `- Suggested CSP Category: ${result.suggested_new_csp_category || 'None'} (Group ID: ${result.suggested_csp_category_group_id || 'None'})\n` +
-        `- Confidence: ${result.confidence}\n` +
-        `- Reasoning: ${result.reasoning}\n` +
-        `- Suggest Rule: ${result.suggest_rule}`
+          `Categorization Result:\n` +
+          `- Standard Category ID: ${result.standard_category_id || 'None'}\n` +
+          `- CSP Category ID: ${result.csp_category_id || 'None'}\n` +
+          `- Suggested Standard Category: ${result.suggested_new_standard_category || 'None'} (Group ID: ${result.suggested_standard_category_group_id || 'None'})\n` +
+          `- Suggested CSP Category: ${result.suggested_new_csp_category || 'None'} (Group ID: ${result.suggested_csp_category_group_id || 'None'})\n` +
+          `- Confidence: ${result.confidence}\n` +
+          `- Reasoning: ${result.reasoning}\n` +
+          `- Suggest Rule: ${result.suggest_rule}`,
       );
     } catch (e: any) {
       setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
@@ -65,7 +66,9 @@ export function AISettings() {
     try {
       setTestResult(null);
       await send('ai-seed-categories');
-      setTestResult('Successfully seeded default Standard and CSP categories! (Note: existing categories were cleared)');
+      setTestResult(
+        'Successfully seeded default Standard and CSP categories! (Note: existing categories were cleared)',
+      );
     } catch (e: any) {
       setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
     } finally {
@@ -98,7 +101,14 @@ export function AISettings() {
             </Button>
           </View>
           {testResult && (
-            <View style={{ marginTop: 10, padding: 10, backgroundColor: 'var(--color-background)', borderRadius: 4 }}>
+            <View
+              style={{
+                marginTop: 10,
+                padding: 10,
+                backgroundColor: 'var(--color-background)',
+                borderRadius: 4,
+              }}
+            >
               <Text style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
                 {testResult}
               </Text>
@@ -109,8 +119,8 @@ export function AISettings() {
     >
       <Text>
         <Trans>
-          <strong>AI Auto-Categorization</strong> requires a Gemini API Key from Google Cloud.
-          This key is stored securely in your local budget file.
+          <strong>AI Auto-Categorization</strong> requires a Gemini API Key from
+          Google Cloud. This key is stored securely in your local budget file.
         </Trans>
       </Text>
     </Setting>

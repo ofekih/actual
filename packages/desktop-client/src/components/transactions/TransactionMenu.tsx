@@ -241,7 +241,9 @@ export function TransactionMenu({
                       text: t('Create rule'),
                     },
                   ]),
-              ...(selectedIds.length === 1 && !ambiguousDuplication && !types.preview
+              ...(selectedIds.length === 1 &&
+              !ambiguousDuplication &&
+              !types.preview
                 ? [
                     Menu.line as any,
                     {
