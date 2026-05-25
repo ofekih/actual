@@ -1,3 +1,5 @@
+import { GoogleGenAI } from '@google/genai';
+
 import * as db from '#server/db';
 
 /**
@@ -20,4 +22,28 @@ export async function requireGeminiApiKey(): Promise<string> {
     throw new Error('Gemini API key is required but not found in settings.');
   }
   return key;
+}
+
+/**
+ * Tests the Gemini API connection.
+ */
+export async function testGeminiConnection(): Promise<{ success: boolean; message: string }> {
+  try {
+    const apiKey = await requireGeminiApiKey();
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: 'Respond with exactly one word: "Success".',
+    });
+    
+    return {
+      success: true,
+      message: response.text || 'Connection successful, but no text was returned.',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
