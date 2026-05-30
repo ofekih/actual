@@ -55,7 +55,7 @@
     "rebuild-electron": "./node_modules/.bin/electron-rebuild -m ./packages/desktop-electron -o better-sqlite3,bcrypt --build-from-source -f",
     "rebuild-node": "yarn workspace @actual-app/core rebuild",
     "lint": "oxfmt --check . && oxlint --type-aware --quiet",
-    "lint:fix": "oxfmt . && oxlint --fix --type-aware --quiet",
+    "lint:fix": "oxfmt --check . && oxlint --type-aware --quiet",
     "install:server": "yarn workspaces focus @actual-app/sync-server --production",
     "constraints": "yarn constraints",
     "typecheck": "tsgo -p tsconfig.root.json --noEmit && lage typecheck",
@@ -120,14 +120,14 @@
   },
   "lint-staged": {
     "packages/*/{package.json,tsconfig.json}": [
-      "ts-node ./bin/validate-publish-imports.ts --fix",
+      "ts-node ./bin/validate-publish-imports.ts",
       "yarn sync:tsconfig-references"
     ],
     "*.{js,mjs,jsx,ts,tsx,md,json,yml,yaml}": [
-      "oxfmt --no-error-on-unmatched-pattern"
+      "oxfmt --check --no-error-on-unmatched-pattern"
     ],
     "*.{js,mjs,jsx,ts,tsx}": [
-      "oxlint --fix --type-aware --quiet"
+      "oxlint --type-aware --quiet"
     ]
   },
   "browserslist": [
