@@ -19,6 +19,7 @@ export type FieldValueTypes = {
   amount: number;
   category: string;
   category_group: string;
+  csp_category: string;
   date: string | RecurConfig;
   notes: string;
   payee: string;
@@ -111,6 +112,16 @@ export type RuleConditionEntity =
     >
   | BaseConditionEntity<
       'imported_payee',
+      | 'is'
+      | 'isNot'
+      | 'oneOf'
+      | 'notOneOf'
+      | 'contains'
+      | 'doesNotContain'
+      | 'matches'
+    >
+  | BaseConditionEntity<
+      'csp_category',
       | 'is'
       | 'isNot'
       | 'oneOf'

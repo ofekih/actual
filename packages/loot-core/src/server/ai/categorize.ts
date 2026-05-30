@@ -14,7 +14,7 @@ export type CategorizeResult = {
   confidence: 'high' | 'medium' | 'low';
   suggest_rule: boolean;
   reasoning: string;
-}
+};
 
 export async function categorizeTransaction(
   transaction: {

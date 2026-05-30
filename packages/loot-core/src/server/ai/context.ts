@@ -1,5 +1,5 @@
-import { q } from '#shared/query';
 import { aqlQuery } from '#server/aql';
+import { q } from '#shared/query';
 
 export type TaxonomyContext = {
   standard: Array<{
@@ -12,7 +12,7 @@ export type TaxonomyContext = {
     groupName: string;
     categories: Array<{ id: string; name: string }>;
   }>;
-}
+};
 
 export async function getTaxonomies(): Promise<TaxonomyContext> {
   const { data: groups } = (await aqlQuery(

@@ -24,7 +24,10 @@ import * as monthUtils from '@actual-app/core/shared/months';
 import { useCategories } from '#hooks/useCategories';
 import { useCspCategories } from '#hooks/useCspCategories';
 import { useFormat } from '#hooks/useFormat';
+import { pushModal } from '#modals/modalsSlice';
 import type { Modal as ModalType } from '#modals/modalsSlice';
+import { useDispatch } from '#redux';
+import type { NewRuleEntity } from '@actual-app/core/types/models';
 
 type AICategorizeReviewModalProps = Extract<
   ModalType,
@@ -38,6 +41,7 @@ export function AICategorizeReviewModal({
   const { data: { list: categories, grouped: categoryGroups } = { list: [], grouped: [] } } = useCategories();
   const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const format = useFormat();
+  const dispatch = useDispatch();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,15 +99,15 @@ export function AICategorizeReviewModal({
           suggested_new_standard_category:
             result.suggested_new_standard_category
               ? {
-                  name: result.suggested_new_standard_category,
-                  groupId: result.suggested_standard_category_group_id!,
-                }
+                name: result.suggested_new_standard_category,
+                groupId: result.suggested_standard_category_group_id!,
+              }
               : null,
           suggested_new_csp_category: result.suggested_new_csp_category
             ? {
-                name: result.suggested_new_csp_category,
-                groupId: result.suggested_csp_category_group_id!,
-              }
+              name: result.suggested_new_csp_category,
+              groupId: result.suggested_csp_category_group_id!,
+            }
             : null,
         },
       );
@@ -115,13 +119,52 @@ export function AICategorizeReviewModal({
 
       await send('transaction-update', updates);
 
-      // In Phase 4 we will handle rule creation if `result.suggest_rule` is true
+      // Create a rule if checkbox is checked
+      if (createRule && transactionInfo.payee) {
+        const rule = buildRule();
+        await send('rule-add', rule);
+      }
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
       setIsLoading(false);
     }
   };
+
+  function buildRule(): NewRuleEntity {
+    const actions: NewRuleEntity['actions'] = [];
+    if (selectedStandardId) {
+      actions.push({ op: 'set', field: 'category', value: selectedStandardId, type: 'id' });
+    }
+    if (selectedCspId) {
+      actions.push({ op: 'set', field: 'csp_category', value: selectedCspId, type: 'id' });
+    }
+    return {
+      stage: null,
+      conditionsOp: 'and',
+      conditions: [
+        {
+          field: 'payee',
+          op: 'is',
+          value: transactionInfo.payee,
+          type: 'id',
+        },
+      ],
+      actions,
+    };
+  }
+
+  function openRuleEditor() {
+    const rule = buildRule();
+    dispatch(
+      pushModal({
+        modal: {
+          name: 'edit-rule',
+          options: { rule },
+        },
+      }),
+    );
+  }
 
   return (
     <Modal name="ai-categorize-review" isLoading={isLoading}>
@@ -149,13 +192,12 @@ export function AICategorizeReviewModal({
                         backgroundColor: theme.tableBackground,
                         border: `1px solid ${theme.tableBorder}`,
                         borderRadius: 4,
-                        borderLeft: `4px solid ${
-                          result.confidence === 'high'
+                        borderLeft: `4px solid ${result.confidence === 'high'
                             ? theme.noticeTextLight
                             : result.confidence === 'medium'
                               ? theme.warningText
                               : theme.errorText
-                        }`,
+                          }`,
                         alignItems: 'center',
                         padding: '10px 15px',
                         gap: 15,
@@ -165,12 +207,12 @@ export function AICategorizeReviewModal({
                         <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Date')}</Text>
                         <Text>{transactionInfo.date}</Text>
                       </View>
-                      
+
                       <View style={{ flex: 2, minWidth: 120 }}>
                         <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Payee')}</Text>
                         <Text style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{transactionInfo['payee.name'] || t('Unknown')}</Text>
                       </View>
-                      
+
                       <View style={{ flex: 1, minWidth: 80, alignItems: 'flex-end' }}>
                         <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Amount')}</Text>
                         <Text>{format(transactionInfo.amount, 'financial')}</Text>
@@ -307,6 +349,14 @@ export function AICategorizeReviewModal({
                                 )}
                               </View>
                             </View>
+
+                            <Button
+                              variant="bare"
+                              style={{ alignSelf: 'flex-start', fontSize: 12 }}
+                              onPress={openRuleEditor}
+                            >
+                              {t('Edit Rule...')}
+                            </Button>
                           </View>
                         )}
                       </View>

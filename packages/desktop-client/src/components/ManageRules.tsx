@@ -23,6 +23,7 @@ import type {
 
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
 import { usePayees } from '#hooks/usePayees';
 import { useSchedules } from '#hooks/useSchedules';
 import { SelectedProvider, useSelected } from '#hooks/useSelected';
@@ -38,6 +39,7 @@ import { RulesList } from './rules/RulesList';
 export type FilterData = {
   payees?: Array<{ id: string; name: string }>;
   categories?: Array<{ id: string; name: string }>;
+  cspCategories?: Array<{ id: string; name: string }>;
   accounts?: Array<{ id: string; name: string }>;
   schedules?: readonly ScheduleEntity[];
 };
@@ -45,7 +47,7 @@ export type FilterData = {
 export function mapValue(
   field: string,
   value: unknown,
-  { payees = [], categories = [], accounts = [] }: Partial<FilterData>,
+  { payees = [], categories = [], cspCategories = [], accounts = [] }: Partial<FilterData>,
 ) {
   if (!value) return '';
 
@@ -54,6 +56,8 @@ export function mapValue(
     object = payees.find(p => p.id === value);
   } else if (field === 'category') {
     object = categories.find(c => c.id === value);
+  } else if (field === 'csp_category') {
+    object = cspCategories.find(c => c.id === value);
   } else if (field === 'account') {
     object = accounts.find(a => a.id === value);
   } else {
@@ -130,6 +134,7 @@ export function ManageRules({
     query: useMemo(() => q('schedules').select('*'), []),
   });
   const { data: { list: categories } = { list: [] } } = useCategories();
+  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const { data: payees } = usePayees();
   const { data: accounts = [] } = useAccounts();
   const filterData = useMemo(
@@ -138,8 +143,9 @@ export function ManageRules({
       accounts,
       schedules,
       categories,
+      cspCategories,
     }),
-    [payees, accounts, schedules, categories],
+    [payees, accounts, schedules, categories, cspCategories],
   );
 
   const filteredRules = useMemo(() => {

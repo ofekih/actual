@@ -80,6 +80,11 @@ const FIELD_INFO = {
     disallowedOps: new Set(['onBudget', 'offBudget']),
     internalOps: new Set(['and']),
   },
+  csp_category: {
+    type: 'id',
+    disallowedOps: new Set(['onBudget', 'offBudget']),
+    internalOps: new Set(['and']),
+  },
   account: { type: 'id' },
   cleared: { type: 'boolean' },
   reconciled: { type: 'boolean' },
@@ -152,6 +157,8 @@ export function mapField(field, opts?) {
       return t('date');
     case 'category':
       return t('category');
+    case 'csp_category':
+      return t('CSP category');
     case 'category_group':
       return t('category group');
     case 'notes':

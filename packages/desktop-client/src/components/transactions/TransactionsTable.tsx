@@ -1812,13 +1812,28 @@ const Transaction = memo(function Transaction({
           width="flex"
           value={
             transaction.csp_category
-              ? (cspCategories.find(c => c.id === transaction.csp_category)?.name ?? '')
-              : ''
+              ? (cspCategories.find(c => c.id === transaction.csp_category)
+                  ?.name ?? '')
+              : transaction.id
+                ? t('Categorize')
+                : ''
           }
-          valueStyle={valueStyle}
+          valueStyle={
+            !transaction.csp_category && transaction.id
+              ? {
+                  // uncategorized — match standard category column styling
+                  fontStyle: 'italic',
+                  fontWeight: 300,
+                  color: theme.formInputTextHighlight,
+                }
+              : valueStyle
+          }
           inputProps={{
             readOnly: true,
-            style: { fontStyle: 'italic', color: 'var(--color-pageTextSubdued)' },
+            style: {
+              fontStyle: 'italic',
+              color: 'var(--color-pageTextSubdued)',
+            },
           }}
         />
 

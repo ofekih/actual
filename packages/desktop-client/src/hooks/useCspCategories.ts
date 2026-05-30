@@ -1,7 +1,7 @@
 import { send } from '@actual-app/core/platform/client/connection';
 import { q } from '@actual-app/core/shared/query';
-import { useQuery } from '@tanstack/react-query';
 import type { CSPCategoryEntity } from '@actual-app/core/types/models';
+import { useQuery } from '@tanstack/react-query';
 
 export function useCspCategories() {
   return useQuery({

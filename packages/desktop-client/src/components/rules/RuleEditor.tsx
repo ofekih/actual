@@ -430,6 +430,7 @@ function ScheduleDescription({ id }) {
 function getActionFields() {
   return [
     'category',
+    'csp_category',
     'payee',
     'payee_name',
     'notes',
@@ -993,6 +994,7 @@ const conditionFields = [
   'account',
   'category',
   'category_group',
+  'csp_category',
   'date',
   'payee',
   'notes',

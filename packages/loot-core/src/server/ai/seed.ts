@@ -1,4 +1,3 @@
-import { batchMessages } from '#server/sync';
 import {
   all,
   delete_,
@@ -8,6 +7,7 @@ import {
   runQuery,
 } from '#server/db';
 import { SORT_INCREMENT } from '#server/db/sort';
+import { batchMessages } from '#server/sync';
 
 const defaultStandardTaxonomy = {
   Income: ['Paycheck', 'Interest/Dividends', 'Tax Refund', 'Income'],

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useResponsive } from '@actual-app/components/hooks/useResponsive';
 import { Input } from '@actual-app/components/input';
+import { Select } from '@actual-app/components/select';
 import type { CSSProperties } from '@actual-app/components/styles';
 import { View } from '@actual-app/components/view';
 import { getMonthYearFormat } from '@actual-app/core/shared/months';
@@ -22,6 +23,7 @@ import { Checkbox } from '#components/forms';
 import { DateSelect } from '#components/select/DateSelect';
 import { RecurringSchedulePicker } from '#components/select/RecurringSchedulePicker';
 import { useCategories } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
@@ -37,7 +39,7 @@ type GenericInputProps = {
   | ((
       | {
           type: 'id';
-          field: 'payee' | 'category' | 'category_group';
+          field: 'payee' | 'category' | 'category_group' | 'csp_category';
         }
       | {
           type: 'id';
@@ -128,6 +130,8 @@ export const GenericInput = ({
   const { t } = useTranslation();
   const { data: { grouped: categoryGroups } = { grouped: [] } } =
     useCategories();
+  const { data: { list: cspCategories } = { list: [] } } =
+    useCspCategories();
   const dateFormat = useDateFormat() || 'MM/dd/yyyy';
 
   let content: JSX.Element | null = null;
@@ -309,6 +313,24 @@ export const GenericInput = ({
             />
           );
           break;
+
+        case 'csp_category': {
+          const singleVal = Array.isArray(props.value) ? (props.value[0] || '') : (props.value || '');
+          content = (
+            <Select
+              options={cspCategories.map(c => [c.id, c.name] as [string, string])}
+              value={singleVal}
+              onChange={(val) => {
+                if (props.multi === true) {
+                  props.onChange([val]);
+                } else {
+                  props.onChange(val);
+                }
+              }}
+            />
+          );
+          break;
+        }
 
         default:
       }
