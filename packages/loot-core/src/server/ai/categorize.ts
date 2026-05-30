@@ -13,6 +13,7 @@ export type CategorizeResult = {
   suggested_csp_category_group_id: string | null;
   confidence: 'high' | 'medium' | 'low';
   suggest_rule: boolean;
+  suggest_rule_condition: 'payee' | 'account' | 'both';
   reasoning: string;
 };
 
@@ -24,8 +25,12 @@ export async function categorizeTransaction(
     amount: number;
     notes: string | null;
     date: string;
+    imported_payee?: string | null;
+    transfer_id?: string | null;
   },
   payeeName?: string,
+  accountName?: string,
+  accountOffBudget?: boolean,
 ): Promise<CategorizeResult> {
   const apiKey = await requireGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -55,8 +60,11 @@ ${JSON.stringify(accountHistory, null, 2)}
 Transaction to categorize:
 Date: ${transaction.date}
 Payee: ${payeeName || transaction.payee}
+Original bank description: ${transaction.imported_payee || '(none)'}
+Account: ${accountName || transaction.account}${accountOffBudget ? ' [OFF-BUDGET / tracking account]' : ''}
 Amount: ${transaction.amount}
-Notes: ${transaction.notes}
+Notes: ${transaction.notes || '(none)'}
+Is transfer: ${transaction.transfer_id ? 'yes' : 'no'}
 
 Instructions:
 1. Select the BEST 'standard_category_id' from the standard taxonomy. Use null if nothing fits.
@@ -64,9 +72,13 @@ Instructions:
 3. IF no existing categories fit, you may suggest a NEW category. To do so:
    - For standard: provide 'suggested_new_standard_category' (the name) and 'suggested_standard_category_group_id' (the ID of the existing group it belongs to).
    - For CSP: provide 'suggested_new_csp_category' (the name) and 'suggested_csp_category_group_id' (the ID of the existing group it belongs to).
-4. Provide a 'confidence' score between 0.0 and 1.0.
+4. Provide a 'confidence' score: 'high', 'medium', or 'low'.
 5. Provide a 'reasoning' string explaining your choice briefly.
-6. If you are highly confident (e.g., > 0.9) that this Payee should ALWAYS be mapped to these categories, set 'suggest_rule' to true.`;
+6. If you are highly confident that this categorization should ALWAYS apply, set 'suggest_rule' to true.
+7. For 'suggest_rule_condition': decide whether the rule should match on 'payee', 'account', or 'both'. Pick the broadest category that should always apply. Don't include both payee and account in the conditions if one would suffice.
+   - Use 'account' when the category is driven by the account type (e.g., an investment/retirement/off-budget account, a dedicated credit card), not by the specific payee.
+   - Use 'payee' when the specific vendor/payee drives the category (e.g., Netflix, Amazon, a specific grocery store).
+   - Use 'both' when both are necessary (e.g., a specific payee that only appears in one account).`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.5-flash',
@@ -94,9 +106,10 @@ Instructions:
           },
           confidence: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
           suggest_rule: { type: Type.BOOLEAN },
+          suggest_rule_condition: { type: Type.STRING, enum: ['payee', 'account', 'both'] },
           reasoning: { type: Type.STRING },
         },
-        required: ['confidence', 'suggest_rule', 'reasoning'],
+        required: ['confidence', 'suggest_rule', 'suggest_rule_condition', 'reasoning'],
       },
     },
   });

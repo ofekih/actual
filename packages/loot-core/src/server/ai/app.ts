@@ -39,12 +39,13 @@ app.method(
     const { aqlQuery } = require('../aql');
     const { q } = require('#shared/query');
     const { data } = await aqlQuery(
-      q('transactions').filter({ id: transactionId }).select('*'),
+      q('transactions').filter({ id: transactionId }).select(['*', 'account.name', 'account.offbudget']),
     );
     if (!data || data.length === 0) {
       throw new Error('Transaction not found');
     }
-    return categorizeTransaction(data[0], payeeName);
+    const tx = data[0];
+    return categorizeTransaction(tx, payeeName, tx['account.name'], !!tx['account.offbudget']);
   },
 );
 

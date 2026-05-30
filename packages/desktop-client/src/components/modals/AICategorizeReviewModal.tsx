@@ -21,6 +21,7 @@ import { theme } from '@actual-app/components/theme';
 import { Checkbox } from '#components/forms';
 import { SheetNameProvider } from '#hooks/useSheetName';
 import * as monthUtils from '@actual-app/core/shared/months';
+import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
 import { useCspCategories } from '#hooks/useCspCategories';
 import { useFormat } from '#hooks/useFormat';
@@ -42,6 +43,7 @@ export function AICategorizeReviewModal({
   const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const format = useFormat();
   const dispatch = useDispatch();
+  const { data: accounts = [] } = useAccounts();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,9 @@ export function AICategorizeReviewModal({
   const [selectedStandardId, setSelectedStandardId] = useState<string | null>(null);
   const [selectedCspId, setSelectedCspId] = useState<string | null>(null);
   const [createRule, setCreateRule] = useState<boolean>(false);
-  const [applyToExisting, setApplyToExisting] = useState(false);
+  const [applyToExisting, setApplyToExisting] = useState(true);
+  const [conditionPayee, setConditionPayee] = useState(true);
+  const [conditionAccount, setConditionAccount] = useState(false);
   const [ruleExpanded, setRuleExpanded] = useState(false);
 
   useEffect(() => {
@@ -75,6 +79,8 @@ export function AICategorizeReviewModal({
           setSelectedStandardId(res.standard_category_id);
           setSelectedCspId(res.csp_category_id);
           setCreateRule(res.suggest_rule);
+          setConditionPayee(res.suggest_rule_condition !== 'account');
+          setConditionAccount(res.suggest_rule_condition !== 'payee');
         } else {
           setError(t('Transaction not found.'));
         }
@@ -121,12 +127,14 @@ export function AICategorizeReviewModal({
       await send('transaction-update', updates);
 
       // Create a rule if checkbox is checked
-      if (createRule && transactionInfo.payee) {
+      if (createRule && (conditionPayee || conditionAccount)) {
         await send('rule-add', buildRule());
 
         // Apply to all existing uncategorized transactions with the same payee
         if (applyToExisting) {
-          const filters: Record<string, unknown> = { payee: transactionInfo.payee, is_parent: false };
+          const filters: Record<string, unknown> = { is_parent: false };
+          if (conditionPayee) filters.payee = transactionInfo.payee;
+          if (conditionAccount) filters.account = transactionInfo.account;
           if (standard_category_id) filters.category = null;
           if (csp_category_id) filters.csp_category = null;
           const { data: existing } = await send(
@@ -156,19 +164,14 @@ export function AICategorizeReviewModal({
     if (selectedCspId) {
       actions.push({ op: 'set', field: 'csp_category', value: selectedCspId, type: 'id' });
     }
-    return {
-      stage: null,
-      conditionsOp: 'and',
-      conditions: [
-        {
-          field: 'payee',
-          op: 'is',
-          value: transactionInfo.payee,
-          type: 'id',
-        },
-      ],
-      actions,
-    };
+    const conditions: NewRuleEntity['conditions'] = [];
+    if (conditionPayee && transactionInfo.payee) {
+      conditions.push({ field: 'payee', op: 'is', value: transactionInfo.payee, type: 'id' });
+    }
+    if (conditionAccount && transactionInfo.account) {
+      conditions.push({ field: 'account', op: 'is', value: transactionInfo.account, type: 'id' });
+    }
+    return { stage: null, conditionsOp: 'and', conditions, actions };
   }
 
   function openRuleEditor() {
@@ -210,10 +213,10 @@ export function AICategorizeReviewModal({
                         border: `1px solid ${theme.tableBorder}`,
                         borderRadius: 4,
                         borderLeft: `4px solid ${result.confidence === 'high'
-                            ? theme.noticeTextLight
-                            : result.confidence === 'medium'
-                              ? theme.warningText
-                              : theme.errorText
+                          ? theme.noticeTextLight
+                          : result.confidence === 'medium'
+                            ? theme.warningText
+                            : theme.errorText
                           }`,
                         alignItems: 'center',
                         padding: '10px 15px',
@@ -324,11 +327,28 @@ export function AICategorizeReviewModal({
                                 border: `1px solid ${theme.tableBorder}`,
                                 borderRadius: 4,
                                 padding: '8px 12px',
-                                gap: 4,
+                                gap: 6,
                               }}>
-                                <Text style={{ fontSize: 13 }}>
-                                  {t('If')} <span style={{ fontWeight: 600 }}>{t('payee')}</span> {t('is')} "<span style={{ fontStyle: 'italic' }}>{transactionInfo['payee.name']}</span>"
-                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                  <Checkbox
+                                    id="cond-payee"
+                                    checked={conditionPayee}
+                                    onChange={(e) => setConditionPayee(e.target.checked)}
+                                  />
+                                  <label htmlFor="cond-payee" style={{ fontSize: 13, userSelect: 'none', cursor: 'pointer' }}>
+                                    {t('payee')} {t('is')} "<span style={{ fontStyle: 'italic' }}>{transactionInfo['payee.name']}</span>"
+                                  </label>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                  <Checkbox
+                                    id="cond-account"
+                                    checked={conditionAccount}
+                                    onChange={(e) => setConditionAccount(e.target.checked)}
+                                  />
+                                  <label htmlFor="cond-account" style={{ fontSize: 13, userSelect: 'none', cursor: 'pointer' }}>
+                                    {t('account')} {t('is')} "<span style={{ fontStyle: 'italic' }}>{accounts.find(a => a.id === transactionInfo.account)?.name ?? transactionInfo.account}</span>"
+                                  </label>
+                                </View>
                               </View>
                             </View>
 
@@ -383,7 +403,7 @@ export function AICategorizeReviewModal({
                                   onChange={(e) => setApplyToExisting(e.target.checked)}
                                 />
                                 <label htmlFor="apply-to-existing" style={{ fontSize: 12, userSelect: 'none', cursor: 'pointer' }}>
-                                  {t('Also apply to existing uncategorized transactions for this payee')}
+                                  {t('Also apply to existing uncategorized transactions matching these conditions')}
                                 </label>
                               </View>
                             )}
