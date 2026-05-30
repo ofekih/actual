@@ -51,6 +51,7 @@ export function AICategorizeReviewModal({
   const [selectedStandardId, setSelectedStandardId] = useState<string | null>(null);
   const [selectedCspId, setSelectedCspId] = useState<string | null>(null);
   const [createRule, setCreateRule] = useState<boolean>(false);
+  const [applyToExisting, setApplyToExisting] = useState(false);
   const [ruleExpanded, setRuleExpanded] = useState(false);
 
   useEffect(() => {
@@ -121,8 +122,24 @@ export function AICategorizeReviewModal({
 
       // Create a rule if checkbox is checked
       if (createRule && transactionInfo.payee) {
-        const rule = buildRule();
-        await send('rule-add', rule);
+        await send('rule-add', buildRule());
+
+        // Apply to all existing uncategorized transactions with the same payee
+        if (applyToExisting) {
+          const filters: Record<string, unknown> = { payee: transactionInfo.payee, is_parent: false };
+          if (standard_category_id) filters.category = null;
+          if (csp_category_id) filters.csp_category = null;
+          const { data: existing } = await send(
+            'query',
+            q('transactions').filter(filters).select('id').serialize(),
+          );
+          for (const tx of existing) {
+            const txUpdates: any = { id: tx.id };
+            if (standard_category_id) txUpdates.category = standard_category_id;
+            if (csp_category_id) txUpdates.csp_category = csp_category_id;
+            await send('transaction-update', txUpdates);
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message || String(err));
@@ -357,6 +374,19 @@ export function AICategorizeReviewModal({
                             >
                               {t('Edit Rule...')}
                             </Button>
+
+                            {createRule && (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Checkbox
+                                  id="apply-to-existing"
+                                  checked={applyToExisting}
+                                  onChange={(e) => setApplyToExisting(e.target.checked)}
+                                />
+                                <label htmlFor="apply-to-existing" style={{ fontSize: 12, userSelect: 'none', cursor: 'pointer' }}>
+                                  {t('Also apply to existing uncategorized transactions for this payee')}
+                                </label>
+                              </View>
+                            )}
                           </View>
                         )}
                       </View>
