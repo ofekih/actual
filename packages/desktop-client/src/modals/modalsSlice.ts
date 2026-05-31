@@ -95,9 +95,14 @@ export type Modal =
     }
   | {
       name: 'ai-categorize-review';
-      options: {
-        transactionId: string;
-      };
+      options:
+        | {
+            bulk: true;
+          }
+        | {
+            transactionId: string;
+            bulk?: false;
+          };
     }
   | {
       name: 'manage-rules';

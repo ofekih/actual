@@ -84,13 +84,7 @@ yarn typecheck
 
 ### Linting and Formatting
 
-```bash
-# Check for linting and formatting issues
-yarn lint
-
-# Auto-fix linting and formatting issues
-yarn lint:fix
-```
+DO NOT run linting or formatting commands. Fixing linting/formatting issues is strictly forbidden.
 
 ### Testing
 
@@ -209,9 +203,8 @@ When making changes:
 1. Read relevant files to understand the current implementation
 2. Make focused, incremental changes
 3. Run type checking: `yarn typecheck`
-4. Run linting: `yarn lint:fix`
+4. DO NOT run linting or formatting tools
 5. Run relevant tests
-6. Fix any linter errors that are introduced
 
 For more details, see the [Development Workflow](./index.md#development-workflow) section.
 
@@ -220,7 +213,7 @@ For more details, see the [Development Workflow](./index.md#development-workflow
 If you encounter issues:
 
 - **Type errors**: Run `yarn typecheck` to see all type errors
-- **Linter errors**: Run `yarn lint:fix` to auto-fix many issues
+- **Linter errors**: DO NOT run linting/formatting tools. Do not fix linter errors.
 - **Test failures**: See the [Testing Guide](./testing.md) for debugging tips
 - **Build failures**: Clean build artifacts and reinstall dependencies:
   ```bash

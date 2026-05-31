@@ -20,8 +20,8 @@ This guide provides comprehensive information for AI agents (like Cursor) workin
 # Type checking (ALWAYS run before committing)
 yarn typecheck
 
-# Linting and formatting (with auto-fix)
-yarn lint:fix
+# Linting and formatting should NEVER be run or fixed. DO NOT run yarn lint:fix or yarn lint.
+# yarn lint:fix (DO NOT RUN THIS COMMAND)
 
 # Run all tests
 yarn test
@@ -201,9 +201,8 @@ When implementing changes:
 1. Read relevant files to understand current implementation
 2. Make focused, incremental changes
 3. Run type checking: `yarn typecheck`
-4. Run linting: `yarn lint:fix`
+4. DO NOT run linting or formatting tools (linting changes must NOT be introduced)
 5. Run relevant tests
-6. Fix any linter errors that are introduced
 
 ### 2. Testing Strategy
 
@@ -539,13 +538,11 @@ Icons in `packages/component-library/src/icons/` are auto-generated. Don't manua
 - **GitHub Issues**: https://github.com/actualbudget/actual/issues
 - **Feature Requests**: Label "needs votes" sorted by reactions
 
-## Code Quality Checklist
-
 Before committing changes, ensure:
 
 - [ ] Commit and PR rules followed (see [PR and Commit Rules](.github/agents/pr-and-commit-rules.md))
 - [ ] `yarn typecheck` passes
-- [ ] `yarn lint:fix` has been run
+- [ ] NO linting changes have been introduced
 - [ ] Relevant tests pass
 - [ ] User-facing strings are translated
 - [ ] Prefer `type` over `interface`
@@ -567,7 +564,7 @@ When performing code reviews (especially for LLM agents): **see [CODE_REVIEW_GUI
 - **Bundle Size**: Check with rollup-plugin-visualizer
 - **Type Checking**: Uses incremental compilation
 - **Testing**: Tests run in parallel by default
-- **Linting**: ESLint caches results for faster subsequent runs
+- **Linting**: DO NOT run linting
 
 ## Workspace Commands Reference
 
@@ -622,7 +619,7 @@ All storage is **SQLite** (file-based via `better-sqlite3`). No external databas
 
 Standard commands documented in `package.json` scripts and the Quick Start section above:
 
-- `yarn lint` / `yarn lint:fix` (uses oxlint + oxfmt)
+- `yarn lint` / `yarn lint:fix` (DO NOT RUN - lint/formatting changes are forbidden)
 - `yarn test` (lage across all workspaces)
 - `yarn typecheck` (tsgo + lage typecheck)
 

@@ -51,8 +51,7 @@ export function AISettings() {
           `- Suggested Standard Category: ${result.suggested_new_standard_category || 'None'} (Group ID: ${result.suggested_standard_category_group_id || 'None'})\n` +
           `- Suggested CSP Category: ${result.suggested_new_csp_category || 'None'} (Group ID: ${result.suggested_csp_category_group_id || 'None'})\n` +
           `- Confidence: ${result.confidence}\n` +
-          `- Reasoning: ${result.reasoning}\n` +
-          `- Suggest Rule: ${result.suggest_rule}`,
+          `- Reasoning: ${result.reasoning}`,
       );
     } catch (e: any) {
       setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
