@@ -41,7 +41,6 @@ CREATE TABLE transactions
    isChild INTEGER DEFAULT 0,
    acct TEXT,
    category TEXT,
-   csp_category TEXT,
    amount INTEGER,
    description TEXT,
    notes TEXT,
@@ -68,19 +67,6 @@ CREATE TABLE category_groups
    (id TEXT PRIMARY KEY,
     name TEXT UNIQUE,
     is_income INTEGER DEFAULT 0,
-    sort_order REAL,
-    tombstone INTEGER DEFAULT 0);
-
-CREATE TABLE csp_categories
- (id TEXT PRIMARY KEY,
-  name TEXT,
-  cat_group TEXT,
-  sort_order REAL,
-  tombstone INTEGER DEFAULT 0);
-
-CREATE TABLE csp_category_groups
-   (id TEXT PRIMARY KEY,
-    name TEXT UNIQUE,
     sort_order REAL,
     tombstone INTEGER DEFAULT 0);
 
