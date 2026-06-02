@@ -131,8 +131,7 @@ export const GenericInput = ({
   const { t } = useTranslation();
   const { data: { grouped: categoryGroups } = { grouped: [] } } =
     useCategories();
-  const { data: { list: cspCategories } = { list: [] } } =
-    useCspCategories();
+  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const dateFormat = useDateFormat() || 'MM/dd/yyyy';
 
   let content: JSX.Element | null = null;
@@ -316,11 +315,13 @@ export const GenericInput = ({
           break;
 
         case 'csp_category': {
-          const singleVal = Array.isArray(props.value) ? (props.value[0] || null) : (props.value || null);
+          const singleVal = Array.isArray(props.value)
+            ? props.value[0] || null
+            : props.value || null;
           content = (
             <CspCategoryAutocomplete
               value={singleVal}
-              onSelect={(val) => {
+              onSelect={val => {
                 const value = val || '';
                 if (props.multi === true) {
                   props.onChange([value]);

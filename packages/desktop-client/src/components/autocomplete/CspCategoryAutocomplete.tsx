@@ -22,32 +22,51 @@ type CspCategoryAutocompleteItem = CSPCategoryEntity & {
 
 type CspCategoryListProps = {
   items: CspCategoryAutocompleteItem[];
-  getItemProps?: (arg: { item: CspCategoryAutocompleteItem }) => Partial<ComponentProps<typeof View>>;
+  getItemProps?: (arg: {
+    item: CspCategoryAutocompleteItem;
+  }) => Partial<ComponentProps<typeof View>>;
   highlightedIndex: number;
   embedded?: boolean;
   footer?: ReactNode;
 };
 
-function CspCategoryList({ items, getItemProps, highlightedIndex, embedded, footer }: CspCategoryListProps) {
+function CspCategoryList({
+  items,
+  getItemProps,
+  highlightedIndex,
+  embedded,
+  footer,
+}: CspCategoryListProps) {
   const grouped = useMemo(() => {
-    return items.reduce<{ groupName: string; categories: (CspCategoryAutocompleteItem & { highlightedIndex: number })[] }[]>(
-      (acc, item, index) => {
-        const existing = acc.find(g => g.groupName === item.groupName);
-        const itemWithIndex = { ...item, highlightedIndex: index };
-        if (!existing) {
-          acc.push({ groupName: item.groupName, categories: [itemWithIndex] });
-        } else {
-          existing.categories.push(itemWithIndex);
-        }
-        return acc;
-      },
-      [],
-    );
+    return items.reduce<
+      {
+        groupName: string;
+        categories: (CspCategoryAutocompleteItem & {
+          highlightedIndex: number;
+        })[];
+      }[]
+    >((acc, item, index) => {
+      const existing = acc.find(g => g.groupName === item.groupName);
+      const itemWithIndex = { ...item, highlightedIndex: index };
+      if (!existing) {
+        acc.push({ groupName: item.groupName, categories: [itemWithIndex] });
+      } else {
+        existing.categories.push(itemWithIndex);
+      }
+      return acc;
+    }, []);
   }, [items]);
 
   return (
     <View>
-      <View style={{ overflowY: 'auto', willChange: 'transform', padding: '5px 0', ...(!embedded && { maxHeight: 175 }) }}>
+      <View
+        style={{
+          overflowY: 'auto',
+          willChange: 'transform',
+          padding: '5px 0',
+          ...(!embedded && { maxHeight: 175 }),
+        }}
+      >
         {grouped.map(group => (
           <Fragment key={group.groupName}>
             <ItemHeader title={group.groupName} type="csp-category" />
@@ -76,10 +95,21 @@ type CspCategoryItemProps = {
   embedded?: boolean;
 };
 
-function CspCategoryItem({ item, className, style, highlighted, embedded, ...props }: CspCategoryItemProps) {
+function CspCategoryItem({
+  item,
+  className,
+  style,
+  highlighted,
+  embedded,
+  ...props
+}: CspCategoryItemProps) {
   const { isNarrowWidth } = useResponsive();
   const narrowStyle = isNarrowWidth
-    ? { ...styles.mobileMenuItem, borderRadius: 0, borderTop: `1px solid ${theme.pillBorder}` }
+    ? {
+        ...styles.mobileMenuItem,
+        borderRadius: 0,
+        borderTop: `1px solid ${theme.pillBorder}`,
+      }
     : {};
 
   return (
@@ -89,8 +119,12 @@ function CspCategoryItem({ item, className, style, highlighted, embedded, ...pro
       className={cx(
         className,
         css({
-          backgroundColor: highlighted ? theme.menuAutoCompleteBackgroundHover : 'transparent',
-          color: highlighted ? theme.menuAutoCompleteItemTextHover : theme.menuAutoCompleteItemText,
+          backgroundColor: highlighted
+            ? theme.menuAutoCompleteBackgroundHover
+            : 'transparent',
+          color: highlighted
+            ? theme.menuAutoCompleteItemTextHover
+            : theme.menuAutoCompleteItemText,
           padding: 4,
           paddingLeft: 20,
           borderRadius: embedded ? 4 : 0,
@@ -116,9 +150,15 @@ type CspCategoryAutocompleteProps = ComponentProps<
   categoryGroups?: CspCategoryGroupWithCategories[];
 };
 
-export function CspCategoryAutocomplete({ categoryGroups, embedded, closeOnBlur, ...props }: CspCategoryAutocompleteProps) {
+export function CspCategoryAutocomplete({
+  categoryGroups,
+  embedded,
+  closeOnBlur,
+  ...props
+}: CspCategoryAutocompleteProps) {
   const { t } = useTranslation();
-  const { data: { grouped: defaultGroups } = { grouped: [] } } = useCspCategories();
+  const { data: { grouped: defaultGroups } = { grouped: [] } } =
+    useCspCategories();
 
   const suggestions = useMemo<CspCategoryAutocompleteItem[]>(() => {
     const groups = categoryGroups ?? defaultGroups;

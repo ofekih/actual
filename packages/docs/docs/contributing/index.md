@@ -70,9 +70,9 @@ When making changes to Actual, follow this workflow:
 1. **Read relevant files**: Understand the current implementation before making changes.
 2. **Make focused, incremental changes**: Keep changes small and focused on a single feature or bugfix.
 3. **Run type checking**: Always run `yarn typecheck` before committing to catch type errors.
-4. **DO NOT run linting**: Do not run linting or formatting tools.
+4. **Run linting**: Run `yarn lint:fix` to ensure code follows style guidelines.
 5. **Run relevant tests**: Run tests for the code you've changed (`yarn test` for all tests, or workspace-specific commands).
-6. **Fix any issues**: Address any type errors or test failures before submitting your PR. Do not introduce formatting or linting changes.
+6. **Fix any issues**: Address any type errors, linter errors, or test failures before submitting your PR.
 
 For more details, see the [Development Setup Guide](./development-setup.md) and [Testing Guide](./testing.md).
 

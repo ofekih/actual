@@ -105,8 +105,14 @@ Instructions:
             type: Type.STRING,
             nullable: true,
           },
-          confidence: { type: Type.STRING, enum: ['certain', 'confident', 'unsure'] },
-          suggest_rule_condition: { type: Type.STRING, enum: ['payee', 'account', 'both'] },
+          confidence: {
+            type: Type.STRING,
+            enum: ['certain', 'confident', 'unsure'],
+          },
+          suggest_rule_condition: {
+            type: Type.STRING,
+            enum: ['payee', 'account', 'both'],
+          },
           reasoning: { type: Type.STRING },
         },
         required: ['confidence', 'suggest_rule_condition', 'reasoning'],

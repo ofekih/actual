@@ -12,7 +12,7 @@ If you use an AI-powered editor like Cursor, see the [Cursor IDE guide](./leader
 
 Regardless of whether the code is written by you or by an AI, it still has to meet the project's standards:
 
-- It must pass `yarn typecheck` (DO NOT run linting/formatting tools).
+- It must pass `yarn typecheck` and `yarn lint:fix`.
 - Relevant tests should pass — see the [Testing Guide](./testing.md).
 - It must follow the project's [Code Style and Conventions](./code-style.md).
 - User-facing strings must be translated.

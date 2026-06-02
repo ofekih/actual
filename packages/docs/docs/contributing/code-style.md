@@ -134,7 +134,7 @@ describe('ComponentName', () => {
 Before committing changes, ensure:
 
 - [ ] `yarn typecheck` passes
-- [ ] NO linting changes have been introduced
+- [ ] `yarn lint:fix` has been run
 - [ ] Relevant tests pass
 - [ ] User-facing strings are translated
 - [ ] Prefer `type` over `interface`

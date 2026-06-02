@@ -47,7 +47,12 @@ export type FilterData = {
 export function mapValue(
   field: string,
   value: unknown,
-  { payees = [], categories = [], cspCategories = [], accounts = [] }: Partial<FilterData>,
+  {
+    payees = [],
+    categories = [],
+    cspCategories = [],
+    accounts = [],
+  }: Partial<FilterData>,
 ) {
   if (!value) return '';
 

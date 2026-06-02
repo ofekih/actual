@@ -25,7 +25,12 @@ This guide helps you resolve common issues when developing for Actual.
 
 ## Linter Errors
 
-DO NOT run linting or formatting commands. Fixing linting/formatting issues is strictly forbidden.
+### Issue: ESLint or Prettier errors
+
+**Solution:**
+
+1. Run `yarn lint:fix` to auto-fix many issues
+2. Check ESLint output for specific rule violations and fix them
 
 ## Test Failures
 
@@ -126,8 +131,9 @@ DO NOT run linting or formatting commands. Fixing linting/formatting issues is s
 **Solution:**
 
 1. Ensure Husky is set up: `yarn prepare`
-2. Run type checking: `yarn typecheck`
-3. Fix any errors before committing
+2. Run linting manually: `yarn lint:fix`
+3. Run type checking: `yarn typecheck`
+4. Fix any errors before committing
 
 ## Environment Issues
 

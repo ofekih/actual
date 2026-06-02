@@ -1,6 +1,9 @@
 import { send } from '@actual-app/core/platform/client/connection';
 import { q } from '@actual-app/core/shared/query';
-import type { CSPCategoryEntity, CSPCategoryGroupEntity } from '@actual-app/core/types/models';
+import type {
+  CSPCategoryEntity,
+  CSPCategoryGroupEntity,
+} from '@actual-app/core/types/models';
 import { useQuery } from '@tanstack/react-query';
 
 export type CspCategoryGroupWithCategories = CSPCategoryGroupEntity & {
