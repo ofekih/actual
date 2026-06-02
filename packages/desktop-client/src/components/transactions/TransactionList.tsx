@@ -32,9 +32,7 @@ import type {
 
 import { FeatureErrorFallback } from '#components/FeatureErrorFallback';
 import type { TableHandleRef } from '#components/table';
-import { useCategories } from '#hooks/useCategories';
 import { useCspCategories } from '#hooks/useCspCategories';
-import { useDateFormat } from '#hooks/useDateFormat';
 import { isValidBoundaryDrop } from '#hooks/useDragDrop';
 import type { DropPosition } from '#hooks/useDragDrop';
 import { useNavigate } from '#hooks/useNavigate';
@@ -102,6 +100,7 @@ export async function createSingleTimeScheduleFromTransaction(
   conditionFields.forEach(field => {
     const value = transaction[field];
     if (value != null && value !== '') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       conditions.push({
         op: 'is',
         field,

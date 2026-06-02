@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { AnimatedLoading } from '@actual-app/components/icons/AnimatedLoading';
 import { SvgExpandArrow } from '@actual-app/components/icons/v0';
-import { Select } from '@actual-app/components/select';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
@@ -41,6 +40,12 @@ type AICategorizeReviewModalProps = Extract<
   ModalType,
   { name: 'ai-categorize-review' }
 >['options'];
+
+type UncategorizedTransaction = TransactionEntity & {
+  'payee.name'?: string;
+  'account.name'?: string;
+  'account.offbudget'?: boolean;
+};
 
 const shimmer = keyframes`
   0% {
@@ -100,7 +105,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
 
   // Queue state for bulk/single mode
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState<
-    any[]
+    UncategorizedTransaction[]
   >([]);
   const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [initialTotal, setInitialTotal] = useState<number | null>(null);
@@ -127,7 +132,9 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
       try {
         if (bulk) {
           const { data } = await send('query', uncategorizedQuery);
-          setUncategorizedTransactions(data || []);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+          const typedData = data as UncategorizedTransaction[];
+          setUncategorizedTransactions(typedData || []);
           setInitialTotal((data || []).length);
           if (data && data.length > 0) {
             setCurrentTxId(data[0].id);
@@ -141,20 +148,22 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
               .serialize(),
           );
           if (data && data.length > 0) {
-            setUncategorizedTransactions(data);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            const typedData = data as UncategorizedTransaction[];
+            setUncategorizedTransactions(typedData);
             setInitialTotal(1);
             setCurrentTxId(initialTransactionId);
           } else {
             setError(t('Transaction not found.'));
           }
         }
-      } catch (err: any) {
-        setError(err.message || String(err));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLocalLoading(false);
       }
     }
-    init();
+    void init();
   }, [bulk, initialTransactionId, t]);
 
   const currentTx =
@@ -164,7 +173,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     : false;
   const result = currentTx ? predictionCache[currentTx.id] || null : null;
 
-  const lookaheadTx = React.useMemo(() => {
+  const lookaheadTx = useMemo(() => {
     if (!bulk || !currentTx) return null;
     const diffPayeeAndAccount = uncategorizedTransactions.find(
       tx =>
@@ -197,9 +206,9 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
         payeeName,
       });
       setPredictionCache(prev => ({ ...prev, [txId]: res }));
-    } catch (err: any) {
+    } catch (err) {
       if (txId === currentTxId) {
-        setError(err.message || String(err));
+        setError(err instanceof Error ? err.message : String(err));
       }
     } finally {
       setFetchingIds(prev => {
@@ -212,14 +221,19 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
 
   useEffect(() => {
     if (currentTx) {
-      fetchPrediction(currentTx.id, currentTx['payee.name'] ?? undefined);
+      void fetchPrediction(currentTx.id, currentTx['payee.name'] ?? undefined);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTx?.id]);
 
   useEffect(() => {
     if (lookaheadTx) {
-      fetchPrediction(lookaheadTx.id, lookaheadTx['payee.name'] ?? undefined);
+      void fetchPrediction(
+        lookaheadTx.id,
+        lookaheadTx['payee.name'] ?? undefined,
+      );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lookaheadTx?.id]);
 
   useEffect(() => {
@@ -268,10 +282,12 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const updates = { id: currentTx.id } as unknown as TransactionEntity;
-      if (standard_category_id !== undefined)
-        {updates.category = standard_category_id ?? undefined;}
-      if (csp_category_id !== undefined)
-        {updates.csp_category = csp_category_id ?? undefined;}
+      if (standard_category_id !== undefined) {
+        updates.category = standard_category_id ?? undefined;
+      }
+      if (csp_category_id !== undefined) {
+        updates.csp_category = csp_category_id ?? undefined;
+      }
 
       await send('transaction-update', updates);
 
@@ -294,18 +310,20 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
               const tx = existing[i];
               // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
               const txUpdates = { id: tx.id } as unknown as TransactionEntity;
-              if (standard_category_id)
-                {txUpdates.category = standard_category_id ?? undefined;}
-              if (csp_category_id)
-                {txUpdates.csp_category = csp_category_id ?? undefined;}
+              if (standard_category_id) {
+                txUpdates.category = standard_category_id ?? undefined;
+              }
+              if (csp_category_id) {
+                txUpdates.csp_category = csp_category_id ?? undefined;
+              }
               await send('transaction-update', txUpdates);
               setSavingProgress({ current: i + 1, total: existing.length });
             }
           }
         }
       }
-    } catch (err: any) {
-      setError(err.message || String(err));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSaving(false);
       setSavingProgress(null);
@@ -316,8 +334,12 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     await onAccept();
     if (bulk) {
       const { data } = await send('query', uncategorizedQuery);
-      setUncategorizedTransactions(data || []);
-      const nextTx = (data || []).find((tx: any) => !skippedIds.has(tx.id));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      const typedData = data as UncategorizedTransaction[];
+      setUncategorizedTransactions(typedData || []);
+      const nextTx = (typedData || []).find(
+        (tx: UncategorizedTransaction) => !skippedIds.has(tx.id),
+      );
       if (nextTx) {
         setCurrentTxId(nextTx.id);
       } else {
@@ -455,7 +477,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                   style={{ marginTop: 10 }}
                   onPress={() => state.close()}
                 >
-                  {<Trans>Close</Trans>}
+                  <Trans>Close</Trans>
                 </Button>
               </View>
             ) : currentTx && (result || isAILoading) ? (
@@ -510,7 +532,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           marginBottom: 2,
                         }}
                       >
-                        {<Trans>Date</Trans>}
+                        <Trans>Date</Trans>
                       </Text>
                       <Text>{currentTx.date}</Text>
                     </View>
@@ -523,7 +545,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           marginBottom: 2,
                         }}
                       >
-                        {<Trans>Payee</Trans>}
+                        <Trans>Payee</Trans>
                       </Text>
                       <Tooltip
                         content={currentTx['payee.name'] || t('Unknown')}
@@ -549,7 +571,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           marginBottom: 2,
                         }}
                       >
-                        {<Trans>Account</Trans>}
+                        <Trans>Account</Trans>
                       </Text>
                       <Tooltip
                         content={currentTx['account.name'] || ''}
@@ -578,7 +600,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                             marginBottom: 2,
                           }}
                         >
-                          {<Trans>Notes</Trans>}
+                          <Trans>Notes</Trans>
                         </Text>
                         <Tooltip content={currentTx.notes}>
                           <Text
@@ -606,7 +628,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           marginBottom: 2,
                         }}
                       >
-                        {<Trans>Amount</Trans>}
+                        <Trans>Amount</Trans>
                       </Text>
                       <Text>{format(currentTx.amount, 'financial')}</Text>
                     </View>
@@ -628,7 +650,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           marginBottom: 2,
                         }}
                       >
-                        {<Trans>Category</Trans>}
+                        <Trans>Category</Trans>
                       </Text>
                       {isAILoading ? (
                         <View
@@ -698,7 +720,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           fontWeight: 600,
                         }}
                       >
-                        {<Trans>Reasoning</Trans>}:
+                        <Trans>Reasoning</Trans>:
                       </Text>
                       <View
                         className={skeletonStyle}
@@ -715,7 +737,9 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                         overflowWrap: 'break-word',
                       }}
                     >
-                      <span style={{ fontWeight: 600 }}>{<Trans>Reasoning</Trans>}:</span>{' '}
+                      <span style={{ fontWeight: 600 }}>
+                        <Trans>Reasoning</Trans>:
+                      </span>{' '}
                       {result?.reasoning}
                     </Text>
                   )}
@@ -762,7 +786,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                 cursor: 'pointer',
                               }}
                             >
-                              ✨ {<Trans>Create a rule for this payee</Trans>}
+                              ✨ <Trans>Create a rule for this payee</Trans>
                             </label>
                             <Text
                               style={{
@@ -771,7 +795,9 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                 marginTop: 2,
                               }}
                             >
-                              {<Trans>Automatically categorize future transactions for</Trans>}{' '}
+                              <Trans>
+                                Automatically categorize future transactions for
+                              </Trans>{' '}
                               "{currentTx['payee.name']}"
                             </Text>
                           </View>
@@ -807,7 +833,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                   marginBottom: 6,
                                 }}
                               >
-                                {<Trans>Conditions</Trans>}
+                                <Trans>Conditions</Trans>
                               </Text>
                               <View
                                 style={{
@@ -890,7 +916,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                   marginBottom: 6,
                                 }}
                               >
-                                {<Trans>Actions</Trans>}
+                                <Trans>Actions</Trans>
                               </Text>
                               <View
                                 style={{
@@ -908,7 +934,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                     );
                                     return (
                                       <Text style={{ fontSize: 13 }}>
-                                        {<Trans>Set</Trans>}{' '}
+                                        <Trans>Set</Trans>{' '}
                                         <span style={{ fontWeight: 600 }}>
                                           {t('category')}
                                         </span>{' '}
@@ -927,7 +953,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                     );
                                     return (
                                       <Text style={{ fontSize: 13 }}>
-                                        {<Trans>Set</Trans>}{' '}
+                                        <Trans>Set</Trans>{' '}
                                         <span style={{ fontWeight: 600 }}>
                                           {t('CSP category')}
                                         </span>{' '}
@@ -986,7 +1012,10 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  {<Trans>Also apply to existing uncategorized transactions matching these conditions</Trans>}
+                                  <Trans>
+                                    Also apply to existing uncategorized
+                                    transactions matching these conditions
+                                  </Trans>
                                 </label>
                               </View>
                             )}
@@ -1009,13 +1038,13 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                     </Button>
                     {bulk && (
                       <Button variant="normal" onPress={handleSkip}>
-                        {<Trans>Skip</Trans>}
+                        <Trans>Skip</Trans>
                       </Button>
                     )}
                     <Button
                       variant="primary"
                       isDisabled={isAILoading}
-                      onPress={() => handleAcceptAndNext(state.close)}
+                      onPress={() => handleAcceptAndNext(() => state.close())}
                     >
                       {t('Accept & Save')}
                     </Button>

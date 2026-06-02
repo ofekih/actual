@@ -1,7 +1,7 @@
-import React from 'react';
+import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
-import { Button } from '@actual-app/components/button';
+import { ButtonWithLoading } from '@actual-app/components/button';
 import { Input } from '@actual-app/components/input';
 import { Text } from '@actual-app/components/text';
 import { View } from '@actual-app/components/view';
@@ -14,10 +14,10 @@ import { Setting } from './UI';
 export function AISettings() {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useSyncedPref('geminiApiKey');
-  const [isTesting, setIsTesting] = React.useState(false);
-  const [isCategorizing, setIsCategorizing] = React.useState(false);
-  const [isSeeding, setIsSeeding] = React.useState(false);
-  const [testResult, setTestResult] = React.useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const [isCategorizing, setIsCategorizing] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   const onTestConnection = async () => {
     setIsTesting(true);
@@ -31,8 +31,15 @@ export function AISettings() {
       } else {
         setTestResult('Connection Failed: ' + response.message);
       }
-    } catch (e: any) {
-      setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
+    } catch (e) {
+      setTestResult(
+        'Error: ' +
+          (e instanceof Error
+            ? e.message
+            : typeof e === 'object' && e !== null
+              ? JSON.stringify(e, null, 2)
+              : String(e)),
+      );
     } finally {
       setIsTesting(false);
     }
@@ -53,8 +60,15 @@ export function AISettings() {
           `- Confidence: ${result.confidence}\n` +
           `- Reasoning: ${result.reasoning}`,
       );
-    } catch (e: any) {
-      setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
+    } catch (e) {
+      setTestResult(
+        'Error: ' +
+          (e instanceof Error
+            ? e.message
+            : typeof e === 'object' && e !== null
+              ? JSON.stringify(e, null, 2)
+              : String(e)),
+      );
     } finally {
       setIsCategorizing(false);
     }
@@ -68,8 +82,15 @@ export function AISettings() {
       setTestResult(
         'Successfully seeded default Standard and CSP categories! (Note: existing categories were cleared)',
       );
-    } catch (e: any) {
-      setTestResult('Error: ' + (e.message || JSON.stringify(e, null, 2)));
+    } catch (e) {
+      setTestResult(
+        'Error: ' +
+          (e instanceof Error
+            ? e.message
+            : typeof e === 'object' && e !== null
+              ? JSON.stringify(e, null, 2)
+              : String(e)),
+      );
     } finally {
       setIsSeeding(false);
     }
@@ -87,17 +108,20 @@ export function AISettings() {
               onChange={e => setApiKey(e.currentTarget.value)}
               style={{ width: 300 }}
             />
-            <Button onPress={onTestConnection} /* isLoading={isTesting} */>
+            <ButtonWithLoading onPress={onTestConnection} isLoading={isTesting}>
               <Trans>Test Connection</Trans>
-            </Button>
+            </ButtonWithLoading>
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Button onPress={onTestCategorize} /* isLoading={isCategorizing} */>
+            <ButtonWithLoading
+              onPress={onTestCategorize}
+              isLoading={isCategorizing}
+            >
               <Trans>Test Categorization</Trans>
-            </Button>
-            <Button onPress={onSeedCategories} /* isLoading={isSeeding} */>
+            </ButtonWithLoading>
+            <ButtonWithLoading onPress={onSeedCategories} isLoading={isSeeding}>
               <Trans>Seed Default Categories</Trans>
-            </Button>
+            </ButtonWithLoading>
           </View>
           {testResult && (
             <View

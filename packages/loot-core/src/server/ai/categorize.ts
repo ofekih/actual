@@ -126,9 +126,10 @@ Instructions:
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const result = JSON.parse(text) as CategorizeResult;
     return result;
-  } catch (e) {
+  } catch {
     throw new Error('Failed to parse Gemini JSON output: ' + text);
   }
 }

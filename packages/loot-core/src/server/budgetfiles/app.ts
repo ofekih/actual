@@ -594,14 +594,14 @@ async function _loadBudget(id: Budget['id']): Promise<{
       'SELECT id FROM category_groups WHERE tombstone = 0 LIMIT 1',
     );
     if (aliveGroups.length === 0) {
-      await db.runQuery('UPDATE category_groups SET tombstone = 0');
-      await db.runQuery('UPDATE categories SET tombstone = 0');
+      db.runQuery('UPDATE category_groups SET tombstone = 0');
+      db.runQuery('UPDATE categories SET tombstone = 0');
     }
     // Also ensure any Income group has is_income = 1
-    await db.runQuery(
+    db.runQuery(
       "UPDATE category_groups SET is_income = 1 WHERE name = 'Income'",
     );
-  } catch (e) {
+  } catch {
     // ignore
   }
   // ----------------------
@@ -624,7 +624,8 @@ async function _loadBudget(id: Budget['id']): Promise<{
       'SELECT value from preferences WHERE id = ?',
       ['budgetType'],
     )) ?? {};
-  sheet.get().meta().budgetType = budgetType as prefs.BudgetType;
+  sheet.get().meta().budgetType =
+    budgetType === 'tracking' ? 'tracking' : 'envelope';
   await budget.createAllBudgets();
 
   // Load all the in-memory state

@@ -67,7 +67,7 @@ export async function seedCategories() {
     for (const cat of cspCategories) {
       await delete_('csp_categories', cat.id);
     }
-    await runQuery('DELETE FROM csp_categories');
+    runQuery('DELETE FROM csp_categories');
 
     const cspGroups = await all<{ id: string }>(
       'SELECT id FROM csp_category_groups',
@@ -75,9 +75,9 @@ export async function seedCategories() {
     for (const group of cspGroups) {
       await delete_('csp_category_groups', group.id);
     }
-    await runQuery('DELETE FROM csp_category_groups');
+    runQuery('DELETE FROM csp_category_groups');
 
-    await runQuery('UPDATE transactions SET csp_category = NULL');
+    runQuery('UPDATE transactions SET csp_category = NULL');
 
     // 2. Clear existing standard categories
     const stdCategories = await all<{ id: string }>(
@@ -85,9 +85,7 @@ export async function seedCategories() {
     );
     for (const cat of stdCategories) {
       await delete_('categories', cat.id);
-      await runQuery('UPDATE categories SET tombstone = 1 WHERE id = ?', [
-        cat.id,
-      ]);
+      runQuery('UPDATE categories SET tombstone = 1 WHERE id = ?', [cat.id]);
     }
 
     const stdGroups = await all<{ id: string }>(
@@ -95,12 +93,12 @@ export async function seedCategories() {
     );
     for (const group of stdGroups) {
       await delete_('category_groups', group.id);
-      await runQuery('UPDATE category_groups SET tombstone = 1 WHERE id = ?', [
+      runQuery('UPDATE category_groups SET tombstone = 1 WHERE id = ?', [
         group.id,
       ]);
     }
 
-    await runQuery('UPDATE transactions SET category = NULL');
+    runQuery('UPDATE transactions SET category = NULL');
   });
 
   // Phase 2: Insertions
@@ -125,7 +123,6 @@ export async function seedCategories() {
       }
     }
 
-    const standardGroupSort = 0;
     for (const [groupName, categories] of Object.entries(
       defaultStandardTaxonomy,
     )) {

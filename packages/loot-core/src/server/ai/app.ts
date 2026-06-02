@@ -1,7 +1,12 @@
 import { createApp } from '#server/app';
+import { aqlQuery } from '#server/aql';
+import { insertCategory, insertWithUUID } from '#server/db';
 import { mutator } from '#server/mutators';
+import { q } from '#shared/query';
 
 import { categorizeTransaction } from './categorize';
+import type { CategorizeResult } from './categorize';
+import { seedCategories } from './seed';
 
 import { testGeminiConnection } from './index';
 
@@ -10,9 +15,9 @@ export type AIHandlers = {
   'ai-categorize-transaction': (args: {
     transactionId: string;
     payeeName?: string;
-  }) => Promise<import('./categorize').CategorizeResult>;
+  }) => Promise<CategorizeResult>;
   'ai-test-categorize-random': () => Promise<
-    import('./categorize').CategorizeResult & { transactionInfo: string }
+    CategorizeResult & { transactionInfo: string }
   >;
   'ai-seed-categories': () => Promise<{ success: boolean }>;
   'ai-apply-categorization': (args: {
@@ -36,8 +41,6 @@ app.method('ai-test-connection', async () => {
 app.method(
   'ai-categorize-transaction',
   async ({ transactionId, payeeName }) => {
-    const { aqlQuery } = require('../aql');
-    const { q } = require('#shared/query');
     const { data } = await aqlQuery(
       q('transactions')
         .filter({ id: transactionId })
@@ -57,8 +60,6 @@ app.method(
 );
 
 app.method('ai-test-categorize-random', async () => {
-  const { aqlQuery } = require('../aql');
-  const { q } = require('#shared/query');
   // Grab the most recent transaction that has a payee
   const { data } = await aqlQuery(
     q('transactions')
@@ -81,7 +82,6 @@ app.method('ai-test-categorize-random', async () => {
 app.method(
   'ai-seed-categories',
   mutator(async () => {
-    const { seedCategories } = require('./seed');
     return seedCategories();
   }),
 );
@@ -89,8 +89,6 @@ app.method(
 app.method(
   'ai-apply-categorization',
   mutator(async args => {
-    const { insertCategory, insertWithUUID } = require('../db');
-
     let standardCatId = args.standard_category_id;
     let cspCatId = args.csp_category_id;
 

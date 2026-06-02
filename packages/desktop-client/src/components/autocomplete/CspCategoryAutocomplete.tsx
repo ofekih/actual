@@ -1,6 +1,5 @@
 import React, { Fragment, useMemo } from 'react';
 import type { ComponentProps, CSSProperties, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { useResponsive } from '@actual-app/components/hooks/useResponsive';
 import { styles } from '@actual-app/components/styles';
@@ -156,7 +155,6 @@ export function CspCategoryAutocomplete({
   closeOnBlur,
   ...props
 }: CspCategoryAutocompleteProps) {
-  const { t } = useTranslation();
   const { data: { grouped: defaultGroups } = { grouped: [] } } =
     useCspCategories();
 

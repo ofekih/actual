@@ -3,6 +3,7 @@ import type { ComponentPropsWithoutRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Menu } from '@actual-app/components/menu';
+import type { MenuItem } from '@actual-app/components/menu';
 import { q } from '@actual-app/core/shared/query';
 import {
   extractScheduleConds,
@@ -197,7 +198,7 @@ export function TransactionMenu({
             );
             break;
           default:
-            throw new Error(`Unrecognized menu option: ${name}`);
+            throw new Error(`Unrecognized menu option: ${String(name)}`);
         }
         closeMenu();
       }}
@@ -245,10 +246,10 @@ export function TransactionMenu({
               !ambiguousDuplication &&
               !types.preview
                 ? [
-                    Menu.line as any,
+                    Menu.line as MenuItem,
                     {
                       name: 'ai-categorize',
-                      text: '✨ ' + t('AI Categorize'),
+                      text: `${'✨ '} ${t('AI Categorize')}`,
                     },
                   ]
                 : []),

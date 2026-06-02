@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { useResponsive } from '@actual-app/components/hooks/useResponsive';
 import { Input } from '@actual-app/components/input';
-import { Select } from '@actual-app/components/select';
 import type { CSSProperties } from '@actual-app/components/styles';
 import { View } from '@actual-app/components/view';
 import { getMonthYearFormat } from '@actual-app/core/shared/months';
@@ -24,7 +23,6 @@ import { Checkbox } from '#components/forms';
 import { DateSelect } from '#components/select/DateSelect';
 import { RecurringSchedulePicker } from '#components/select/RecurringSchedulePicker';
 import { useCategories } from '#hooks/useCategories';
-import { useCspCategories } from '#hooks/useCspCategories';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
@@ -131,7 +129,6 @@ export const GenericInput = ({
   const { t } = useTranslation();
   const { data: { grouped: categoryGroups } = { grouped: [] } } =
     useCategories();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const dateFormat = useDateFormat() || 'MM/dd/yyyy';
 
   let content: JSX.Element | null = null;
