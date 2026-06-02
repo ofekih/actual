@@ -5,6 +5,7 @@ export type TaxonomyContext = {
   standard: Array<{
     groupId: string;
     groupName: string;
+    isIncome: boolean;
     categories: Array<{ id: string; name: string; isIncome: boolean }>;
   }>;
   csp: Array<{
@@ -17,7 +18,7 @@ export type TaxonomyContext = {
 export async function getTaxonomies(): Promise<TaxonomyContext> {
   const { data: groups } = (await aqlQuery(
     q('category_groups').select('*'),
-  )) as { data: Array<{ id: string; name: string }> };
+  )) as { data: Array<{ id: string; name: string; is_income: boolean }> };
   const { data: categories } = (await aqlQuery(
     q('categories').select('*'),
   )) as {
@@ -39,6 +40,7 @@ export async function getTaxonomies(): Promise<TaxonomyContext> {
   const standard = groups.map(g => ({
     groupId: g.id,
     groupName: g.name,
+    isIncome: g.is_income,
     categories: categories
       .filter(c => c.group === g.id)
       .map(c => ({ id: c.id, name: c.name, isIncome: !!c.is_income })),

@@ -16,6 +16,7 @@ import { AccountAutocomplete } from '#components/autocomplete/AccountAutocomplet
 import { Autocomplete } from '#components/autocomplete/Autocomplete';
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
 import { CategoryGroupAutocomplete } from '#components/autocomplete/CategoryGroupAutocomplete';
+import { CspCategoryAutocomplete } from '#components/autocomplete/CspCategoryAutocomplete';
 import { FilterAutocomplete } from '#components/autocomplete/FilterAutocomplete';
 import { PayeeAutocomplete } from '#components/autocomplete/PayeeAutocomplete';
 import { ReportAutocomplete } from '#components/autocomplete/ReportAutocomplete';
@@ -315,18 +316,19 @@ export const GenericInput = ({
           break;
 
         case 'csp_category': {
-          const singleVal = Array.isArray(props.value) ? (props.value[0] || '') : (props.value || '');
+          const singleVal = Array.isArray(props.value) ? (props.value[0] || null) : (props.value || null);
           content = (
-            <Select
-              options={cspCategories.map(c => [c.id, c.name] as [string, string])}
+            <CspCategoryAutocomplete
               value={singleVal}
-              onChange={(val) => {
+              onSelect={(val) => {
+                const value = val || '';
                 if (props.multi === true) {
-                  props.onChange([val]);
+                  props.onChange([value]);
                 } else {
-                  props.onChange(val);
+                  props.onChange(value);
                 }
               }}
+              inputProps={{ placeholder: t('Select CSP category...') }}
             />
           );
           break;

@@ -16,7 +16,9 @@ import {
   ModalTitle,
 } from '#components/common/Modal';
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
+import { CspCategoryAutocomplete } from '#components/autocomplete/CspCategoryAutocomplete';
 import { Select } from '@actual-app/components/select';
+import { Tooltip } from '@actual-app/components/tooltip';
 import { theme } from '@actual-app/components/theme';
 import { Checkbox } from '#components/forms';
 import { SheetNameProvider } from '#hooks/useSheetName';
@@ -334,7 +336,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
             title={<ModalTitle title={modalTitle} shrinkOnOverflow />}
             rightContent={<ModalCloseButton onPress={() => state.close()} />}
           />
-          <View style={{ gap: 15, padding: 15, minWidth: 650, width: 650, position: 'relative' }}>
+          <View style={{ gap: 15, padding: 15, minWidth: 1000, width: 1000, position: 'relative' }}>
             {error ? (
               <Text style={{ color: theme.errorText }}>{error}</Text>
             ) : showSuccess ? (
@@ -384,8 +386,32 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
 
                     <View style={{ flex: 2, minWidth: 120 }}>
                       <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Payee')}</Text>
-                      <Text style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentTx['payee.name'] || t('Unknown')}</Text>
+                      <Tooltip
+                        content={currentTx['payee.name'] || t('Unknown')}
+                        triggerProps={{ isDisabled: !currentTx['payee.name'] }}
+                      >
+                        <Text style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentTx['payee.name'] || t('Unknown')}</Text>
+                      </Tooltip>
                     </View>
+
+                    <View style={{ flex: 2, minWidth: 120 }}>
+                      <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Account')}</Text>
+                      <Tooltip
+                        content={currentTx['account.name'] || ''}
+                        triggerProps={{ isDisabled: !currentTx['account.name'] }}
+                      >
+                        <Text style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentTx['account.name'] || '—'}</Text>
+                      </Tooltip>
+                    </View>
+
+                    {currentTx.notes ? (
+                      <View style={{ flex: 2, minWidth: 100 }}>
+                        <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Notes')}</Text>
+                        <Tooltip content={currentTx.notes}>
+                          <Text style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: theme.pageTextLight, fontStyle: 'italic' }}>{currentTx.notes}</Text>
+                        </Tooltip>
+                      </View>
+                    ) : null}
 
                     <View style={{ flex: 1, minWidth: 80, alignItems: 'flex-end' }}>
                       <Text style={{ color: theme.pageTextLight, fontSize: 12, marginBottom: 2 }}>{t('Amount')}</Text>
@@ -417,10 +443,11 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                       {isAILoading ? (
                         <View className={skeletonStyle} style={{ height: 28, borderRadius: 4 }} />
                       ) : (
-                        <Select
-                          options={[['', t('Uncategorized')], ...cspCategories.map(c => [c.id, c.name] as [string, string])]}
-                          value={selectedCspId || ''}
-                          onChange={(val) => setSelectedCspId(val === '' ? null : val)}
+                        <CspCategoryAutocomplete
+                          value={selectedCspId}
+                          onSelect={id => setSelectedCspId(id)}
+                          updateOnValueChange={true}
+                          inputProps={{ placeholder: t('Select CSP category...') }}
                         />
                       )}
                     </View>
