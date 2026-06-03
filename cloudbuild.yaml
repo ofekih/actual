@@ -1,38 +1,43 @@
 steps:
+  # Step 1: Build the image
   - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'build',
-        '--network=cloudbuild',
-        '-t',
-        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
-        '-t',
-        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:latest',
-        '-f',
-        'sync-server.Dockerfile',
-        '.',
-      ]
+    id: 'build'
+    args: [
+      'build',
+      '--network=cloudbuild',
+      '-t', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
+      '-t', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:latest',
+      '-f', 'sync-server.Dockerfile',
+      '.'
+    ]
 
+  # Step 2: Push the image explicitly
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push'
+    args: ['push', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}']
+    waitFor: ['build']
+
+  # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy'
     entrypoint: 'gcloud'
-    args:
-      [
-        'run',
-        'deploy',
-        'actual-vanilla-service',
-        '--image',
-        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
-        '--region',
-        'us-central1',
-      ]
+    args: [
+      'run',
+      'deploy',
+      'actual-vanilla-service',
+      '--image', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
+      '--region', 'us-central1',
+      '--platform', 'managed'
+    ]
+    waitFor: ['push']
 
 images:
   - 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}'
   - 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:latest'
 
 substitutions:
-  _TAG: 'latest'
+  _TAG: 'latest' # You can override this in the Trigger UI
 
 options:
-  machineType: 'E2_HIGHCPU_8'
+  machineType: 'E2_LARGE'
   logging: CLOUD_LOGGING_ONLY
