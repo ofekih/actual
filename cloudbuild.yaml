@@ -1,34 +1,64 @@
 steps:
+  # Step 0: Prepare workspace, build core and apply migrations to default DB
+  - name: 'node:22'
+    id: 'prepare'
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        # Install dependencies (use immutable install to respect lockfile)
+        yarn install --immutable --frozen-lockfile
+        # Build just the core package (faster than building the whole monorepo)
+        yarn workspace @actual-app/core build
+        # Apply pending SQL/JS migrations to the default DB included in the repo
+        # This updates packages/loot-core/default-db.sqlite so the image contains
+        # an up-to-date default DB for new budgets.
+        npx ts-node packages/loot-core/src/server/migrate/cli.ts migrate --db packages/loot-core/default-db.sqlite || true
+
   # Step 1: Build the image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build'
-    args: [
-      'build',
-      '--network=cloudbuild',
-      '-t', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
-      '-t', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:latest',
-      '-f', 'sync-server.Dockerfile',
-      '.'
-    ]
+    args:
+      [
+        'build',
+        '--network=cloudbuild',
+        '-t',
+        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
+        '-t',
+        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:latest',
+        '-f',
+        'sync-server.Dockerfile',
+        '.',
+      ]
+    waitFor: ['prepare']
 
   # Step 2: Push the image explicitly
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push'
-    args: ['push', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}']
+    args:
+      [
+        'push',
+        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
+      ]
     waitFor: ['build']
 
   # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy'
     entrypoint: 'gcloud'
-    args: [
-      'run',
-      'deploy',
-      'actual-vanilla-service',
-      '--image', 'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
-      '--region', 'us-central1',
-      '--platform', 'managed'
-    ]
+    args:
+      [
+        'run',
+        'deploy',
+        'actual-vanilla-service',
+        '--image',
+        'us-central1-docker.pkg.dev/budget-497306/actual-server-repo/actual-server:${_TAG}',
+        '--region',
+        'us-central1',
+        '--platform',
+        'managed',
+      ]
     waitFor: ['push']
 
 images:
