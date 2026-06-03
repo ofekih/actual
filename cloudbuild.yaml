@@ -11,10 +11,8 @@ steps:
         yarn install --immutable
         # Build just the core package (faster than building the whole monorepo)
         yarn workspace @actual-app/core build
-        # Apply pending SQL/JS migrations to the default DB included in the repo
-        # This updates packages/loot-core/default-db.sqlite so the image contains
-        # an up-to-date default DB for new budgets.
-        npx ts-node packages/loot-core/src/server/migrate/cli.ts migrate --db packages/loot-core/default-db.sqlite || true
+        # Apply pending SQL/JS migrations using the sync-server packaged script.
+        yarn workspace @actual-app/sync-server db:migrate || true
 
   # Step 1: Build the image
   - name: 'gcr.io/cloud-builders/docker'
