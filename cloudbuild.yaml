@@ -8,7 +8,7 @@ steps:
       - |
         set -euo pipefail
         # Install dependencies (use immutable install to respect lockfile)
-        yarn install --immutable --frozen-lockfile
+        yarn install --immutable
         # Build just the core package (faster than building the whole monorepo)
         yarn workspace @actual-app/core build
         # Apply pending SQL/JS migrations to the default DB included in the repo
