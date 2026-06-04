@@ -191,6 +191,7 @@ __metadata:
     better-sqlite3: "npm:^12.8.0"
     convict: "npm:^6.2.5"
     cors: "npm:^2.8.6"
+    cross-env: "npm:^10.1.0"
     date-fns: "npm:^4.1.0"
     debug: "npm:^4.4.3"
     express: "npm:^5.2.1"
