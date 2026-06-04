@@ -351,18 +351,18 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
           is_income: currentTx.amount > 0,
           suggested_new_standard_category:
             isAcceptingSuggestedStandard &&
-              result.suggested_new_standard_category
+            result.suggested_new_standard_category
               ? {
-                name: result.suggested_new_standard_category,
-                groupId: result.suggested_standard_category_group_id!,
-              }
+                  name: result.suggested_new_standard_category,
+                  groupId: result.suggested_standard_category_group_id!,
+                }
               : null,
           suggested_new_csp_category:
             isAcceptingSuggestedCsp && result.suggested_new_csp_category
               ? {
-                name: result.suggested_new_csp_category,
-                groupId: result.suggested_csp_category_group_id!,
-              }
+                  name: result.suggested_new_csp_category,
+                  groupId: result.suggested_csp_category_group_id!,
+                }
               : null,
         },
       );
@@ -610,14 +610,15 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                       backgroundColor: theme.tableBackground,
                       border: `1px solid ${theme.tableBorder}`,
                       borderRadius: 4,
-                      borderLeft: `4px solid ${isAILoading
+                      borderLeft: `4px solid ${
+                        isAILoading
                           ? theme.tableBorder
                           : result?.confidence === 'certain'
                             ? theme.noticeTextLight
                             : result?.confidence === 'confident'
                               ? theme.warningText
                               : theme.errorText
-                        }`,
+                      }`,
                       alignItems: 'center',
                       padding: '10px 15px',
                       gap: 15,
@@ -1041,7 +1042,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                         {t('to')} "
                                         <span style={{ fontStyle: 'italic' }}>
                                           {selectedStandardId ===
-                                            'new-standard-category-placeholder'
+                                          'new-standard-category-placeholder'
                                             ? `${result?.suggested_new_standard_category} (New)`
                                             : (cat?.name ?? selectedStandardId)}
                                         </span>
@@ -1063,7 +1064,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                         {t('to')} "
                                         <span style={{ fontStyle: 'italic' }}>
                                           {selectedCspId ===
-                                            'new-csp-category-placeholder'
+                                          'new-csp-category-placeholder'
                                             ? `${result?.suggested_new_csp_category} (New)`
                                             : (cat?.name ?? selectedCspId)}
                                         </span>
