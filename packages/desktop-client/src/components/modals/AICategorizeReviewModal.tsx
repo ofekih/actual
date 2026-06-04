@@ -13,6 +13,8 @@ import type { CategorizeResult } from '@actual-app/core/server/ai/categorize';
 import * as monthUtils from '@actual-app/core/shared/months';
 import { q } from '@actual-app/core/shared/query';
 import type {
+  CategoryEntity,
+  CSPCategoryEntity,
   NewRuleEntity,
   TransactionEntity,
 } from '@actual-app/core/types/models';
@@ -86,7 +88,12 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
       grouped: [],
     },
   } = useCategories();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
+  const {
+    data: { list: cspCategories, grouped: defaultCspGroups } = {
+      list: [],
+      grouped: [],
+    },
+  } = useCspCategories();
   const format = useFormat();
   const dispatch = useDispatch();
   const { data: accounts = [] } = useAccounts();
@@ -173,6 +180,67 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     : false;
   const result = currentTx ? predictionCache[currentTx.id] || null : null;
 
+  const modifiedCategoryGroups = useMemo(() => {
+    if (
+      !result?.suggested_new_standard_category ||
+      !result?.suggested_standard_category_group_id
+    ) {
+      return categoryGroups;
+    }
+    return categoryGroups.map(group => {
+      if (group.id === result.suggested_standard_category_group_id) {
+        const cats = group.categories || [];
+        if (cats.some(c => c.id === 'new-standard-category-placeholder')) {
+          return group;
+        }
+        return {
+          ...group,
+          categories: [
+            ...cats,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            {
+              id: 'new-standard-category-placeholder',
+              name: `✨ ${result.suggested_new_standard_category} (New)`,
+              group: group.id,
+            } as unknown as CategoryEntity,
+          ],
+        };
+      }
+      return group;
+    });
+  }, [categoryGroups, result]);
+
+  const modifiedCspCategoryGroups = useMemo(() => {
+    const groups = defaultCspGroups || [];
+    if (
+      !result?.suggested_new_csp_category ||
+      !result?.suggested_csp_category_group_id
+    ) {
+      return groups;
+    }
+    return groups.map(group => {
+      if (group.id === result.suggested_csp_category_group_id) {
+        const cats = group.categories || [];
+        if (cats.some(c => c.id === 'new-csp-category-placeholder')) {
+          return group;
+        }
+        return {
+          ...group,
+          categories: [
+            ...cats,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            {
+              id: 'new-csp-category-placeholder',
+              name: `✨ ${result.suggested_new_csp_category} (New)`,
+              group: group.id,
+            } as unknown as CSPCategoryEntity,
+          ],
+        };
+      }
+      return group;
+    });
+  }, [defaultCspGroups, result]);
+
   const lookaheadTx = useMemo(() => {
     if (!bulk || !currentTx) return null;
     const diffPayeeAndAccount = uncategorizedTransactions.find(
@@ -238,8 +306,18 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
 
   useEffect(() => {
     if (result) {
-      setSelectedStandardId(result.standard_category_id ?? null);
-      setSelectedCspId(result.csp_category_id ?? null);
+      if (result.suggested_new_standard_category) {
+        setSelectedStandardId('new-standard-category-placeholder');
+      } else {
+        setSelectedStandardId(result.standard_category_id ?? null);
+      }
+
+      if (result.suggested_new_csp_category) {
+        setSelectedCspId('new-csp-category-placeholder');
+      } else {
+        setSelectedCspId(result.csp_category_id ?? null);
+      }
+
       setCreateRule(result.confidence === 'certain');
       setConditionPayee(result.suggest_rule_condition !== 'account');
       setConditionAccount(result.suggest_rule_condition !== 'payee');
@@ -258,25 +336,34 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     if (!currentTx || !result) return;
     setIsSaving(true);
     try {
+      const isAcceptingSuggestedStandard =
+        selectedStandardId === 'new-standard-category-placeholder';
+      const isAcceptingSuggestedCsp =
+        selectedCspId === 'new-csp-category-placeholder';
+
       const { standard_category_id, csp_category_id } = await send(
         'ai-apply-categorization',
         {
-          standard_category_id: selectedStandardId,
-          csp_category_id: selectedCspId,
+          standard_category_id: isAcceptingSuggestedStandard
+            ? null
+            : selectedStandardId,
+          csp_category_id: isAcceptingSuggestedCsp ? null : selectedCspId,
           is_income: currentTx.amount > 0,
           suggested_new_standard_category:
-            result.suggested_new_standard_category
+            isAcceptingSuggestedStandard &&
+              result.suggested_new_standard_category
               ? {
-                  name: result.suggested_new_standard_category,
-                  groupId: result.suggested_standard_category_group_id!,
-                }
+                name: result.suggested_new_standard_category,
+                groupId: result.suggested_standard_category_group_id!,
+              }
               : null,
-          suggested_new_csp_category: result.suggested_new_csp_category
-            ? {
+          suggested_new_csp_category:
+            isAcceptingSuggestedCsp && result.suggested_new_csp_category
+              ? {
                 name: result.suggested_new_csp_category,
                 groupId: result.suggested_csp_category_group_id!,
               }
-            : null,
+              : null,
         },
       );
 
@@ -292,7 +379,17 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
       await send('transaction-update', updates);
 
       if (createRule && (conditionPayee || conditionAccount)) {
-        await send('rule-add', buildRule());
+        await send(
+          'rule-add',
+          buildRule(
+            selectedStandardId === 'new-standard-category-placeholder'
+              ? standard_category_id
+              : selectedStandardId,
+            selectedCspId === 'new-csp-category-placeholder'
+              ? csp_category_id
+              : selectedCspId,
+          ),
+        );
 
         if (applyToExisting) {
           const filters: Record<string, unknown> = { is_parent: false };
@@ -366,21 +463,24 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     }
   };
 
-  function buildRule(): NewRuleEntity {
+  function buildRule(
+    standardId: string | null = selectedStandardId,
+    cspId: string | null = selectedCspId,
+  ): NewRuleEntity {
     const actions: NewRuleEntity['actions'] = [];
-    if (selectedStandardId) {
+    if (standardId && standardId !== 'new-standard-category-placeholder') {
       actions.push({
         op: 'set',
         field: 'category',
-        value: selectedStandardId,
+        value: standardId,
         type: 'id',
       });
     }
-    if (selectedCspId) {
+    if (cspId && cspId !== 'new-csp-category-placeholder') {
       actions.push({
         op: 'set',
         field: 'csp_category',
-        value: selectedCspId,
+        value: cspId,
         type: 'id',
       });
     }
@@ -442,8 +542,8 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
             style={{
               gap: 15,
               padding: 15,
-              minWidth: 1000,
-              width: 1000,
+              minWidth: 1200,
+              width: 1200,
               position: 'relative',
             }}
           >
@@ -510,15 +610,14 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                       backgroundColor: theme.tableBackground,
                       border: `1px solid ${theme.tableBorder}`,
                       borderRadius: 4,
-                      borderLeft: `4px solid ${
-                        isAILoading
+                      borderLeft: `4px solid ${isAILoading
                           ? theme.tableBorder
                           : result?.confidence === 'certain'
                             ? theme.noticeTextLight
                             : result?.confidence === 'confident'
                               ? theme.warningText
                               : theme.errorText
-                      }`,
+                        }`,
                       alignItems: 'center',
                       padding: '10px 15px',
                       gap: 15,
@@ -664,7 +763,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                           )}
                         >
                           <CategoryAutocomplete
-                            categoryGroups={categoryGroups}
+                            categoryGroups={modifiedCategoryGroups}
                             value={selectedStandardId}
                             onSelect={id => setSelectedStandardId(id)}
                             showSplitOption={false}
@@ -694,6 +793,7 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                         />
                       ) : (
                         <CspCategoryAutocomplete
+                          categoryGroups={modifiedCspCategoryGroups}
                           value={selectedCspId}
                           onSelect={id => setSelectedCspId(id)}
                           updateOnValueChange
@@ -940,7 +1040,10 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                         </span>{' '}
                                         {t('to')} "
                                         <span style={{ fontStyle: 'italic' }}>
-                                          {cat?.name ?? selectedStandardId}
+                                          {selectedStandardId ===
+                                            'new-standard-category-placeholder'
+                                            ? `${result?.suggested_new_standard_category} (New)`
+                                            : (cat?.name ?? selectedStandardId)}
                                         </span>
                                         "
                                       </Text>
@@ -959,7 +1062,10 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                                         </span>{' '}
                                         {t('to')} "
                                         <span style={{ fontStyle: 'italic' }}>
-                                          {cat?.name ?? selectedCspId}
+                                          {selectedCspId ===
+                                            'new-csp-category-placeholder'
+                                            ? `${result?.suggested_new_csp_category} (New)`
+                                            : (cat?.name ?? selectedCspId)}
                                         </span>
                                         "
                                       </Text>

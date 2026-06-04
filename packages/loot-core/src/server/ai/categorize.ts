@@ -70,7 +70,7 @@ Instructions:
 2. Select the BEST 'csp_category_id' from the CSP taxonomy. Use null if nothing fits.
 3. IF no existing categories fit, you may suggest a NEW category to be created. To do so:
    - Understand that categories are structured under Category Groups. Group definitions include "isIncome: true" (for income, initial setup funding, or inflows) or "isIncome: false" (for standard spending and expenses).
-   - If the transaction is an inflow (e.g. initial setup balance, paycheck, interest, refund) and no existing income categories fit, suggest a new category name under an income group (a group with "isIncome: true").
+   - If the transaction is an inflow (e.g. paycheck, interest, refund) and no existing income categories fit, suggest a new category name under an income group (a group with "isIncome: true").
    - If the transaction is an outflow/spending and no existing categories fit, suggest a new category name under a relevant spending group (a group with "isIncome: false").
    - For standard: provide 'suggested_new_standard_category' (the new category name) and 'suggested_standard_category_group_id' (the ID of the existing group it belongs to).
    - For CSP: provide 'suggested_new_csp_category' (the new category name) and 'suggested_csp_category_group_id' (the ID of the existing group it belongs to).

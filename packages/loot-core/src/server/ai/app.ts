@@ -103,7 +103,7 @@ app.method(
     if (args.suggested_new_csp_category) {
       cspCatId = await insertWithUUID('csp_categories', {
         name: args.suggested_new_csp_category.name,
-        group_id: args.suggested_new_csp_category.groupId,
+        cat_group: args.suggested_new_csp_category.groupId,
       });
     }
 
