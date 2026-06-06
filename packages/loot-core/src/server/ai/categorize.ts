@@ -130,6 +130,7 @@ Please adjust your categorization (standard_category_id, csp_category_id, sugges
     contents: systemPrompt,
     config: {
       temperature: 0.1,
+      tools: [{ googleSearch: {} }],
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
