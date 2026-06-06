@@ -24,6 +24,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { accountQueries } from '#accounts';
 import { resetApp, setAppState } from '#app/appSlice';
 import type { SelectLinkedAccountsModalProps } from '#components/modals/SelectLinkedAccountsModal';
+import type { CspCategoryGroupWithCategories } from '#hooks/useCspCategories';
 import { createAppAsyncThunk } from '#redux';
 import { signOut } from '#users/usersSlice';
 
@@ -280,6 +281,18 @@ export type Modal =
         onSelect: (categoryId: string | null, categoryName: string) => void;
         month?: string | undefined;
         showHiddenCategories?: boolean;
+        showNoneOption?: boolean;
+        closeOnSelect?: boolean;
+        clearOnSelect?: boolean;
+        onClose?: () => void;
+      };
+    }
+  | {
+      name: 'csp-category-autocomplete';
+      options: {
+        title?: string;
+        categoryGroups?: CspCategoryGroupWithCategories[];
+        onSelect: (categoryId: string | null, categoryName: string) => void;
         showNoneOption?: boolean;
         closeOnSelect?: boolean;
         clearOnSelect?: boolean;

@@ -33,6 +33,7 @@ import { CoverModal } from './modals/CoverModal';
 import { CreateAccountModal } from './modals/CreateAccountModal';
 import { CreateEncryptionKeyModal } from './modals/CreateEncryptionKeyModal';
 import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
+import { CspCategoryAutocompleteModal } from './modals/CspCategoryAutocompleteModal';
 import { EditUserAccess } from './modals/EditAccess';
 import { EditFieldModal } from './modals/EditFieldModal';
 import { EditRuleModal } from './modals/EditRuleModal';
@@ -219,6 +220,9 @@ export function Modals() {
 
         case 'category-autocomplete':
           return <CategoryAutocompleteModal key={key} {...modal.options} />;
+
+        case 'csp-category-autocomplete':
+          return <CspCategoryAutocompleteModal key={key} {...modal.options} />;
 
         case 'category-group-autocomplete':
           return (

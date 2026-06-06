@@ -62,6 +62,7 @@ import {
 import type {
   AccountEntity,
   CategoryEntity,
+  CSPCategoryEntity,
   PayeeEntity,
   TransactionEntity,
 } from '@actual-app/core/types/models';
@@ -86,6 +87,7 @@ import { createSingleTimeScheduleFromTransaction } from '#components/transaction
 import { AmountInput } from '#components/util/AmountInput';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
 import { useCurrentWordRange } from '#hooks/useCurrentWordRange';
 import { useCursorPosition } from '#hooks/useCursorPosition';
 import { useDateFormat } from '#hooks/useDateFormat';
@@ -170,7 +172,10 @@ function deserializeTransaction(
   return { ...realTransaction, date, amount: amountToInteger(amount || 0) };
 }
 
-export function lookupName(items: CategoryEntity[], id?: CategoryEntity['id']) {
+export function lookupName<T extends { id: string; name: string }>(
+  items: T[],
+  id?: string,
+) {
   if (!id) {
     return null;
   }
@@ -239,7 +244,14 @@ type FooterProps = {
   editingField?: string;
   onEditField: (
     id: TransactionEntity['id'],
-    field: 'category' | 'payee' | 'account' | 'date' | 'amount' | 'notes',
+    field:
+      | 'category'
+      | 'csp_category'
+      | 'payee'
+      | 'account'
+      | 'date'
+      | 'amount'
+      | 'notes',
   ) => void;
 };
 
@@ -390,7 +402,14 @@ type ChildTransactionEditProps = {
   isBudgetTransfer: (transaction: TransactionEntity) => boolean;
   onEditField: (
     id: TransactionEntity['id'],
-    field: 'category' | 'payee' | 'account' | 'date' | 'amount' | 'notes',
+    field:
+      | 'category'
+      | 'csp_category'
+      | 'payee'
+      | 'account'
+      | 'date'
+      | 'amount'
+      | 'notes',
   ) => void;
   onUpdate: <Field extends keyof TransactionEntity>(
     transaction: TransactionEntity,
@@ -421,6 +440,7 @@ const ChildTransactionEdit = forwardRef<
     ref,
   ) => {
     const { t } = useTranslation();
+    const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
     const { editingField, onRequestActiveEdit, onClearActiveEdit } =
       useSingleActiveEditForm()!;
     const [hideFraction, _] = useSyncedPref('hideFraction');
@@ -521,6 +541,22 @@ const ChildTransactionEdit = forwardRef<
             }
             onPress={() => onEditField(transaction.id, 'category')}
             data-testid={`category-field-${transaction.id}`}
+          />
+        </View>
+
+        <View>
+          <FieldLabel title={t('CSP Category')} />
+          <TapField
+            icon={<SvgTag width={17} height={17} />}
+            placeholder={t('Select a CSP category')}
+            rightContent={dropdownChevron}
+            value={lookupName(cspCategories, transaction.csp_category) ?? ''}
+            isDisabled={
+              !!editingField &&
+              editingField !== getFieldName(transaction.id, 'csp_category')
+            }
+            onPress={() => onEditField(transaction.id, 'csp_category')}
+            data-testid={`csp-category-field-${transaction.id}`}
           />
         </View>
 
@@ -637,6 +673,12 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
     );
     const { data: { grouped: categoryGroups } = { grouped: [] } } =
       useCategories();
+    const {
+      data: { list: cspCategories, grouped: defaultCspGroups } = {
+        list: [],
+        grouped: [],
+      },
+    } = useCspCategories();
     const noteRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
@@ -891,7 +933,14 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
     const onEditFieldInner = useCallback(
       (
         transactionId: TransactionEntity['id'],
-        name: 'category' | 'payee' | 'account' | 'date' | 'amount' | 'notes',
+        name:
+          | 'category'
+          | 'csp_category'
+          | 'payee'
+          | 'account'
+          | 'date'
+          | 'amount'
+          | 'notes',
       ) => {
         onRequestActiveEdit?.(getFieldName(transaction.id, name), () => {
           const transactionToEdit = transactions.find(
@@ -923,6 +972,29 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
                           transactionToEdit,
                           name,
                           categoryId as TransactionEntity['category'],
+                        );
+                      },
+                      onClose: () => {
+                        onClearActiveEdit();
+                      },
+                    },
+                  },
+                }),
+              );
+              break;
+            case 'csp_category':
+              dispatch(
+                pushModal({
+                  modal: {
+                    name: 'csp-category-autocomplete',
+                    options: {
+                      categoryGroups: defaultCspGroups,
+                      showNoneOption: true,
+                      onSelect: cspCategoryId => {
+                        void onUpdateInner(
+                          transactionToEdit,
+                          name,
+                          cspCategoryId as TransactionEntity['csp_category'],
                         );
                       },
                       onClose: () => {
@@ -1285,31 +1357,54 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
           </View>
 
           {!transaction.is_parent && (
-            <View>
-              <FieldLabel title={t('Category')} />
-              <TapField
-                icon={<SvgTag width={17} height={17} />}
-                placeholder={t('Select a category')}
-                rightContent={dropdownChevron}
-                style={{
-                  ...((isOffBudget || isBudgetTransfer(transaction)) && {
-                    fontStyle: 'italic',
-                    color: theme.pageTextSubdued,
-                    fontWeight: 300,
-                  }),
-                }}
-                value={getCategory(transaction, isOffBudget)}
-                isDisabled={
-                  (!!editingField &&
+            <>
+              <View>
+                <FieldLabel title={t('Category')} />
+                <TapField
+                  icon={<SvgTag width={17} height={17} />}
+                  placeholder={t('Select a category')}
+                  rightContent={dropdownChevron}
+                  style={{
+                    ...((isOffBudget || isBudgetTransfer(transaction)) && {
+                      fontStyle: 'italic',
+                      color: theme.pageTextSubdued,
+                      fontWeight: 300,
+                    }),
+                  }}
+                  value={getCategory(transaction, isOffBudget)}
+                  isDisabled={
+                    (!!editingField &&
+                      editingField !==
+                        getFieldName(transaction.id, 'category')) ||
+                    isOffBudget ||
+                    isBudgetTransfer(transaction)
+                  }
+                  onPress={() => onEditFieldInner(transaction.id, 'category')}
+                  data-testid="category-field"
+                />
+              </View>
+
+              <View>
+                <FieldLabel title={t('CSP Category')} />
+                <TapField
+                  icon={<SvgTag width={17} height={17} />}
+                  placeholder={t('Select a CSP category')}
+                  rightContent={dropdownChevron}
+                  value={
+                    lookupName(cspCategories, transaction.csp_category) ?? ''
+                  }
+                  isDisabled={
+                    !!editingField &&
                     editingField !==
-                      getFieldName(transaction.id, 'category')) ||
-                  isOffBudget ||
-                  isBudgetTransfer(transaction)
-                }
-                onPress={() => onEditFieldInner(transaction.id, 'category')}
-                data-testid="category-field"
-              />
-            </View>
+                      getFieldName(transaction.id, 'csp_category')
+                  }
+                  onPress={() =>
+                    onEditFieldInner(transaction.id, 'csp_category')
+                  }
+                  data-testid="csp-category-field"
+                />
+              </View>
+            </>
           )}
 
           {childTransactions.map((childTrans, i, arr) => (
