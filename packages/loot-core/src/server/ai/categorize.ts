@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from '@google/genai';
 
+import { integerToAmount } from '#shared/util';
+
 import { getAccountHistory, getPayeeHistory, getTaxonomies } from './context';
 
 import { requireGeminiApiKey } from './index';
@@ -15,6 +17,21 @@ export type CategorizeResult = {
   suggest_rule_condition: 'payee' | 'account' | 'both';
   reasoning: string;
 };
+
+type TransactionHistoryItem = {
+  date: string;
+  amount: number;
+  'payee.name'?: string;
+  notes?: string | null;
+  'category.name'?: string | null;
+  'csp_category.name'?: string | null;
+};
+
+function formatAmount(amount: number): string {
+  const decimal = integerToAmount(amount);
+  const type = amount < 0 ? 'Outflow/Payment' : 'Inflow/Deposit';
+  return `${decimal.toFixed(2)} (${type})`;
+}
 
 export async function categorizeTransaction(
   transaction: {
@@ -35,10 +52,22 @@ export async function categorizeTransaction(
   const ai = new GoogleGenAI({ apiKey });
 
   const taxonomies = await getTaxonomies();
-  const payeeHistory = transaction.payee
-    ? await getPayeeHistory(transaction.payee)
-    : [];
-  const accountHistory = await getAccountHistory(transaction.account);
+  const payeeHistory = (
+    transaction.payee ? await getPayeeHistory(transaction.payee) : []
+  ) as TransactionHistoryItem[];
+  const accountHistory = (await getAccountHistory(
+    transaction.account,
+  )) as TransactionHistoryItem[];
+
+  const formattedPayeeHistory = payeeHistory.map(h => ({
+    ...h,
+    amount: formatAmount(h.amount),
+  }));
+
+  const formattedAccountHistory = accountHistory.map(h => ({
+    ...h,
+    amount: formatAmount(h.amount),
+  }));
 
   const systemPrompt = `You are an AI assistant integrated into Actual Budget, a local-first personal finance app.
 Your task is to categorize a bank transaction into the user's specific taxonomy.
@@ -51,17 +80,17 @@ Here are the user's available CSP (High-Level) Categories:
 ${JSON.stringify(taxonomies.csp, null, 2)}
 
 Here is the recent history of transactions for this specific Payee (to understand how the user usually categorizes this payee):
-${JSON.stringify(payeeHistory, null, 2)}
+${JSON.stringify(formattedPayeeHistory, null, 2)}
 
 Here is the recent history of transactions for this specific Account (e.g. to catch account-level patterns like a gas credit card):
-${JSON.stringify(accountHistory, null, 2)}
+${JSON.stringify(formattedAccountHistory, null, 2)}
 
 Transaction to categorize:
 Date: ${transaction.date}
 Payee: ${payeeName || transaction.payee}
 Original bank description: ${transaction.imported_payee || '(none)'}
 Account: ${accountName || transaction.account}${accountOffBudget ? ' [OFF-BUDGET / tracking account]' : ''}
-Amount: ${transaction.amount}
+Amount: ${formatAmount(transaction.amount)}
 Notes: ${transaction.notes || '(none)'}
 Is transfer: ${transaction.transfer_id ? 'yes' : 'no'}
 
