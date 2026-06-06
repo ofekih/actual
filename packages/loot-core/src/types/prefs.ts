@@ -56,7 +56,8 @@ export type SyncedPrefs = Partial<
     | `flip-amount-${string}-${'csv' | 'qif'}`
     | `flags.${FeatureFlag}`
     | `learn-categories`
-    | 'geminiApiKey',
+    | 'geminiApiKey'
+    | `show-hidden-tags`,
     string
   >
 >;
