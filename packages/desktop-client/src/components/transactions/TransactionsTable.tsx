@@ -80,6 +80,7 @@ import memoizeOne from 'memoize-one';
 import { getAccountsById } from '#accounts/accountsSlice';
 import { AccountAutocomplete } from '#components/autocomplete/AccountAutocomplete';
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
+import { CspCategoryAutocomplete } from '#components/autocomplete/CspCategoryAutocomplete';
 import { PayeeAutocomplete } from '#components/autocomplete/PayeeAutocomplete';
 import { TagAutocomplete } from '#components/autocomplete/TagAutocomplete';
 import { getStatusProps } from '#components/schedules/StatusBadge';
@@ -1810,17 +1811,20 @@ const Transaction = memo(function Transaction({
           </CustomCell>
         )}
 
-        <InputCell
+        <CustomCell
           name="csp_category"
           width="flex"
-          value={
-            transaction.csp_category
-              ? (cspCategories.find(c => c.id === transaction.csp_category)
-                  ?.name ?? '')
+          textAlign="flex"
+          value={transaction.csp_category}
+          formatter={value =>
+            value
+              ? (cspCategories.find(c => c.id === value)?.name ?? '')
               : transaction.id
                 ? t('Categorize')
                 : ''
           }
+          exposed={focusedField === 'csp_category'}
+          onExpose={name => !isPreview && onEdit(id, name)}
           valueStyle={
             !transaction.csp_category && transaction.id
               ? {
@@ -1831,14 +1835,29 @@ const Transaction = memo(function Transaction({
                 }
               : valueStyle
           }
-          inputProps={{
-            readOnly: true,
-            style: {
-              fontStyle: 'italic',
-              color: 'var(--color-pageTextSubdued)',
-            },
+          onUpdate={async value => {
+            onUpdate('csp_category', value);
           }}
-        />
+        >
+          {({
+            onBlur,
+            onKeyDown,
+            onUpdate,
+            onSave,
+            shouldSaveFromKey,
+            inputStyle,
+          }) => (
+            <CspCategoryAutocomplete
+              value={transaction.csp_category ?? null}
+              focused
+              clearOnBlur={false}
+              shouldSaveFromKey={shouldSaveFromKey}
+              inputProps={{ onBlur, onKeyDown, style: inputStyle }}
+              onUpdate={onUpdate}
+              onSelect={onSave}
+            />
+          )}
+        </CustomCell>
 
         <InputCell
           /* Debit field for all transactions */
@@ -3056,6 +3075,7 @@ export const TransactionTable = forwardRef(
         'payee',
         'notes',
         'category',
+        'csp_category',
         'debit',
         'credit',
         'cleared',
@@ -3074,6 +3094,7 @@ export const TransactionTable = forwardRef(
         'payee',
         'notes',
         'category',
+        'csp_category',
         'debit',
         'credit',
         'cleared',
@@ -3084,11 +3105,20 @@ export const TransactionTable = forwardRef(
 
     function getFields(item: TransactionEntity | undefined, fields: string[]) {
       fields = item?.is_child
-        ? ['select', 'payee', 'notes', 'category', 'debit', 'credit']
+        ? [
+            'select',
+            'payee',
+            'notes',
+            'category',
+            'csp_category',
+            'debit',
+            'credit',
+          ]
         : fields.filter(
             f =>
               (props.showAccount || f !== 'account') &&
-              (props.showCategory || f !== 'category'),
+              (props.showCategory ||
+                (f !== 'category' && f !== 'csp_category')),
           );
 
       if (item?.id && isPreviewId(item.id)) {
