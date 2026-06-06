@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { AnimatedLoading } from '@actual-app/components/icons/AnimatedLoading';
 import { SvgExpandArrow } from '@actual-app/components/icons/v0';
+import { Input } from '@actual-app/components/input';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
@@ -78,6 +80,7 @@ const dotStyle = (status: 'loaded' | 'loading' | 'pending') => css`
 export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
   const { t } = useTranslation();
   const format = useFormat();
+  const [followUpText, setFollowUpText] = useState('');
 
   const bulk = 'bulk' in props ? (props.bulk ?? false) : false;
   const initialTransactionId =
@@ -119,10 +122,15 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     handleAcceptAndNext,
     handleSkip,
     openRuleEditor,
+    refinePrediction,
   } = useAICategorizeSession({
     bulk,
     initialTransactionId,
   });
+
+  useEffect(() => {
+    setFollowUpText('');
+  }, [currentTx?.id]);
 
   let modalTitle = t('AI Categorization Review');
   if (bulk && initialTotal && initialTotal > 0 && remainingCount > 0) {
@@ -483,6 +491,45 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                       </span>{' '}
                       {result?.reasoning}
                     </Text>
+                  )}
+
+                  {currentTx && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        gap: 10,
+                        alignItems: 'center',
+                        marginTop: 5,
+                      }}
+                    >
+                      <Input
+                        placeholder={t(
+                          'Ask AI to change categorization... (e.g., "This should be under utilities")',
+                        )}
+                        value={followUpText}
+                        onChange={e => setFollowUpText(e.target.value)}
+                        onKeyDown={e => {
+                          if (
+                            e.key === 'Enter' &&
+                            followUpText.trim() &&
+                            !isAILoading
+                          ) {
+                            void refinePrediction(currentTx.id, followUpText);
+                          }
+                        }}
+                        style={{ flex: 1 }}
+                        disabled={isAILoading}
+                      />
+                      <Button
+                        variant="primary"
+                        isDisabled={!followUpText.trim() || isAILoading}
+                        onPress={async () => {
+                          await refinePrediction(currentTx.id, followUpText);
+                        }}
+                      >
+                        {t('Ask AI')}
+                      </Button>
+                    </View>
                   )}
 
                   {isAILoading ? (

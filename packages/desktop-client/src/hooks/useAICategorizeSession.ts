@@ -140,9 +140,7 @@ export function useAICategorizeSession({
 
   const currentTx =
     uncategorizedTransactions.find(tx => tx.id === currentTxId) || null;
-  const isAILoading = currentTx
-    ? fetchingIds.has(currentTx.id) && !predictionCache[currentTx.id]
-    : false;
+  const isAILoading = currentTx ? fetchingIds.has(currentTx.id) : false;
   const result = currentTx ? predictionCache[currentTx.id] || null : null;
 
   // Modified category groups based on standard category suggestions
@@ -527,6 +525,63 @@ export function useAICategorizeSession({
     );
   }
 
+  const refinePrediction = async (txId: string, followUpMessage: string) => {
+    if (fetchingIds.has(txId)) return;
+    setFetchingIds(prev => {
+      const next = new Set(prev);
+      next.add(txId);
+      return next;
+    });
+    setError(null);
+    try {
+      const currentTx = uncategorizedTransactions.find(tx => tx.id === txId);
+      const payeeName = currentTx ? currentTx['payee.name'] : undefined;
+      const previousResult = predictionCache[txId] || null;
+
+      const res = await send('ai-categorize-transaction', {
+        transactionId: txId,
+        payeeName,
+        previousResult,
+        followUpMessage,
+      });
+
+      setPredictionCache(prev => {
+        const nextCache = { ...prev, [txId]: res };
+        return nextCache;
+      });
+
+      // Synchronize state if the prediction fetched was for the current active transaction
+      if (txId === currentTxIdRef.current) {
+        if (res.suggested_new_standard_category) {
+          setSelectedStandardId('new-standard-category-placeholder');
+        } else {
+          setSelectedStandardId(res.standard_category_id ?? null);
+        }
+
+        if (res.suggested_new_csp_category) {
+          setSelectedCspId('new-csp-category-placeholder');
+        } else {
+          setSelectedCspId(res.csp_category_id ?? null);
+        }
+
+        setCreateRule(res.confidence === 'certain');
+        setConditionPayee(res.suggest_rule_condition !== 'account');
+        setConditionAccount(res.suggest_rule_condition !== 'payee');
+        setRuleExpanded(false);
+      }
+    } catch (err) {
+      if (txId === currentTxIdRef.current) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      setFetchingIds(prev => {
+        const next = new Set(prev);
+        next.delete(txId);
+        return next;
+      });
+    }
+  };
+
   const remainingCount = uncategorizedTransactions.filter(
     tx => !skippedIds.has(tx.id),
   ).length;
@@ -577,5 +632,6 @@ export function useAICategorizeSession({
     handleAcceptAndNext,
     handleSkip,
     openRuleEditor,
+    refinePrediction,
   };
 }

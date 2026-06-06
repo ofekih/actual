@@ -15,6 +15,8 @@ export type AIHandlers = {
   'ai-categorize-transaction': (args: {
     transactionId: string;
     payeeName?: string;
+    previousResult?: CategorizeResult | null;
+    followUpMessage?: string;
   }) => Promise<CategorizeResult>;
   'ai-test-categorize-random': () => Promise<
     CategorizeResult & { transactionInfo: string }
@@ -40,7 +42,7 @@ app.method('ai-test-connection', async () => {
 
 app.method(
   'ai-categorize-transaction',
-  async ({ transactionId, payeeName }) => {
+  async ({ transactionId, payeeName, previousResult, followUpMessage }) => {
     const { data } = await aqlQuery(
       q('transactions')
         .filter({ id: transactionId })
@@ -55,6 +57,8 @@ app.method(
       payeeName,
       tx['account.name'],
       !!tx['account.offbudget'],
+      previousResult,
+      followUpMessage,
     );
   },
 );

@@ -47,6 +47,8 @@ export async function categorizeTransaction(
   payeeName?: string,
   accountName?: string,
   accountOffBudget?: boolean,
+  previousResult?: CategorizeResult | null,
+  followUpMessage?: string,
 ): Promise<CategorizeResult> {
   const apiKey = await requireGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -69,7 +71,7 @@ export async function categorizeTransaction(
     amount: formatAmount(h.amount),
   }));
 
-  const systemPrompt = `You are an AI assistant integrated into Actual Budget, a local-first personal finance app.
+  let systemPrompt = `You are an AI assistant integrated into Actual Budget, a local-first personal finance app.
 Your task is to categorize a bank transaction into the user's specific taxonomy.
 You must return a strict JSON response.
 
@@ -109,6 +111,19 @@ Instructions:
    - Use 'account' when the category is driven by the account type (e.g., an investment/retirement/off-budget account, a dedicated credit card), not by the specific payee.
    - Use 'payee' when the specific vendor/payee drives the category (e.g., Netflix, Amazon, a specific grocery store).
    - Use 'both' when both are necessary (e.g., a specific payee that only appears in one account).`;
+
+  if (followUpMessage && previousResult) {
+    systemPrompt += `
+
+USER CORRECTION REQUEST:
+The user reviewed your previous suggestion and has provided the following instruction or feedback:
+"${followUpMessage}"
+
+Your previous suggestion was:
+${JSON.stringify(previousResult, null, 2)}
+
+Please adjust your categorization (standard_category_id, csp_category_id, suggested_new_standard_category, suggested_new_csp_category, etc.) and reasoning based on this feedback.`;
+  }
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.5-flash',
