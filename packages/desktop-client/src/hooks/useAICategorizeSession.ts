@@ -75,6 +75,10 @@ export function useAICategorizeSession({
   const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [initialTotal, setInitialTotal] = useState<number | null>(null);
   const [currentTxId, setCurrentTxId] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [txCache, setTxCache] = useState<
+    Record<string, UncategorizedTransaction>
+  >({});
 
   // Use a Ref to ensure async fetchPrediction updates selection states correctly for current transaction
   const currentTxIdRef = useRef<string | null>(null);
@@ -109,6 +113,15 @@ export function useAICategorizeSession({
           if (data && data.length > 0) {
             currentTxIdRef.current = data[0].id;
             setCurrentTxId(data[0].id);
+            setTxCache(
+              (typedData || []).reduce(
+                (acc, tx) => {
+                  acc[tx.id] = tx;
+                  return acc;
+                },
+                {} as Record<string, UncategorizedTransaction>,
+              ),
+            );
           }
         } else if (initialTransactionId) {
           const { data } = await send(
@@ -125,6 +138,7 @@ export function useAICategorizeSession({
             setInitialTotal(1);
             currentTxIdRef.current = initialTransactionId;
             setCurrentTxId(initialTransactionId);
+            setTxCache({ [initialTransactionId]: typedData[0] });
           } else {
             setError(t('Transaction not found.'));
           }
@@ -138,8 +152,7 @@ export function useAICategorizeSession({
     void init();
   }, [bulk, initialTransactionId, t]);
 
-  const currentTx =
-    uncategorizedTransactions.find(tx => tx.id === currentTxId) || null;
+  const currentTx = currentTxId ? txCache[currentTxId] || null : null;
   const isAILoading = currentTx ? fetchingIds.has(currentTx.id) : false;
   const result = currentTx ? predictionCache[currentTx.id] || null : null;
 
@@ -245,24 +258,39 @@ export function useAICategorizeSession({
     currentTxIdRef.current = txId;
     setCurrentTxId(txId);
 
-    if (txId && currentPredictions[txId]) {
-      const res = currentPredictions[txId];
-      if (res.suggested_new_standard_category) {
-        setSelectedStandardId('new-standard-category-placeholder');
-      } else {
-        setSelectedStandardId(res.standard_category_id ?? null);
-      }
+    if (txId) {
+      const tx = txCache[txId];
+      if (tx && (tx.category != null || tx.csp_category != null)) {
+        setSelectedStandardId(tx.category ?? null);
+        setSelectedCspId(tx.csp_category ?? null);
+        setCreateRule(false);
+        setRuleExpanded(false);
+      } else if (currentPredictions[txId]) {
+        const res = currentPredictions[txId];
+        if (res.suggested_new_standard_category) {
+          setSelectedStandardId('new-standard-category-placeholder');
+        } else {
+          setSelectedStandardId(res.standard_category_id ?? null);
+        }
 
-      if (res.suggested_new_csp_category) {
-        setSelectedCspId('new-csp-category-placeholder');
-      } else {
-        setSelectedCspId(res.csp_category_id ?? null);
-      }
+        if (res.suggested_new_csp_category) {
+          setSelectedCspId('new-csp-category-placeholder');
+        } else {
+          setSelectedCspId(res.csp_category_id ?? null);
+        }
 
-      setCreateRule(res.confidence === 'certain');
-      setConditionPayee(res.suggest_rule_condition !== 'account');
-      setConditionAccount(res.suggest_rule_condition !== 'payee');
-      setRuleExpanded(false);
+        setCreateRule(res.confidence === 'certain');
+        setConditionPayee(res.suggest_rule_condition !== 'account');
+        setConditionAccount(res.suggest_rule_condition !== 'payee');
+        setRuleExpanded(false);
+      } else {
+        setSelectedStandardId(null);
+        setSelectedCspId(null);
+        setCreateRule(false);
+        setConditionPayee(true);
+        setConditionAccount(false);
+        setRuleExpanded(false);
+      }
     } else {
       setSelectedStandardId(null);
       setSelectedCspId(null);
@@ -387,6 +415,19 @@ export function useAICategorizeSession({
 
       await send('transaction-update', updates);
 
+      setTxCache(prev => {
+        const tx = prev[currentTx.id];
+        if (!tx) return prev;
+        return {
+          ...prev,
+          [currentTx.id]: {
+            ...tx,
+            category: standard_category_id ?? undefined,
+            csp_category: csp_category_id ?? undefined,
+          },
+        };
+      });
+
       if (createRule && (conditionPayee || conditionAccount)) {
         await send(
           'rule-add',
@@ -437,15 +478,27 @@ export function useAICategorizeSession({
   };
 
   const handleAcceptAndNext = async (modalClose: () => void) => {
+    const prevTxId = currentTxId;
     await onAccept();
     if (bulk) {
       const { data } = await send('query', uncategorizedQuery);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const typedData = data as UncategorizedTransaction[];
       setUncategorizedTransactions(typedData || []);
+      setTxCache(prev => {
+        const next = { ...prev };
+        (typedData || []).forEach(tx => {
+          next[tx.id] = tx;
+        });
+        return next;
+      });
+
       const nextTx = (typedData || []).find(
         (tx: UncategorizedTransaction) => !skippedIds.has(tx.id),
       );
+      if (prevTxId) {
+        setHistory(prev => [...prev, prevTxId]);
+      }
       if (nextTx) {
         advanceToTransaction(nextTx.id);
       } else {
@@ -458,6 +511,7 @@ export function useAICategorizeSession({
 
   const handleSkip = () => {
     if (!currentTx) return;
+    const prevTxId = currentTx.id;
     const nextSkipped = new Set(skippedIds);
     nextSkipped.add(currentTx.id);
     setSkippedIds(nextSkipped);
@@ -465,10 +519,29 @@ export function useAICategorizeSession({
     const nextTx = uncategorizedTransactions.find(
       tx => tx.id !== currentTx.id && !nextSkipped.has(tx.id),
     );
+    setHistory(prev => [...prev, prevTxId]);
     if (nextTx) {
       advanceToTransaction(nextTx.id);
     } else {
       advanceToTransaction(null);
+    }
+  };
+
+  const handleBack = () => {
+    if (history.length === 0) return;
+    const nextHistory = [...history];
+    const prevTxId = nextHistory.pop();
+    setHistory(nextHistory);
+
+    if (prevTxId) {
+      if (skippedIds.has(prevTxId)) {
+        setSkippedIds(prev => {
+          const next = new Set(prev);
+          next.delete(prevTxId);
+          return next;
+        });
+      }
+      advanceToTransaction(prevTxId);
     }
   };
 
@@ -585,8 +658,8 @@ export function useAICategorizeSession({
   const remainingCount = uncategorizedTransactions.filter(
     tx => !skippedIds.has(tx.id),
   ).length;
-  const currentProgress = initialTotal ? initialTotal - remainingCount + 1 : 1;
-  const showSuccess = !isLocalLoading && remainingCount === 0;
+  const currentProgress = history.length + 1;
+  const showSuccess = !isLocalLoading && remainingCount === 0 && !currentTxId;
 
   const preloadStatus = useMemo(() => {
     return lookaheadTxs.map(tx => {
@@ -629,8 +702,10 @@ export function useAICategorizeSession({
     currentProgress,
     showSuccess,
     skippedIds,
+    history,
     handleAcceptAndNext,
     handleSkip,
+    handleBack,
     openRuleEditor,
     refinePrediction,
   };

@@ -119,8 +119,10 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
     currentProgress,
     showSuccess,
     skippedIds,
+    history,
     handleAcceptAndNext,
     handleSkip,
+    handleBack,
     openRuleEditor,
     refinePrediction,
   } = useAICategorizeSession({
@@ -822,26 +824,40 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                   <View
                     style={{
                       flexDirection: 'row',
-                      justifyContent: 'flex-end',
-                      gap: 10,
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       marginTop: 10,
                     }}
                   >
-                    <Button onPress={() => state.close()}>
-                      {bulk ? t('Stop / Close') : t('Cancel')}
-                    </Button>
-                    {bulk && (
-                      <Button variant="normal" onPress={handleSkip}>
-                        <Trans>Skip</Trans>
-                      </Button>
-                    )}
-                    <Button
-                      variant="primary"
-                      isDisabled={isAILoading}
-                      onPress={() => handleAcceptAndNext(() => state.close())}
+                    <View>
+                      {history.length > 0 && (
+                        <Button variant="normal" onPress={handleBack}>
+                          <Trans>Back</Trans>
+                        </Button>
+                      )}
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        gap: 10,
+                      }}
                     >
-                      {t('Accept & Save')}
-                    </Button>
+                      <Button onPress={() => state.close()}>
+                        {bulk ? t('Stop / Close') : t('Cancel')}
+                      </Button>
+                      {bulk && (
+                        <Button variant="normal" onPress={handleSkip}>
+                          <Trans>Skip</Trans>
+                        </Button>
+                      )}
+                      <Button
+                        variant="primary"
+                        isDisabled={isAILoading}
+                        onPress={() => handleAcceptAndNext(() => state.close())}
+                      >
+                        {t('Accept & Save')}
+                      </Button>
+                    </View>
                   </View>
                 </View>
               </>
