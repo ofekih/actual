@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
@@ -8,16 +7,7 @@ import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
 import { View } from '@actual-app/components/view';
-import { send } from '@actual-app/core/platform/client/connection';
-import type { CategorizeResult } from '@actual-app/core/server/ai/categorize';
 import * as monthUtils from '@actual-app/core/shared/months';
-import { q } from '@actual-app/core/shared/query';
-import type {
-  CategoryEntity,
-  CSPCategoryEntity,
-  NewRuleEntity,
-  TransactionEntity,
-} from '@actual-app/core/types/models';
 import { css, keyframes } from '@emotion/css';
 
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
@@ -29,25 +19,15 @@ import {
   ModalTitle,
 } from '#components/common/Modal';
 import { Checkbox } from '#components/forms';
-import { useAccounts } from '#hooks/useAccounts';
-import { useCategories } from '#hooks/useCategories';
-import { useCspCategories } from '#hooks/useCspCategories';
+import { useAICategorizeSession } from '#hooks/useAICategorizeSession';
 import { useFormat } from '#hooks/useFormat';
 import { SheetNameProvider } from '#hooks/useSheetName';
-import { pushModal } from '#modals/modalsSlice';
 import type { Modal as ModalType } from '#modals/modalsSlice';
-import { useDispatch } from '#redux';
 
 type AICategorizeReviewModalProps = Extract<
   ModalType,
   { name: 'ai-categorize-review' }
 >['options'];
-
-type UncategorizedTransaction = TransactionEntity & {
-  'payee.name'?: string;
-  'account.name'?: string;
-  'account.offbudget'?: boolean;
-};
 
 const shimmer = keyframes`
   0% {
@@ -69,458 +49,80 @@ const skeletonStyle = css`
   animation: ${shimmer} 1.4s ease infinite;
 `;
 
-const uncategorizedQuery = q('transactions')
-  .filter({
-    'account.offbudget': false,
-    category: null,
-    $or: [
-      { 'payee.transfer_acct.offbudget': true, 'payee.transfer_acct': null },
-    ],
-  })
-  .select(['*', 'payee.name', 'account.name', 'account.offbudget'])
-  .serialize();
+const pulse = keyframes`
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+`;
+
+const dotStyle = (status: 'loaded' | 'loading' | 'pending') => css`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: ${status === 'loaded'
+    ? theme.noticeTextLight
+    : status === 'loading'
+      ? theme.warningText
+      : theme.tableBorder};
+  transition: all 0.3s ease;
+  ${status === 'loading' && `animation: ${pulse} 0.8s infinite alternate;`}
+  ${status === 'loaded' &&
+  `transform: scale(1.25); box-shadow: 0 0 6px ${theme.noticeTextLight};`}
+`;
 
 export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
   const { t } = useTranslation();
-  const {
-    data: { list: categories, grouped: categoryGroups } = {
-      list: [],
-      grouped: [],
-    },
-  } = useCategories();
-  const {
-    data: { list: cspCategories, grouped: defaultCspGroups } = {
-      list: [],
-      grouped: [],
-    },
-  } = useCspCategories();
   const format = useFormat();
-  const dispatch = useDispatch();
-  const { data: accounts = [] } = useAccounts();
 
-  const bulk = 'bulk' in props ? props.bulk : false;
+  const bulk = 'bulk' in props ? (props.bulk ?? false) : false;
   const initialTransactionId =
     'transactionId' in props ? props.transactionId : undefined;
 
-  const [isLocalLoading, setIsLocalLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savingProgress, setSavingProgress] = useState<{
-    current: number;
-    total: number;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // Queue state for bulk/single mode
-  const [uncategorizedTransactions, setUncategorizedTransactions] = useState<
-    UncategorizedTransaction[]
-  >([]);
-  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
-  const [initialTotal, setInitialTotal] = useState<number | null>(null);
-  const [currentTxId, setCurrentTxId] = useState<string | null>(null);
-
-  // Predictions cache
-  const [predictionCache, setPredictionCache] = useState<
-    Record<string, CategorizeResult>
-  >({});
-  const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
-
-  const [selectedStandardId, setSelectedStandardId] = useState<string | null>(
-    null,
-  );
-  const [selectedCspId, setSelectedCspId] = useState<string | null>(null);
-  const [createRule, setCreateRule] = useState<boolean>(false);
-  const [applyToExisting, setApplyToExisting] = useState(true);
-  const [conditionPayee, setConditionPayee] = useState(true);
-  const [conditionAccount, setConditionAccount] = useState(false);
-  const [ruleExpanded, setRuleExpanded] = useState(false);
-
-  useEffect(() => {
-    async function init() {
-      try {
-        if (bulk) {
-          const { data } = await send('query', uncategorizedQuery);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-          const typedData = data as UncategorizedTransaction[];
-          setUncategorizedTransactions(typedData || []);
-          setInitialTotal((data || []).length);
-          if (data && data.length > 0) {
-            setCurrentTxId(data[0].id);
-          }
-        } else if (initialTransactionId) {
-          const { data } = await send(
-            'query',
-            q('transactions')
-              .filter({ id: initialTransactionId })
-              .select(['*', 'payee.name', 'account.name', 'account.offbudget'])
-              .serialize(),
-          );
-          if (data && data.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            const typedData = data as UncategorizedTransaction[];
-            setUncategorizedTransactions(typedData);
-            setInitialTotal(1);
-            setCurrentTxId(initialTransactionId);
-          } else {
-            setError(t('Transaction not found.'));
-          }
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsLocalLoading(false);
-      }
-    }
-    void init();
-  }, [bulk, initialTransactionId, t]);
-
-  const currentTx =
-    uncategorizedTransactions.find(tx => tx.id === currentTxId) || null;
-  const isAILoading = currentTx
-    ? fetchingIds.has(currentTx.id) && !predictionCache[currentTx.id]
-    : false;
-  const result = currentTx ? predictionCache[currentTx.id] || null : null;
-
-  const modifiedCategoryGroups = useMemo(() => {
-    if (
-      !result?.suggested_new_standard_category ||
-      !result?.suggested_standard_category_group_id
-    ) {
-      return categoryGroups;
-    }
-    return categoryGroups.map(group => {
-      if (group.id === result.suggested_standard_category_group_id) {
-        const cats = group.categories || [];
-        if (cats.some(c => c.id === 'new-standard-category-placeholder')) {
-          return group;
-        }
-        return {
-          ...group,
-          categories: [
-            ...cats,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            {
-              id: 'new-standard-category-placeholder',
-              name: `✨ ${result.suggested_new_standard_category} (New)`,
-              group: group.id,
-            } as unknown as CategoryEntity,
-          ],
-        };
-      }
-      return group;
-    });
-  }, [categoryGroups, result]);
-
-  const modifiedCspCategoryGroups = useMemo(() => {
-    const groups = defaultCspGroups || [];
-    if (
-      !result?.suggested_new_csp_category ||
-      !result?.suggested_csp_category_group_id
-    ) {
-      return groups;
-    }
-    return groups.map(group => {
-      if (group.id === result.suggested_csp_category_group_id) {
-        const cats = group.categories || [];
-        if (cats.some(c => c.id === 'new-csp-category-placeholder')) {
-          return group;
-        }
-        return {
-          ...group,
-          categories: [
-            ...cats,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            {
-              id: 'new-csp-category-placeholder',
-              name: `✨ ${result.suggested_new_csp_category} (New)`,
-              group: group.id,
-            } as unknown as CSPCategoryEntity,
-          ],
-        };
-      }
-      return group;
-    });
-  }, [defaultCspGroups, result]);
-
-  const lookaheadTx = useMemo(() => {
-    if (!bulk || !currentTx) return null;
-    const diffPayeeAndAccount = uncategorizedTransactions.find(
-      tx =>
-        tx.id !== currentTx.id &&
-        !skippedIds.has(tx.id) &&
-        tx.payee !== currentTx.payee &&
-        tx.account !== currentTx.account,
-    );
-    if (diffPayeeAndAccount) return diffPayeeAndAccount;
-    return (
-      uncategorizedTransactions.find(
-        tx => tx.id !== currentTx.id && !skippedIds.has(tx.id),
-      ) || null
-    );
-  }, [bulk, currentTx, uncategorizedTransactions, skippedIds]);
-
-  const fetchPrediction = async (
-    txId: string,
-    payeeName: string | undefined,
-  ) => {
-    if (predictionCache[txId] || fetchingIds.has(txId)) return;
-    setFetchingIds(prev => {
-      const next = new Set(prev);
-      next.add(txId);
-      return next;
-    });
-    try {
-      const res = await send('ai-categorize-transaction', {
-        transactionId: txId,
-        payeeName,
-      });
-      setPredictionCache(prev => ({ ...prev, [txId]: res }));
-    } catch (err) {
-      if (txId === currentTxId) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-    } finally {
-      setFetchingIds(prev => {
-        const next = new Set(prev);
-        next.delete(txId);
-        return next;
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (currentTx) {
-      void fetchPrediction(currentTx.id, currentTx['payee.name'] ?? undefined);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTx?.id]);
-
-  useEffect(() => {
-    if (lookaheadTx) {
-      void fetchPrediction(
-        lookaheadTx.id,
-        lookaheadTx['payee.name'] ?? undefined,
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lookaheadTx?.id]);
-
-  useEffect(() => {
-    if (result) {
-      if (result.suggested_new_standard_category) {
-        setSelectedStandardId('new-standard-category-placeholder');
-      } else {
-        setSelectedStandardId(result.standard_category_id ?? null);
-      }
-
-      if (result.suggested_new_csp_category) {
-        setSelectedCspId('new-csp-category-placeholder');
-      } else {
-        setSelectedCspId(result.csp_category_id ?? null);
-      }
-
-      setCreateRule(result.confidence === 'certain');
-      setConditionPayee(result.suggest_rule_condition !== 'account');
-      setConditionAccount(result.suggest_rule_condition !== 'payee');
-      setRuleExpanded(false);
-    } else {
-      setSelectedStandardId(null);
-      setSelectedCspId(null);
-      setCreateRule(false);
-      setConditionPayee(true);
-      setConditionAccount(false);
-      setRuleExpanded(false);
-    }
-  }, [currentTxId, result]);
-
-  const onAccept = async () => {
-    if (!currentTx || !result) return;
-    setIsSaving(true);
-    try {
-      const isAcceptingSuggestedStandard =
-        selectedStandardId === 'new-standard-category-placeholder';
-      const isAcceptingSuggestedCsp =
-        selectedCspId === 'new-csp-category-placeholder';
-
-      const { standard_category_id, csp_category_id } = await send(
-        'ai-apply-categorization',
-        {
-          standard_category_id: isAcceptingSuggestedStandard
-            ? null
-            : selectedStandardId,
-          csp_category_id: isAcceptingSuggestedCsp ? null : selectedCspId,
-          is_income: currentTx.amount > 0,
-          suggested_new_standard_category:
-            isAcceptingSuggestedStandard &&
-            result.suggested_new_standard_category
-              ? {
-                  name: result.suggested_new_standard_category,
-                  groupId: result.suggested_standard_category_group_id!,
-                }
-              : null,
-          suggested_new_csp_category:
-            isAcceptingSuggestedCsp && result.suggested_new_csp_category
-              ? {
-                  name: result.suggested_new_csp_category,
-                  groupId: result.suggested_csp_category_group_id!,
-                }
-              : null,
-        },
-      );
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const updates = { id: currentTx.id } as unknown as TransactionEntity;
-      if (standard_category_id !== undefined) {
-        updates.category = standard_category_id ?? undefined;
-      }
-      if (csp_category_id !== undefined) {
-        updates.csp_category = csp_category_id ?? undefined;
-      }
-
-      await send('transaction-update', updates);
-
-      if (createRule && (conditionPayee || conditionAccount)) {
-        await send(
-          'rule-add',
-          buildRule(
-            selectedStandardId === 'new-standard-category-placeholder'
-              ? standard_category_id
-              : selectedStandardId,
-            selectedCspId === 'new-csp-category-placeholder'
-              ? csp_category_id
-              : selectedCspId,
-          ),
-        );
-
-        if (applyToExisting) {
-          const filters: Record<string, unknown> = { is_parent: false };
-          if (conditionPayee) filters.payee = currentTx.payee;
-          if (conditionAccount) filters.account = currentTx.account;
-          if (standard_category_id) filters.category = null;
-          if (csp_category_id) filters.csp_category = null;
-          const { data: existing } = await send(
-            'query',
-            q('transactions').filter(filters).select('id').serialize(),
-          );
-          if (existing && existing.length > 0) {
-            setSavingProgress({ current: 0, total: existing.length });
-            for (let i = 0; i < existing.length; i++) {
-              const tx = existing[i];
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-              const txUpdates = { id: tx.id } as unknown as TransactionEntity;
-              if (standard_category_id) {
-                txUpdates.category = standard_category_id ?? undefined;
-              }
-              if (csp_category_id) {
-                txUpdates.csp_category = csp_category_id ?? undefined;
-              }
-              await send('transaction-update', txUpdates);
-              setSavingProgress({ current: i + 1, total: existing.length });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsSaving(false);
-      setSavingProgress(null);
-    }
-  };
-
-  const handleAcceptAndNext = async (modalClose: () => void) => {
-    await onAccept();
-    if (bulk) {
-      const { data } = await send('query', uncategorizedQuery);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const typedData = data as UncategorizedTransaction[];
-      setUncategorizedTransactions(typedData || []);
-      const nextTx = (typedData || []).find(
-        (tx: UncategorizedTransaction) => !skippedIds.has(tx.id),
-      );
-      if (nextTx) {
-        setCurrentTxId(nextTx.id);
-      } else {
-        setCurrentTxId(null);
-      }
-    } else {
-      modalClose();
-    }
-  };
-
-  const handleSkip = () => {
-    if (!currentTx) return;
-    const nextSkipped = new Set(skippedIds);
-    nextSkipped.add(currentTx.id);
-    setSkippedIds(nextSkipped);
-
-    const nextTx = uncategorizedTransactions.find(
-      tx => tx.id !== currentTx.id && !nextSkipped.has(tx.id),
-    );
-    if (nextTx) {
-      setCurrentTxId(nextTx.id);
-    } else {
-      setCurrentTxId(null);
-    }
-  };
-
-  function buildRule(
-    standardId: string | null = selectedStandardId,
-    cspId: string | null = selectedCspId,
-  ): NewRuleEntity {
-    const actions: NewRuleEntity['actions'] = [];
-    if (standardId && standardId !== 'new-standard-category-placeholder') {
-      actions.push({
-        op: 'set',
-        field: 'category',
-        value: standardId,
-        type: 'id',
-      });
-    }
-    if (cspId && cspId !== 'new-csp-category-placeholder') {
-      actions.push({
-        op: 'set',
-        field: 'csp_category',
-        value: cspId,
-        type: 'id',
-      });
-    }
-    const conditions: NewRuleEntity['conditions'] = [];
-    if (conditionPayee && currentTx?.payee) {
-      conditions.push({
-        field: 'payee',
-        op: 'is',
-        value: currentTx.payee,
-        type: 'id',
-      });
-    }
-    if (conditionAccount && currentTx?.account) {
-      conditions.push({
-        field: 'account',
-        op: 'is',
-        value: currentTx.account,
-        type: 'id',
-      });
-    }
-    return { stage: null, conditionsOp: 'and', conditions, actions };
-  }
-
-  function openRuleEditor() {
-    const rule = buildRule();
-    dispatch(
-      pushModal({
-        modal: {
-          name: 'edit-rule',
-          options: { rule },
-        },
-      }),
-    );
-  }
-
-  const remainingCount = uncategorizedTransactions.filter(
-    tx => !skippedIds.has(tx.id),
-  ).length;
-  const currentProgress = initialTotal ? initialTotal - remainingCount + 1 : 1;
-  const showSuccess = !isLocalLoading && remainingCount === 0;
+  const {
+    preloadStatus,
+    isLocalLoading,
+    isSaving,
+    savingProgress,
+    error,
+    currentTx,
+    result,
+    isAILoading,
+    selectedStandardId,
+    setSelectedStandardId,
+    selectedCspId,
+    setSelectedCspId,
+    createRule,
+    setCreateRule,
+    applyToExisting,
+    setApplyToExisting,
+    conditionPayee,
+    setConditionPayee,
+    conditionAccount,
+    setConditionAccount,
+    ruleExpanded,
+    setRuleExpanded,
+    modifiedCategoryGroups,
+    modifiedCspCategoryGroups,
+    accounts,
+    categories,
+    cspCategories,
+    initialTotal,
+    remainingCount,
+    currentProgress,
+    showSuccess,
+    skippedIds,
+    handleAcceptAndNext,
+    handleSkip,
+    openRuleEditor,
+  } = useAICategorizeSession({
+    bulk,
+    initialTransactionId,
+  });
 
   let modalTitle = t('AI Categorization Review');
   if (bulk && initialTotal && initialTotal > 0 && remainingCount > 0) {
@@ -585,22 +187,60 @@ export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {
                 {bulk && initialTotal && initialTotal > 0 && (
                   <View
                     style={{
-                      width: '100%',
-                      height: 4,
-                      backgroundColor: theme.tableBorder,
-                      borderRadius: 2,
-                      overflow: 'hidden',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                       marginBottom: 5,
                     }}
                   >
                     <View
                       style={{
-                        width: `${((currentProgress - 1) / initialTotal) * 100}%`,
-                        height: '100%',
-                        backgroundColor: theme.formInputTextHighlight,
-                        transition: 'width 0.3s ease',
+                        flex: 1,
+                        height: 4,
+                        backgroundColor: theme.tableBorder,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        marginRight: 15,
                       }}
-                    />
+                    >
+                      <View
+                        style={{
+                          width: `${((currentProgress - 1) / initialTotal) * 100}%`,
+                          height: '100%',
+                          backgroundColor: theme.formInputTextHighlight,
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </View>
+                    {preloadStatus.length > 0 && (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <Text
+                          style={{ fontSize: 11, color: theme.pageTextLight }}
+                        >
+                          <Trans>AI Preload:</Trans>
+                        </Text>
+                        {preloadStatus.map((status, idx) => (
+                          <Tooltip
+                            key={idx}
+                            content={
+                              status === 'loaded'
+                                ? t('Ready')
+                                : status === 'loading'
+                                  ? t('Loading...')
+                                  : t('Pending')
+                            }
+                          >
+                            <View className={dotStyle(status)} />
+                          </Tooltip>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 )}
                 <View style={{ gap: 15 }}>
