@@ -62,7 +62,6 @@ import {
 import type {
   AccountEntity,
   CategoryEntity,
-  CSPCategoryEntity,
   PayeeEntity,
   TransactionEntity,
 } from '@actual-app/core/types/models';
@@ -1082,6 +1081,7 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
         transaction.id,
         transactions,
         unserializedTransactions,
+        defaultCspGroups,
         showHiddenCategories,
       ],
     );
