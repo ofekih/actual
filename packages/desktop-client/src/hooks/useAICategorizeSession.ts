@@ -208,7 +208,7 @@ export function useAICategorizeSession({
     });
   }, [defaultCspGroups, result]);
 
-  const PRELOAD_COUNT = 5;
+  const PRELOAD_COUNT = 3;
 
   // Lookahead: find the next transactions where account and payee are different
   const lookaheadTxs = useMemo(() => {
