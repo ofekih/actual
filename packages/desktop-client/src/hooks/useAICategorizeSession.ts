@@ -493,9 +493,15 @@ export function useAICategorizeSession({
         return next;
       });
 
-      const nextTx = (typedData || []).find(
-        (tx: UncategorizedTransaction) => !skippedIds.has(tx.id),
-      );
+      const nextTx =
+        lookaheadTxs.find(
+          ltx =>
+            (typedData || []).some(tx => tx.id === ltx.id) &&
+            !skippedIds.has(ltx.id),
+        ) ||
+        (typedData || []).find(
+          (tx: UncategorizedTransaction) => !skippedIds.has(tx.id),
+        );
       if (prevTxId) {
         setHistory(prev => [...prev, prevTxId]);
       }
@@ -516,9 +522,11 @@ export function useAICategorizeSession({
     nextSkipped.add(currentTx.id);
     setSkippedIds(nextSkipped);
 
-    const nextTx = uncategorizedTransactions.find(
-      tx => tx.id !== currentTx.id && !nextSkipped.has(tx.id),
-    );
+    const nextTx =
+      lookaheadTxs.find(ltx => !nextSkipped.has(ltx.id)) ||
+      uncategorizedTransactions.find(
+        tx => tx.id !== currentTx.id && !nextSkipped.has(tx.id),
+      );
     setHistory(prev => [...prev, prevTxId]);
     if (nextTx) {
       advanceToTransaction(nextTx.id);
