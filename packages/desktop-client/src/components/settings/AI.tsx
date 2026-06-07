@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { ButtonWithLoading } from '@actual-app/components/button';
-import { Input } from '@actual-app/components/input';
+import { baseInputStyle, Input } from '@actual-app/components/input';
 import { Text } from '@actual-app/components/text';
+import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
+import { css } from '@emotion/css';
 
 import { useSyncedPref } from '#hooks/useSyncedPref';
 
@@ -14,6 +16,9 @@ import { Setting } from './UI';
 export function AISettings() {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useSyncedPref('geminiApiKey');
+  const [customInstructions, setCustomInstructions] = useSyncedPref(
+    'geminiCustomInstructions',
+  );
   const [isTesting, setIsTesting] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -97,55 +102,101 @@ export function AISettings() {
   };
 
   return (
-    <Setting
-      primaryAction={
-        <View style={{ flexDirection: 'column', gap: 10 }}>
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <Input
-              type="password"
-              value={apiKey || ''}
-              placeholder={t('Enter Gemini API Key')}
-              onChange={e => setApiKey(e.currentTarget.value)}
-              style={{ width: 300 }}
-            />
-            <ButtonWithLoading onPress={onTestConnection} isLoading={isTesting}>
-              <Trans>Test Connection</Trans>
-            </ButtonWithLoading>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <ButtonWithLoading
-              onPress={onTestCategorize}
-              isLoading={isCategorizing}
-            >
-              <Trans>Test Categorization</Trans>
-            </ButtonWithLoading>
-            <ButtonWithLoading onPress={onSeedCategories} isLoading={isSeeding}>
-              <Trans>Seed Default Categories</Trans>
-            </ButtonWithLoading>
-          </View>
-          {testResult && (
+    <View style={{ gap: 20 }}>
+      <Setting
+        primaryAction={
+          <View style={{ flexDirection: 'column', gap: 10 }}>
             <View
-              style={{
-                marginTop: 10,
-                padding: 10,
-                backgroundColor: 'var(--color-background)',
-                borderRadius: 4,
-              }}
+              style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}
             >
-              <Text style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
-                {testResult}
-              </Text>
+              <Input
+                type="password"
+                value={apiKey || ''}
+                placeholder={t('Enter Gemini API Key')}
+                onChange={e => setApiKey(e.currentTarget.value)}
+                style={{ width: 300 }}
+              />
+              <ButtonWithLoading
+                onPress={onTestConnection}
+                isLoading={isTesting}
+              >
+                <Trans>Test Connection</Trans>
+              </ButtonWithLoading>
             </View>
-          )}
-        </View>
-      }
-    >
-      <Text>
-        <Trans>
-          <strong>AI Auto-Categorization</strong> requires a Gemini API Key from
-          Google Cloud. This key is stored securely in your local budget file.
-        </Trans>
-      </Text>
-    </Setting>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <ButtonWithLoading
+                onPress={onTestCategorize}
+                isLoading={isCategorizing}
+              >
+                <Trans>Test Categorization</Trans>
+              </ButtonWithLoading>
+              <ButtonWithLoading
+                onPress={onSeedCategories}
+                isLoading={isSeeding}
+              >
+                <Trans>Seed Default Categories</Trans>
+              </ButtonWithLoading>
+            </View>
+            {testResult && (
+              <View
+                style={{
+                  marginTop: 10,
+                  padding: 10,
+                  backgroundColor: 'var(--color-background)',
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
+                  {testResult}
+                </Text>
+              </View>
+            )}
+          </View>
+        }
+      >
+        <Text>
+          <Trans>
+            <strong>AI Auto-Categorization</strong> requires a Gemini API Key
+            from Google Cloud. This key is stored securely in your local budget
+            file.
+          </Trans>
+        </Text>
+      </Setting>
+
+      <Setting
+        primaryAction={
+          <textarea
+            value={customInstructions || ''}
+            placeholder={t(
+              'Enter custom instructions (e.g. "Ignore transfers between Checking and Savings")',
+            )}
+            onChange={e => setCustomInstructions(e.currentTarget.value)}
+            className={css([
+              baseInputStyle,
+              {
+                width: '100%',
+                maxWidth: 500,
+                height: 80,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                resize: 'vertical',
+                '&:focus': {
+                  border: '1px solid ' + theme.formInputBorderSelected,
+                  boxShadow: '0 1px 1px ' + theme.formInputShadowSelected,
+                },
+              },
+            ])}
+          />
+        }
+      >
+        <Text>
+          <Trans>
+            <strong>Custom AI Instructions</strong> allow you to guide how
+            Gemini categorizes your transactions. These instructions are
+            appended to the system prompt.
+          </Trans>
+        </Text>
+      </Setting>
+    </View>
   );
 }

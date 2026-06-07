@@ -14,6 +14,17 @@ export async function getGeminiApiKey(): Promise<string | null> {
 }
 
 /**
+ * Retrieves the custom instructions for Gemini from the user's synced preferences.
+ */
+export async function getGeminiCustomInstructions(): Promise<string | null> {
+  const row = await db.first<{ value: string }>(
+    'SELECT value FROM preferences WHERE id = ?',
+    ['geminiCustomInstructions'],
+  );
+  return row ? row.value : null;
+}
+
+/**
  * Validates that an API key exists, throwing an error if not.
  */
 export async function requireGeminiApiKey(): Promise<string> {

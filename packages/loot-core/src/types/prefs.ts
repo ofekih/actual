@@ -58,6 +58,7 @@ export type SyncedPrefs = Partial<
     | `flags.${FeatureFlag}`
     | `learn-categories`
     | 'geminiApiKey'
+    | 'geminiCustomInstructions'
     | `show-hidden-tags`,
     string
   >

@@ -4,7 +4,7 @@ import { integerToAmount } from '#shared/util';
 
 import { getAccountHistory, getPayeeHistory, getTaxonomies } from './context';
 
-import { requireGeminiApiKey } from './index';
+import { getGeminiCustomInstructions, requireGeminiApiKey } from './index';
 
 export type CategorizeResult = {
   standard_category_id: string | null;
@@ -112,6 +112,14 @@ Instructions:
    - Use 'account' when the category is driven by the account type (e.g., an investment/retirement/off-budget account, a dedicated credit card), not by the specific payee.
    - Use 'payee' when the specific vendor/payee drives the category (e.g., Netflix, Amazon, a specific grocery store).
    - Use 'both' when both are necessary (e.g., a specific payee that only appears in one account).`;
+
+  const customInstructions = await getGeminiCustomInstructions();
+  if (customInstructions) {
+    systemPrompt += `
+
+Additional Custom Instructions from User:
+${customInstructions}`;
+  }
 
   if (followUpMessage && previousResult) {
     systemPrompt += `
