@@ -99,6 +99,7 @@ Is transfer: ${transaction.transfer_id ? 'yes' : 'no'}
 Instructions:
 1. Select the BEST 'standard_category_id' from the standard taxonomy. Use null if nothing fits.
 2. Select the BEST 'csp_category_id' from the CSP taxonomy. Use null if nothing fits.
+   - NOTE: If the transaction is a transfer, off-budget, or should be ignored, you MUST select the category ID of 'Ignored' from the CSP taxonomy instead of returning null (if an 'Ignored' category is present in the taxonomy).
 3. IF no existing categories fit, you may suggest a NEW category to be created. To do so:
    - Understand that categories are structured under Category Groups. Group definitions include "isIncome: true" (for income, initial setup funding, or inflows) or "isIncome: false" (for standard spending and expenses).
    - If the transaction is an inflow (e.g. paycheck, interest, refund) and no existing income categories fit, suggest a new category name under an income group (a group with "isIncome: true").
