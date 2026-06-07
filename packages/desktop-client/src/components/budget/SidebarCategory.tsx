@@ -15,9 +15,12 @@ import type {
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
 
+import { useMoveCategoryMutation } from '#budget';
 import { InputCell } from '#components/table';
 import { useContextMenu } from '#hooks/useContextMenu';
 import { useGlobalPref } from '#hooks/useGlobalPref';
+import { pushModal } from '#modals/modalsSlice';
+import { useDispatch } from '#redux';
 
 import { SidebarCategoryButtons } from './SidebarCategoryButtons';
 
@@ -63,6 +66,8 @@ export function SidebarCategory({
   const { t } = useTranslation();
   const [categoryExpandedStatePref] = useGlobalPref('categoryExpandedState');
   const categoryExpandedState = categoryExpandedStatePref ?? 0;
+  const dispatch = useDispatch();
+  const moveCategory = useMoveCategoryMutation();
 
   const temporary = category.id === 'new';
   const { setMenuOpen, menuOpen, handleContextMenu, resetPosition, position } =
@@ -118,6 +123,24 @@ export function SidebarCategory({
                 onDelete(category.id);
               } else if (type === 'toggle-visibility') {
                 onSave({ ...category, hidden: !category.hidden });
+              } else if (type === 'move-group') {
+                dispatch(
+                  pushModal({
+                    modal: {
+                      name: 'category-group-autocomplete',
+                      options: {
+                        title: t('Move to group'),
+                        onSelect: async groupId => {
+                          await moveCategory.mutateAsync({
+                            id: category.id,
+                            groupId,
+                            targetId: null,
+                          });
+                        },
+                      },
+                    },
+                  }),
+                );
               }
               setMenuOpen(false);
             }}
@@ -127,6 +150,7 @@ export function SidebarCategory({
                 name: 'toggle-visibility',
                 text: category.hidden ? t('Show') : t('Hide'),
               },
+              { name: 'move-group', text: t('Move to group...') },
               { name: 'delete', text: t('Delete') },
             ]}
           />

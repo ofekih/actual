@@ -7,6 +7,7 @@ import { Button } from '@actual-app/components/button';
 import {
   SvgChartPie,
   SvgDotsHorizontalTriple,
+  SvgFolder,
   SvgTrash,
 } from '@actual-app/components/icons/v1';
 import {
@@ -20,6 +21,7 @@ import { styles } from '@actual-app/components/styles';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 
+import { useMoveCategoryMutation } from '#budget';
 import {
   Modal,
   ModalCloseButton,
@@ -30,7 +32,9 @@ import { Notes } from '#components/Notes';
 import { useCategory } from '#hooks/useCategory';
 import { useCategoryGroup } from '#hooks/useCategoryGroup';
 import { useNotes } from '#hooks/useNotes';
+import { collapseModals, pushModal } from '#modals/modalsSlice';
 import type { Modal as ModalType } from '#modals/modalsSlice';
+import { useDispatch } from '#redux';
 
 type CategoryMenuModalProps = Extract<
   ModalType,
@@ -185,6 +189,9 @@ function AdditionalCategoryMenu({
   const { t } = useTranslation();
   const triggerRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const dispatch = useDispatch();
+  const moveCategory = useMoveCategoryMutation();
+
   const itemStyle: CSSProperties = {
     ...styles.mediumText,
     height: styles.mobileMinHeight,
@@ -227,6 +234,13 @@ function AdditionalCategoryMenu({
               },
               !categoryGroup?.hidden && Menu.line,
               {
+                name: 'moveGroup',
+                text: t('Move to Group...'),
+                icon: SvgFolder,
+                iconSize: 16,
+              },
+              Menu.line,
+              {
                 name: 'delete',
                 text: t('Delete'),
                 icon: SvgTrash,
@@ -239,6 +253,27 @@ function AdditionalCategoryMenu({
                 onDelete();
               } else if (itemName === 'toggleVisibility') {
                 onToggleVisibility();
+              } else if (itemName === 'moveGroup') {
+                dispatch(
+                  pushModal({
+                    modal: {
+                      name: 'category-group-autocomplete',
+                      options: {
+                        title: t('Move to group'),
+                        onSelect: async groupId => {
+                          await moveCategory.mutateAsync({
+                            id: category.id,
+                            groupId,
+                            targetId: null,
+                          });
+                          dispatch(
+                            collapseModals({ rootModalName: 'category-menu' }),
+                          );
+                        },
+                      },
+                    },
+                  }),
+                );
               }
             }}
           />
