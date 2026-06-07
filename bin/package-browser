@@ -20,9 +20,13 @@ done
 
 if [ "$SKIP_TRANSLATIONS" = false ]; then
   echo "Updating translations..."
-  rm -rf packages/desktop-client/locale
-  git clone --depth=1 https://github.com/actualbudget/translations packages/desktop-client/locale
-  rm -rf packages/desktop-client/locale/.git
+  if ! [ -d packages/desktop-client/locale ]; then
+      git clone https://github.com/actualbudget/translations packages/desktop-client/locale
+  fi
+  pushd packages/desktop-client/locale > /dev/null
+  git checkout .
+  git pull
+  popd > /dev/null
   packages/desktop-client/bin/remove-untranslated-languages
 fi
 

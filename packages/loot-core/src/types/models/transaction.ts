@@ -2,7 +2,6 @@ import type { IntegerAmount } from '#shared/util';
 
 import type { AccountEntity } from './account';
 import type { CategoryEntity } from './category';
-import type { CSPCategoryEntity } from './csp-category';
 import type { PayeeEntity } from './payee';
 import type { ScheduleEntity } from './schedule';
 
@@ -13,7 +12,6 @@ export type TransactionEntity = {
   parent_id?: TransactionEntity['id'];
   account: AccountEntity['id'];
   category?: CategoryEntity['id'];
-  csp_category?: CSPCategoryEntity['id'];
   amount: IntegerAmount;
   payee?: PayeeEntity['id'] | null;
   notes?: string;

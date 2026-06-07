@@ -68,7 +68,6 @@ import type {
   AccountEntity,
   CategoryEntity,
   CategoryGroupEntity,
-  CSPCategoryEntity,
   PayeeEntity,
   RuleEntity,
   ScheduleEntity,
@@ -80,7 +79,6 @@ import memoizeOne from 'memoize-one';
 import { getAccountsById } from '#accounts/accountsSlice';
 import { AccountAutocomplete } from '#components/autocomplete/AccountAutocomplete';
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
-import { CspCategoryAutocomplete } from '#components/autocomplete/CspCategoryAutocomplete';
 import { PayeeAutocomplete } from '#components/autocomplete/PayeeAutocomplete';
 import { TagAutocomplete } from '#components/autocomplete/TagAutocomplete';
 import { getStatusProps } from '#components/schedules/StatusBadge';
@@ -277,36 +275,20 @@ const TransactionHeader = memo(
           }
         />
         {showCategory && (
-          <>
-            <HeaderCell
-              value={t('Category')}
-              width="flex"
-              alignItems="flex"
-              marginLeft={-5}
-              id="category"
-              icon={field === 'category' ? ascDesc : 'clickable'}
-              onClick={() =>
-                onSort(
-                  'category',
-                  selectAscDesc(field, ascDesc, 'category', 'asc'),
-                )
-              }
-            />
-            <HeaderCell
-              value={t('CSP Category')}
-              width="flex"
-              alignItems="flex"
-              marginLeft={-5}
-              id="csp_category"
-              icon={field === 'csp_category' ? ascDesc : 'clickable'}
-              onClick={() =>
-                onSort(
-                  'csp_category',
-                  selectAscDesc(field, ascDesc, 'csp_category', 'asc'),
-                )
-              }
-            />
-          </>
+          <HeaderCell
+            value={t('Category')}
+            width="flex"
+            alignItems="flex"
+            marginLeft={-5}
+            id="category"
+            icon={field === 'category' ? ascDesc : 'clickable'}
+            onClick={() =>
+              onSort(
+                'category',
+                selectAscDesc(field, ascDesc, 'category', 'asc'),
+              )
+            }
+          />
         )}
         <HeaderCell
           value={t('Payment')}
@@ -880,7 +862,6 @@ type TransactionProps = {
   expanded?: boolean;
   focusedField?: string;
   categoryGroups: CategoryGroupEntity[];
-  cspCategories: CSPCategoryEntity[];
   payees: PayeeEntity[];
   accounts: AccountEntity[];
   balance: number;
@@ -948,7 +929,6 @@ const Transaction = memo(function Transaction({
   expanded,
   focusedField,
   categoryGroups,
-  cspCategories,
   payees,
   accounts,
   balance,
@@ -1811,54 +1791,6 @@ const Transaction = memo(function Transaction({
           </CustomCell>
         )}
 
-        <CustomCell
-          name="csp_category"
-          width="flex"
-          textAlign="flex"
-          value={transaction.csp_category}
-          formatter={value =>
-            value
-              ? (cspCategories.find(c => c.id === value)?.name ?? '')
-              : transaction.id
-                ? t('Categorize')
-                : ''
-          }
-          exposed={focusedField === 'csp_category'}
-          onExpose={name => !isPreview && onEdit(id, name)}
-          valueStyle={
-            !transaction.csp_category && transaction.id
-              ? {
-                  // uncategorized — match standard category column styling
-                  fontStyle: 'italic',
-                  fontWeight: 300,
-                  color: theme.formInputTextHighlight,
-                }
-              : valueStyle
-          }
-          onUpdate={async value => {
-            onUpdate('csp_category', value);
-          }}
-        >
-          {({
-            onBlur,
-            onKeyDown,
-            onUpdate,
-            onSave,
-            shouldSaveFromKey,
-            inputStyle,
-          }) => (
-            <CspCategoryAutocomplete
-              value={transaction.csp_category ?? null}
-              focused
-              clearOnBlur={false}
-              shouldSaveFromKey={shouldSaveFromKey}
-              inputProps={{ onBlur, onKeyDown, style: inputStyle }}
-              onUpdate={onUpdate}
-              onSelect={onSave}
-            />
-          )}
-        </CustomCell>
-
         <InputCell
           /* Debit field for all transactions */
           type="input"
@@ -2164,7 +2096,6 @@ function TransactionError({
 type NewTransactionProps = {
   accounts: AccountEntity[];
   categoryGroups: CategoryGroupEntity[];
-  cspCategories: CSPCategoryEntity[];
   dateFormat: string;
   editingTransaction: TransactionEntity['id'];
   focusedField: string;
@@ -2203,7 +2134,6 @@ function NewTransaction({
   transactions,
   accounts,
   categoryGroups,
-  cspCategories,
   payees,
   transferAccountsByTransaction,
   editingTransaction,
@@ -2273,8 +2203,6 @@ function NewTransaction({
           transaction={transaction}
           subtransactions={transaction.is_parent ? childTransactions : null}
           transferAccountsByTransaction={transferAccountsByTransaction}
-          categoryGroups={categoryGroups}
-          cspCategories={cspCategories}
           showAccount={showAccount}
           showBalance={showBalance}
           showCleared={showCleared}
@@ -2283,6 +2211,7 @@ function NewTransaction({
           }
           showZeroInDeposit={isDeposit}
           accounts={accounts}
+          categoryGroups={categoryGroups}
           payees={payees}
           dateFormat={dateFormat}
           hideFraction={!!hideFraction}
@@ -2366,7 +2295,6 @@ type TransactionTableInnerProps = {
   loadMoreTransactions: () => void;
   accounts: AccountEntity[];
   categoryGroups: CategoryGroupEntity[];
-  cspCategories: CSPCategoryEntity[];
   payees: PayeeEntity[];
   balances: Record<TransactionEntity['id'], IntegerAmount> | null;
   showBalances: boolean;
@@ -2507,7 +2435,6 @@ function TransactionTableInner({
       selectedItems,
       accounts,
       categoryGroups,
-      cspCategories,
       payees,
       showCleared,
       showAccount,
@@ -2595,7 +2522,6 @@ function TransactionTableInner({
         focusedField={editing ? tableNavigator.focusedField : undefined}
         accounts={accounts}
         categoryGroups={categoryGroups}
-        cspCategories={cspCategories}
         payees={payees}
         dateFormat={dateFormat}
         hideFraction={hideFraction}
@@ -2686,7 +2612,6 @@ function TransactionTableInner({
               focusedField={newNavigator.focusedField}
               accounts={props.accounts}
               categoryGroups={props.categoryGroups}
-              cspCategories={props.cspCategories}
               payees={props.payees || []}
               showAccount={props.showAccount}
               showBalance={props.showBalances}
@@ -2760,7 +2685,6 @@ type TableState = {
 };
 
 export type TransactionTableProps = {
-  cspCategories: CSPCategoryEntity[];
   transactions: readonly TransactionEntity[];
   loadMoreTransactions: () => void;
   accounts: AccountEntity[];
@@ -3075,7 +2999,6 @@ export const TransactionTable = forwardRef(
         'payee',
         'notes',
         'category',
-        'csp_category',
         'debit',
         'credit',
         'cleared',
@@ -3094,7 +3017,6 @@ export const TransactionTable = forwardRef(
         'payee',
         'notes',
         'category',
-        'csp_category',
         'debit',
         'credit',
         'cleared',
@@ -3105,20 +3027,11 @@ export const TransactionTable = forwardRef(
 
     function getFields(item: TransactionEntity | undefined, fields: string[]) {
       fields = item?.is_child
-        ? [
-            'select',
-            'payee',
-            'notes',
-            'category',
-            'csp_category',
-            'debit',
-            'credit',
-          ]
+        ? ['select', 'payee', 'notes', 'category', 'debit', 'credit']
         : fields.filter(
             f =>
               (props.showAccount || f !== 'account') &&
-              (props.showCategory ||
-                (f !== 'category' && f !== 'csp_category')),
+              (props.showCategory || f !== 'category'),
           );
 
       if (item?.id && isPreviewId(item.id)) {

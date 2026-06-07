@@ -24,7 +24,6 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { accountQueries } from '#accounts';
 import { resetApp, setAppState } from '#app/appSlice';
 import type { SelectLinkedAccountsModalProps } from '#components/modals/SelectLinkedAccountsModal';
-import type { CspCategoryGroupWithCategories } from '#hooks/useCspCategories';
 import { createAppAsyncThunk } from '#redux';
 import { signOut } from '#users/usersSlice';
 
@@ -95,17 +94,6 @@ export type Modal =
       };
     }
   | {
-      name: 'ai-categorize-review';
-      options:
-        | {
-            bulk: true;
-          }
-        | {
-            transactionId: string;
-            bulk?: false;
-          };
-    }
-  | {
       name: 'manage-rules';
       options: { payeeId?: string };
     }
@@ -137,6 +125,12 @@ export type Modal =
     }
   | {
       name: 'pluggyai-init';
+      options: {
+        onSuccess: () => void;
+      };
+    }
+  | {
+      name: 'akahu-init';
       options: {
         onSuccess: () => void;
       };
@@ -288,18 +282,6 @@ export type Modal =
       };
     }
   | {
-      name: 'csp-category-autocomplete';
-      options: {
-        title?: string;
-        categoryGroups?: CspCategoryGroupWithCategories[];
-        onSelect: (categoryId: string | null, categoryName: string) => void;
-        showNoneOption?: boolean;
-        closeOnSelect?: boolean;
-        clearOnSelect?: boolean;
-        onClose?: () => void;
-      };
-    }
-  | {
       name: 'category-group-autocomplete';
       options: {
         title?: string;
@@ -382,6 +364,7 @@ export type Modal =
         onEditNotes: (id: NoteEntity['id']) => void;
         onDelete: (categoryId: CategoryEntity['id']) => void;
         onToggleVisibility: (categoryId: CategoryEntity['id']) => void;
+        onEditAutomations?: (categoryId: CategoryEntity['id']) => void;
         onClose?: () => void;
       };
     }

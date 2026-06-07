@@ -31,7 +31,6 @@ import { useMetadataPref } from '#hooks/useMetadataPref';
 import { useNavigate } from '#hooks/useNavigate';
 import { useSheetValue } from '#hooks/useSheetValue';
 import { useSyncedPref } from '#hooks/useSyncedPref';
-import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
 import * as bindings from '#spreadsheet/bindings';
 
@@ -47,38 +46,21 @@ import { ThemeSelector } from './ThemeSelector';
 
 function UncategorizedButton() {
   const count: number | null = useSheetValue(bindings.uncategorizedCount());
-  const dispatch = useDispatch();
-
   if (count === null || count <= 0) {
     return null;
   }
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-      <Link
-        variant="button"
-        buttonVariant="bare"
-        to="/categories/uncategorized"
-        style={{
-          color: theme.errorText,
-        }}
-      >
-        <Trans count={count}>{{ count }} uncategorized transactions</Trans>
-      </Link>
-      <Button
-        variant="bare"
-        style={{ color: theme.formInputTextHighlight, fontSize: 13 }}
-        onPress={() =>
-          dispatch(
-            pushModal({
-              modal: { name: 'ai-categorize-review', options: { bulk: true } },
-            }),
-          )
-        }
-      >
-        ✨
-      </Button>
-    </View>
+    <Link
+      variant="button"
+      buttonVariant="bare"
+      to="/categories/uncategorized"
+      style={{
+        color: theme.errorText,
+      }}
+    >
+      <Trans count={count}>{{ count }} uncategorized transactions</Trans>
+    </Link>
   );
 }
 

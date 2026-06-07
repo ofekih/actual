@@ -12,7 +12,6 @@ import { Link } from '#components/common/Link';
 import { FinancialText } from '#components/FinancialText';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
-import { useCspCategories } from '#hooks/useCspCategories';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { useFormat } from '#hooks/useFormat';
 import { useLocale } from '#hooks/useLocale';
@@ -50,7 +49,6 @@ export function Value<T>({
     },
   } = useCategories();
   const { data: accounts = [] } = useAccounts();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
   const valueStyle = {
     color: theme.pageTextPositive,
     ...style,
@@ -72,9 +70,6 @@ export function Value<T>({
 
       case 'category_group':
         return categoryGroups;
-
-      case 'csp_category':
-        return cspCategories;
 
       case 'account':
         return accounts;
@@ -125,7 +120,6 @@ export function Value<T>({
         case 'payee':
         case 'category':
         case 'category_group':
-        case 'csp_category':
         case 'account':
         case 'rule':
           if (valueIsRaw) {

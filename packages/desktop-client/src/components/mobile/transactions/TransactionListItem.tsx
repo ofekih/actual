@@ -38,7 +38,6 @@ import { makeAmountFullStyle } from '#components/budget/util';
 import { useAccount } from '#hooks/useAccount';
 import { useCachedSchedules } from '#hooks/useCachedSchedules';
 import { useCategories } from '#hooks/useCategories';
-import { useCspCategories } from '#hooks/useCspCategories';
 import { useDisplayPayee } from '#hooks/useDisplayPayee';
 import { usePayee } from '#hooks/usePayee';
 import { NotesTagFormatter } from '#notes/NotesTagFormatter';
@@ -88,7 +87,6 @@ export function TransactionListItem({
 }: TransactionListItemProps) {
   const { t } = useTranslation();
   const { data: { list: categories } = { list: [] } } = useCategories();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
 
   const { data: payee } = usePayee(transaction?.payee);
   const displayPayee = useDisplayPayee({ transaction });
@@ -147,7 +145,6 @@ export function TransactionListItem({
         : null;
 
   const prettyCategory = specialCategory || categoryName;
-  const cspCategoryName = lookupName(cspCategories, transaction.csp_category);
   const textStyle = getTextStyle({ isPreview });
 
   return (
@@ -263,7 +260,6 @@ export function TransactionListItem({
                   }}
                 >
                   {prettyCategory || t('Uncategorized')}
-                  {cspCategoryName ? ` (${cspCategoryName})` : ''}
                 </TextOneLine>
               </View>
             )}

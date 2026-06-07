@@ -1,8 +1,6 @@
 import type {
   CategoryEntity,
   CategoryGroupEntity,
-  CSPCategoryEntity,
-  CSPCategoryGroupEntity,
   PayeeEntity,
 } from '#types/models';
 
@@ -13,14 +11,7 @@ import {
   schema,
   schemaConfig,
 } from './aql';
-import type {
-  DbAccount,
-  DbCategory,
-  DbCategoryGroup,
-  DbCspCategory,
-  DbCspCategoryGroup,
-  DbPayee,
-} from './db';
+import type { DbAccount, DbCategory, DbCategoryGroup, DbPayee } from './db';
 import { ValidationError } from './errors';
 
 export function requiredFields<T extends object, K extends keyof T>(
@@ -166,98 +157,6 @@ export const categoryGroupModel = {
       categories: categories
         .filter(category => category.cat_group === categoryGroup.id)
         .map(c => categoryModel.fromDb(c)),
-    };
-  },
-};
-
-export const cspCategoryModel = {
-  validate(
-    category: Partial<DbCspCategory>,
-    { update }: { update?: boolean } = {},
-  ): DbCspCategory {
-    requiredFields(
-      'csp_category',
-      category,
-      update ? ['name', 'cat_group'] : ['name', 'cat_group'],
-      update,
-    );
-
-    const { sort_order: _sort_order, ...rest } = category;
-    return { ...rest } as DbCspCategory;
-  },
-  toDb(
-    category: CSPCategoryEntity,
-    { update }: { update?: boolean } = {},
-  ): DbCspCategory {
-    return (
-      update
-        ? convertForUpdate(schema, schemaConfig, 'csp_categories', category)
-        : convertForInsert(schema, schemaConfig, 'csp_categories', category)
-    ) as DbCspCategory;
-  },
-  fromDb(category: DbCspCategory): CSPCategoryEntity {
-    return convertFromSelect(
-      schema,
-      schemaConfig,
-      'csp_categories',
-      category,
-    ) as CSPCategoryEntity;
-  },
-};
-
-export const cspCategoryGroupModel = {
-  validate(
-    categoryGroup: Partial<DbCspCategoryGroup>,
-    { update }: { update?: boolean } = {},
-  ): DbCspCategoryGroup {
-    requiredFields(
-      'cspCategoryGroup',
-      categoryGroup,
-      update ? ['name'] : ['name'],
-      update,
-    );
-
-    const { sort_order: _sort_order, ...rest } = categoryGroup;
-    return { ...rest } as DbCspCategoryGroup;
-  },
-  toDb(
-    categoryGroup: CSPCategoryGroupEntity,
-    { update }: { update?: boolean } = {},
-  ): DbCspCategoryGroup {
-    return (
-      update
-        ? convertForUpdate(
-            schema,
-            schemaConfig,
-            'csp_category_groups',
-            categoryGroup,
-          )
-        : convertForInsert(
-            schema,
-            schemaConfig,
-            'csp_category_groups',
-            categoryGroup,
-          )
-    ) as DbCspCategoryGroup;
-  },
-  fromDb(
-    categoryGroup: DbCspCategoryGroup & {
-      categories: DbCspCategory[];
-    },
-  ): CSPCategoryGroupEntity {
-    const { categories, ...rest } = categoryGroup;
-    const categoryGroupEntity = convertFromSelect(
-      schema,
-      schemaConfig,
-      'csp_category_groups',
-      rest,
-    ) as CSPCategoryGroupEntity;
-
-    return {
-      ...categoryGroupEntity,
-      categories: categories
-        .filter(category => category.cat_group === categoryGroup.id)
-        .map(c => cspCategoryModel.fromDb(c)),
     };
   },
 };

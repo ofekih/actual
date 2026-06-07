@@ -15,11 +15,11 @@ import { AccountAutocomplete } from '#components/autocomplete/AccountAutocomplet
 import { Autocomplete } from '#components/autocomplete/Autocomplete';
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
 import { CategoryGroupAutocomplete } from '#components/autocomplete/CategoryGroupAutocomplete';
-import { CspCategoryAutocomplete } from '#components/autocomplete/CspCategoryAutocomplete';
 import { FilterAutocomplete } from '#components/autocomplete/FilterAutocomplete';
 import { PayeeAutocomplete } from '#components/autocomplete/PayeeAutocomplete';
 import { ReportAutocomplete } from '#components/autocomplete/ReportAutocomplete';
 import { Checkbox } from '#components/forms';
+import { hideNativeDateIconClassName } from '#components/mobile/MobileForms';
 import { DateSelect } from '#components/select/DateSelect';
 import { RecurringSchedulePicker } from '#components/select/RecurringSchedulePicker';
 import { useCategories } from '#hooks/useCategories';
@@ -38,7 +38,7 @@ type GenericInputProps = {
   | ((
       | {
           type: 'id';
-          field: 'payee' | 'category' | 'category_group' | 'csp_category';
+          field: 'payee' | 'category' | 'category_group';
         }
       | {
           type: 'id';
@@ -311,27 +311,6 @@ export const GenericInput = ({
           );
           break;
 
-        case 'csp_category': {
-          const singleVal = Array.isArray(props.value)
-            ? props.value[0] || null
-            : props.value || null;
-          content = (
-            <CspCategoryAutocomplete
-              value={singleVal}
-              onSelect={val => {
-                const value = val || '';
-                if (props.multi === true) {
-                  props.onChange([value]);
-                } else {
-                  props.onChange(value);
-                }
-              }}
-              inputProps={{ placeholder: t('Select CSP category...') }}
-            />
-          );
-          break;
-        }
-
         default:
       }
       break;
@@ -429,7 +408,19 @@ export const GenericInput = ({
                 value={props.value}
                 dateFormat={dateFormat}
                 openOnFocus={false}
-                inputProps={{ placeholder: dateFormat.toLowerCase() }}
+                inputProps={{
+                  placeholder: dateFormat.toLowerCase(),
+                  className: hideNativeDateIconClassName,
+                  style: {
+                    marginLeft: 0,
+                    marginRight: 0,
+                    // ios renders native date inputs taller than other fields;
+                    // border-box + appearance reset bring it back in line
+                    boxSizing: 'border-box',
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                  },
+                }}
                 onSelect={props.onChange}
               />
             );

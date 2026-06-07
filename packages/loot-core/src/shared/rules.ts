@@ -79,11 +79,6 @@ const FIELD_INFO = {
     disallowedOps: new Set(['onBudget', 'offBudget']),
     internalOps: new Set(['and']),
   },
-  csp_category: {
-    type: 'id',
-    disallowedOps: new Set(['onBudget', 'offBudget']),
-    internalOps: new Set(['and']),
-  },
   account: { type: 'id' },
   cleared: { type: 'boolean' },
   reconciled: { type: 'boolean' },

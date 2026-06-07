@@ -3,7 +3,6 @@ import type { ComponentPropsWithoutRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Menu } from '@actual-app/components/menu';
-import type { MenuItem } from '@actual-app/components/menu';
 import { q } from '@actual-app/core/shared/query';
 import {
   extractScheduleConds,
@@ -187,18 +186,8 @@ export function TransactionMenu({
           case 'create-rule':
             onCreateRule(selectedIds);
             break;
-          case 'ai-categorize':
-            dispatch(
-              pushModal({
-                modal: {
-                  name: 'ai-categorize-review',
-                  options: { transactionId: selectedIds[0] },
-                },
-              }),
-            );
-            break;
           default:
-            throw new Error(`Unrecognized menu option: ${String(name)}`);
+            throw new Error(`Unrecognized menu option: ${name}`);
         }
         closeMenu();
       }}
@@ -242,17 +231,6 @@ export function TransactionMenu({
                       text: t('Create rule'),
                     },
                   ]),
-              ...(selectedIds.length === 1 &&
-              !ambiguousDuplication &&
-              !types.preview
-                ? [
-                    Menu.line as MenuItem,
-                    {
-                      name: 'ai-categorize',
-                      text: `${'✨ '} ${t('AI Categorize')}`,
-                    },
-                  ]
-                : []),
               ...(canUnsplitTransactions
                 ? [
                     {

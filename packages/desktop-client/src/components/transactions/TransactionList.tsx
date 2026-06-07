@@ -32,7 +32,6 @@ import type {
 
 import { FeatureErrorFallback } from '#components/FeatureErrorFallback';
 import type { TableHandleRef } from '#components/table';
-import { useCspCategories } from '#hooks/useCspCategories';
 import { isValidBoundaryDrop } from '#hooks/useDragDrop';
 import type { DropPosition } from '#hooks/useDragDrop';
 import { useNavigate } from '#hooks/useNavigate';
@@ -100,7 +99,6 @@ export async function createSingleTimeScheduleFromTransaction(
   conditionFields.forEach(field => {
     const value = transaction[field];
     if (value != null && value !== '') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       conditions.push({
         op: 'is',
         field,
@@ -329,7 +327,6 @@ export function TransactionList({
   onMakeAsNonSplitTransactions,
 }: TransactionListProps) {
   const { t } = useTranslation();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -734,7 +731,6 @@ export function TransactionList({
         loadMoreTransactions={loadMoreTransactions}
         accounts={accounts}
         categoryGroups={categoryGroups}
-        cspCategories={cspCategories}
         payees={payees}
         balances={balances}
         showBalances={showBalances}

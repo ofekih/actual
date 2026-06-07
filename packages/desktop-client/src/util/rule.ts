@@ -57,8 +57,6 @@ export function mapField(field, opts?) {
       return t('date');
     case 'category':
       return t('category');
-    case 'csp_category':
-      return t('CSP category');
     case 'category_group':
       return t('category group');
     case 'notes':

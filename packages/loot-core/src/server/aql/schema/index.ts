@@ -39,7 +39,6 @@ export const schema = {
     parent_id: f('id'),
     account: f('id', { ref: 'accounts', required: true }),
     category: f('id', { ref: 'categories' }),
-    csp_category: f('id', { ref: 'csp_categories' }),
     amount: f('integer', { default: 0, required: true }),
     payee: f('id', { ref: 'payees' }),
     notes: f('string'),
@@ -97,19 +96,6 @@ export const schema = {
     name: f('string'),
     is_income: f('boolean'),
     hidden: f('boolean'),
-    sort_order: f('float'),
-    tombstone: f('boolean'),
-  },
-  csp_categories: {
-    id: f('id'),
-    name: f('string'),
-    group: f('id', { ref: 'csp_category_groups' }),
-    sort_order: f('float'),
-    tombstone: f('boolean'),
-  },
-  csp_category_groups: {
-    id: f('id'),
-    name: f('string'),
     sort_order: f('float'),
     tombstone: f('boolean'),
   },
@@ -261,9 +247,6 @@ export const schemaConfig: SchemaConfig = {
       case 'categories':
         return 'v_categories';
 
-      case 'csp_categories':
-        return 'v_csp_categories';
-
       case 'payees':
         return 'v_payees';
 
@@ -294,10 +277,6 @@ export const schemaConfig: SchemaConfig = {
         case 'category_groups':
           return ['is_income', 'sort_order', 'id'];
         case 'categories':
-          return ['sort_order', 'id'];
-        case 'csp_category_groups':
-          return ['sort_order', 'id'];
-        case 'csp_categories':
           return ['sort_order', 'id'];
         case 'payees':
           return [
@@ -345,17 +324,6 @@ export const schemaConfig: SchemaConfig = {
       v_categories: internalFields => {
         const fields = internalFields({ group: 'cat_group' });
         return `SELECT ${fields} FROM categories _`;
-      },
-    },
-
-    csp_categories: {
-      fields: {
-        group: 'cat_group',
-      },
-
-      v_csp_categories: internalFields => {
-        const fields = internalFields({ group: 'cat_group' });
-        return `SELECT ${fields} FROM csp_categories _`;
       },
     },
 
@@ -431,7 +399,6 @@ export const schemaConfig: SchemaConfig = {
         const fields = publicFields({
           payee: 'p.id',
           category: 'c.id',
-          csp_category: 'cc.id',
           account: 'a.id',
         });
 
@@ -442,7 +409,6 @@ export const schemaConfig: SchemaConfig = {
           SELECT ${fields} FROM v_transactions_internal_alive _
           LEFT JOIN payees p ON (p.id = _.payee AND p.tombstone = 0)
           LEFT JOIN categories c ON (c.id = _.category AND c.tombstone = 0)
-          LEFT JOIN csp_categories cc ON (cc.id = _.csp_category AND cc.tombstone = 0)
           LEFT JOIN accounts a ON (a.id = _.account AND a.tombstone = 0)
           ORDER BY _.date desc, _.starting_balance_flag, _.sort_order desc, _.id;
         `;

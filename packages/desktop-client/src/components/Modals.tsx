@@ -14,7 +14,7 @@ import { useDispatch } from '#redux';
 import { EditSyncAccount } from './banksync/EditSyncAccount';
 import { AccountAutocompleteModal } from './modals/AccountAutocompleteModal';
 import { AccountMenuModal } from './modals/AccountMenuModal';
-import { AICategorizeReviewModal } from './modals/AICategorizeReviewModal';
+import { AkahuInitialiseModal } from './modals/AkahuInitialiseModal';
 import { BudgetAutomationsModal } from './modals/BudgetAutomationsModal';
 import { BudgetPageMenuModal } from './modals/BudgetPageMenuModal';
 import { CategoryAutocompleteModal } from './modals/CategoryAutocompleteModal';
@@ -33,7 +33,6 @@ import { CoverModal } from './modals/CoverModal';
 import { CreateAccountModal } from './modals/CreateAccountModal';
 import { CreateEncryptionKeyModal } from './modals/CreateEncryptionKeyModal';
 import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
-import { CspCategoryAutocompleteModal } from './modals/CspCategoryAutocompleteModal';
 import { EditUserAccess } from './modals/EditAccess';
 import { EditFieldModal } from './modals/EditFieldModal';
 import { EditRuleModal } from './modals/EditRuleModal';
@@ -191,6 +190,9 @@ export function Modals() {
         case 'pluggyai-init':
           return <PluggyAiInitialiseModal key={key} {...modal.options} />;
 
+        case 'akahu-init':
+          return <AkahuInitialiseModal key={key} {...modal.options} />;
+
         case 'enablebanking-init':
           return <EnableBankingInitialiseModal key={key} {...modal.options} />;
 
@@ -220,9 +222,6 @@ export function Modals() {
 
         case 'category-autocomplete':
           return <CategoryAutocompleteModal key={key} {...modal.options} />;
-
-        case 'csp-category-autocomplete':
-          return <CspCategoryAutocompleteModal key={key} {...modal.options} />;
 
         case 'category-group-autocomplete':
           return (
@@ -405,9 +404,6 @@ export function Modals() {
           return <ImportYNAB5Modal key={key} />;
         case 'import-actual':
           return <ImportActualModal key={key} />;
-
-        case 'ai-categorize-review':
-          return <AICategorizeReviewModal key={key} {...modal.options} />;
 
         case 'out-of-sync-migrations':
           return <OutOfSyncMigrationsModal key={key} />;
