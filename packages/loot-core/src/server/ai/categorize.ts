@@ -5,6 +5,7 @@ import { integerToAmount } from '#shared/util';
 
 import { getAccountHistory, getPayeeHistory, getTaxonomies } from './context';
 import type { TaxonomyContext } from './context';
+
 import { getGeminiCustomInstructions, requireGeminiApiKey } from './index';
 
 export type CategorizeResult = {
