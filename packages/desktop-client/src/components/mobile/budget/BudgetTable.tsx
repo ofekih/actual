@@ -33,6 +33,7 @@ import { envelopeBudget, trackingBudget } from '#spreadsheet/bindings';
 
 import { ExpenseGroupList } from './ExpenseGroupList';
 import { IncomeGroup } from './IncomeGroup';
+import { useMobileBudgetComponents } from './MobileBudgetComponentsContext';
 
 export const ROW_HEIGHT = 50;
 
@@ -338,8 +339,6 @@ type BudgetTableProps = {
   onEditCategoryGroup: (id: CategoryGroupEntity['id']) => void;
   onEditCategory: (id: CategoryEntity['id']) => void;
 };
-
-import { useMobileBudgetComponents } from './MobileBudgetComponentsContext';
 
 export function BudgetTable({
   categoryGroups,

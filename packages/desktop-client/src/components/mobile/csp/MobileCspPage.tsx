@@ -712,7 +712,7 @@ export function MobileCspPage() {
 
         if (type === 'savings') savingsTotal += bal;
         else if (type === 'investments') investmentsTotal += bal;
-        else if (type === 'debt') debtTotal += bal;
+        else if (type === 'debt') debtTotal -= bal;
       });
 
     return savingsTotal + investmentsTotal + debtTotal;

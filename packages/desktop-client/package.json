@@ -76,7 +76,10 @@
     "#components/util/accountValidation": "./src/components/util/accountValidation.ts",
     "#components/util/countries": "./src/components/util/countries.ts",
     "#components/util/localeToCountry": "./src/components/util/localeToCountry.ts",
-    "#components/*": "./src/components/*.tsx",
+    "#components/*": [
+      "./src/components/*.tsx",
+      "./src/components/*.ts"
+    ],
     "#hooks/useCachedSchedules": "./src/hooks/useCachedSchedules.tsx",
     "#hooks/useDisplayPayee": "./src/hooks/useDisplayPayee.tsx",
     "#hooks/useDragDrop": "./src/hooks/useDragDrop.tsx",

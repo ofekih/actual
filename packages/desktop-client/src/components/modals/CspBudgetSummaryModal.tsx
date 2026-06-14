@@ -58,7 +58,7 @@ export function CspBudgetSummaryModal(_props: CspBudgetSummaryModalProps) {
 
       if (type === 'savings') savingsTotal += bal;
       else if (type === 'investments') investmentsTotal += bal;
-      else if (type === 'debt') debtTotal += bal;
+      else if (type === 'debt') debtTotal -= bal;
     });
 
   const netWorth = savingsTotal + investmentsTotal + debtTotal;

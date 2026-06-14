@@ -304,9 +304,9 @@ export function Account<FieldName extends SheetFields<'account'>>({
                     : { name: 'close', text: t('Close') },
                   Menu.line,
                   {
-                    name: t('CSP Category') as any,
+                    name: t('CSP Category') as unknown as string,
                     text: '',
-                    type: Menu.label as any,
+                    type: Menu.label as unknown as 'label',
                   },
                   {
                     name: 'csp-auto',

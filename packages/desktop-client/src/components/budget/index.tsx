@@ -10,7 +10,6 @@ import type {
   CategoryEntity,
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
-import { useCspBudgetComponents as useCspBudgetComponentsContext } from '#components/csp/CspComponentsContext';
 
 import {
   useBudgetActions,
@@ -22,6 +21,7 @@ import {
   useSaveCategoryMutation,
   useSortCategoriesMutation,
 } from '#budget';
+import { useCspBudgetComponents as useCspBudgetComponentsContext } from '#components/csp/CspComponentsContext';
 import { useCategories } from '#hooks/useCategories';
 import { useGlobalPref } from '#hooks/useGlobalPref';
 import { useLocalPref } from '#hooks/useLocalPref';

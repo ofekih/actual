@@ -307,7 +307,7 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
           .serialize(),
       );
       const res: Record<string, number> = {};
-      data.forEach((row: any) => {
+      data.forEach((row: { account: string; sum: number }) => {
         res[row.account] = row.sum;
       });
       return res;
@@ -326,7 +326,7 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
 
       if (type === 'savings') savingsTotal += bal;
       else if (type === 'investments') investmentsTotal += bal;
-      else if (type === 'debt') debtTotal += bal;
+      else if (type === 'debt') debtTotal -= bal;
     });
 
   const netWorth = savingsTotal + investmentsTotal + debtTotal;
@@ -638,8 +638,12 @@ export function Csp() {
   };
 
   // No-op handlers for budget-specific actions (CSP is read-only for now)
-  const noop = () => {};
-  const noopBudgetAction = () => {};
+  const noop = () => {
+    /* no-op */
+  };
+  const noopBudgetAction = () => {
+    /* no-op */
+  };
 
   const onShowActivity = (categoryId: string, month?: string) => {
     const filterConditions = [
