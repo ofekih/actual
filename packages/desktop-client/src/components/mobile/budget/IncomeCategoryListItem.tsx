@@ -27,7 +27,10 @@ type IncomeCategoryNameProps = {
   onEdit: (id: CategoryEntity['id']) => void;
 };
 
-function IncomeCategoryName({ category, onEdit }: IncomeCategoryNameProps) {
+export function IncomeCategoryName({
+  category,
+  onEdit,
+}: IncomeCategoryNameProps) {
   const sidebarColumnWidth = getColumnWidth({
     isSidebar: true,
     offset: -10,

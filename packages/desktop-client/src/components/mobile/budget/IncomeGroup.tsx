@@ -157,7 +157,7 @@ type IncomeGroupNameProps = {
   onToggleCollapse: (id: CategoryGroupEntity['id']) => void;
 };
 
-function IncomeGroupName({
+export function IncomeGroupName({
   group,
   onEdit,
   isCollapsed,

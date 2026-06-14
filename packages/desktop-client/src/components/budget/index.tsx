@@ -10,6 +10,7 @@ import type {
   CategoryEntity,
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
+import { useCspBudgetComponents as useCspBudgetComponentsContext } from '#components/csp/CspComponentsContext';
 
 import {
   useBudgetActions,
@@ -35,7 +36,6 @@ import { EnvelopeBudgetProvider } from './envelope/EnvelopeBudgetContext';
 import * as trackingBudget from './tracking/TrackingBudgetComponents';
 import { TrackingBudgetProvider } from './tracking/TrackingBudgetContext';
 import { prewarmAllMonths, prewarmMonth } from './util';
-import { useCspBudgetComponents as useCspBudgetComponentsContext } from '../csp/CspComponentsContext';
 
 export function Budget() {
   const currentMonth = monthUtils.currentMonth();

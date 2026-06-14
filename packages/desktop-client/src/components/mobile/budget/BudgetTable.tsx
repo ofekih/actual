@@ -292,6 +292,9 @@ function BudgetGroups({
     [collapsedGroupIds],
   );
 
+  const overrides = useMobileBudgetComponents();
+  const IncomeGroupComponent = overrides?.IncomeGroup || IncomeGroup;
+
   return (
     <View
       data-testid="budget-groups"
@@ -311,7 +314,7 @@ function BudgetGroups({
       />
 
       {incomeGroup && (
-        <IncomeGroup
+        <IncomeGroupComponent
           categoryGroup={incomeGroup}
           month={month}
           showHiddenCategories={showHiddenCategories}
@@ -335,6 +338,8 @@ type BudgetTableProps = {
   onEditCategoryGroup: (id: CategoryGroupEntity['id']) => void;
   onEditCategory: (id: CategoryEntity['id']) => void;
 };
+
+import { useMobileBudgetComponents } from './MobileBudgetComponentsContext';
 
 export function BudgetTable({
   categoryGroups,
@@ -366,9 +371,13 @@ export function BudgetTable({
 
   const schedulesQuery = useMemo(() => q('schedules').select('*'), []);
 
+  const overrides = useMobileBudgetComponents();
+  const TableHeaderComponent =
+    overrides?.BudgetTableHeader || BudgetTableHeader;
+
   return (
     <>
-      <BudgetTableHeader
+      <TableHeaderComponent
         month={month}
         show3Columns={show3Columns}
         showSpentColumn={showSpentColumn}

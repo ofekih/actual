@@ -9,6 +9,7 @@ import { css } from '@emotion/css';
 import { useMoveCategoryMutation } from '#budget';
 
 import { IncomeCategoryListItem } from './IncomeCategoryListItem';
+import { useMobileBudgetComponents } from './MobileBudgetComponentsContext';
 
 type IncomeCategoryListProps = {
   categories: CategoryEntity[];
@@ -25,6 +26,9 @@ export function IncomeCategoryList({
 }: IncomeCategoryListProps) {
   const { t } = useTranslation();
   const moveCategory = useMoveCategoryMutation();
+  const overrides = useMobileBudgetComponents();
+  const CategoryListItemComponent =
+    overrides?.IncomeCategoryListItem || IncomeCategoryListItem;
 
   const { dragAndDropHooks } = useDragAndDrop({
     getItems: keys =>
@@ -106,10 +110,15 @@ export function IncomeCategoryList({
       aria-label={t('Income categories')}
       items={categories}
       dragAndDropHooks={dragAndDropHooks}
-      dependencies={[month, onEditCategory, onBudgetAction]}
+      dependencies={[
+        month,
+        onEditCategory,
+        onBudgetAction,
+        CategoryListItemComponent,
+      ]}
     >
       {category => (
-        <IncomeCategoryListItem
+        <CategoryListItemComponent
           key={category.id}
           value={category}
           month={month}

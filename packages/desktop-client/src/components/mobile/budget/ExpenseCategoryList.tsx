@@ -12,6 +12,7 @@ import { css } from '@emotion/css';
 import { useMoveCategoryMutation } from '#budget';
 
 import { ExpenseCategoryListItem } from './ExpenseCategoryListItem';
+import { useMobileBudgetComponents } from './MobileBudgetComponentsContext';
 
 type ExpenseCategoryListProps = {
   categoryGroup: CategoryGroupEntity;
@@ -36,6 +37,9 @@ export function ExpenseCategoryList({
 }: ExpenseCategoryListProps) {
   const { t } = useTranslation();
   const moveCategory = useMoveCategoryMutation();
+  const overrides = useMobileBudgetComponents();
+  const CategoryListItemComponent =
+    overrides?.ExpenseCategoryListItem || ExpenseCategoryListItem;
 
   const { dragAndDropHooks } = useDragAndDrop({
     getItems: keys =>
@@ -126,10 +130,11 @@ export function ExpenseCategoryList({
         shouldHideCategory,
         show3Columns,
         showBudgetedColumn,
+        CategoryListItemComponent,
       ]}
     >
       {category => (
-        <ExpenseCategoryListItem
+        <CategoryListItemComponent
           key={category.id}
           value={category}
           month={month}

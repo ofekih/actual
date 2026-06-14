@@ -15,6 +15,7 @@ import {
   ExpenseGroupHeader,
   ExpenseGroupListItem,
 } from './ExpenseGroupListItem';
+import { useMobileBudgetComponents } from './MobileBudgetComponentsContext';
 
 type ExpenseGroupListProps = {
   categoryGroups: CategoryGroupEntity[];
@@ -43,6 +44,9 @@ export function ExpenseGroupList({
 }: ExpenseGroupListProps) {
   const { t } = useTranslation();
   const moveCategoryGroup = useMoveCategoryGroupMutation();
+  const overrides = useMobileBudgetComponents();
+  const GroupListItemComponent =
+    overrides?.ExpenseGroupListItem || ExpenseGroupListItem;
 
   const { dragAndDropHooks } = useDragAndDrop({
     getItems: keys =>
@@ -146,11 +150,12 @@ export function ExpenseGroupList({
         showHiddenCategories,
         isCollapsed,
         onToggleCollapse,
+        GroupListItemComponent,
       ]}
       dragAndDropHooks={dragAndDropHooks}
     >
       {categoryGroup => (
-        <ExpenseGroupListItem
+        <GroupListItemComponent
           key={categoryGroup.id}
           value={categoryGroup}
           month={month}

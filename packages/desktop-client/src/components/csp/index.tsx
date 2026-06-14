@@ -4,58 +4,58 @@ import React, {
   useContext,
   useEffect,
   useEffectEvent,
-  useCallback,
   useMemo,
   useState,
-  useRef,
 } from 'react';
-
 import { Trans } from 'react-i18next';
 
+import { Block } from '@actual-app/components/block';
+import { Button } from '@actual-app/components/button';
+import {
+  SvgArrowButtonDown1,
+  SvgArrowButtonUp1,
+} from '@actual-app/components/icons/v2';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
-import { SvgArrowButtonDown1, SvgArrowButtonUp1 } from '@actual-app/components/icons/v2';
-import { Button } from '@actual-app/components/button';
-import { Block } from '@actual-app/components/block';
-import { css } from '@emotion/css';
 import * as monthUtils from '@actual-app/core/shared/months';
-import { useLocale } from '#hooks/useLocale';
-import { useSyncedPref } from '#hooks/useSyncedPref';
-import { integerToCurrency } from '@actual-app/core/shared/util';
 import { q } from '@actual-app/core/shared/query';
+import { integerToCurrency } from '@actual-app/core/shared/util';
 import type {
-  AccountEntity,
   CategoryEntity,
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
+import { css } from '@emotion/css';
 import { useQuery } from '@tanstack/react-query';
 
-import { useAccounts } from '#hooks/useAccounts';
-
-import { useCspCategories } from '#hooks/useCspCategories';
-import { useGlobalPref } from '#hooks/useGlobalPref';
-import { useLocalPref } from '#hooks/useLocalPref';
-import { useNavigate } from '#hooks/useNavigate';
-import { useSpreadsheet } from '#hooks/useSpreadsheet';
-import { SheetNameProvider } from '#hooks/useSheetName';
-
-import { AutoSizingBudgetTable } from '../budget/DynamicBudgetTable';
-import { EnvelopeBudgetProvider } from '../budget/envelope/EnvelopeBudgetContext';
-import { TrackingBudgetProvider } from '../budget/tracking/TrackingBudgetContext';
-import { prewarmAllMonths, prewarmMonth, makeAmountGrey } from '../budget/util';
 import type {
   BudgetComponents,
   BudgetSummaryProps,
-  CategoryMonthProps,
   CategoryGroupMonthProps,
-} from '../budget';
-
+  CategoryMonthProps,
+} from '#components/budget';
+import { CategoriesOverrideProvider } from '#components/budget/CategoriesOverrideContext';
+import { AutoSizingBudgetTable } from '#components/budget/DynamicBudgetTable';
+import { EnvelopeBudgetProvider } from '#components/budget/envelope/EnvelopeBudgetContext';
+import { TrackingBudgetProvider } from '#components/budget/tracking/TrackingBudgetContext';
+import {
+  makeAmountGrey,
+  prewarmAllMonths,
+  prewarmMonth,
+} from '#components/budget/util';
 import { Field, Row } from '#components/table';
+import { useAccounts } from '#hooks/useAccounts';
+import { useCspCategories } from '#hooks/useCspCategories';
+import { useGlobalPref } from '#hooks/useGlobalPref';
+import { useLocale } from '#hooks/useLocale';
+import { useLocalPref } from '#hooks/useLocalPref';
+import { useNavigate } from '#hooks/useNavigate';
+import { SheetNameProvider } from '#hooks/useSheetName';
+import { useSpreadsheet } from '#hooks/useSpreadsheet';
+import { useSyncedPref } from '#hooks/useSyncedPref';
 
-import { CategoriesOverrideProvider } from '../budget/CategoriesOverrideContext';
 import { CspComponentsProvider } from './CspComponentsContext';
 
 // ---------------------------------------------------------------------------
@@ -64,9 +64,9 @@ import { CspComponentsProvider } from './CspComponentsContext';
 
 type CspActuals = Record<string, number>;
 
-const CspActualsContext = createContext<CspActuals>({});
+export const CspActualsContext = createContext<CspActuals>({});
 
-function useCspActualsForMonth(month: string) {
+export function useCspActualsForMonth(month: string) {
   return useQuery({
     queryKey: ['csp-actuals', month],
     queryFn: async () => {
@@ -99,15 +99,29 @@ export { useCspBudgetComponents } from './CspComponentsContext';
 // CSP month-cell components (plugged in place of envelope/tracking ones)
 // ---------------------------------------------------------------------------
 
-function CspAmountCell({ amount, percentage }: { amount: number; percentage?: number }) {
+function CspAmountCell({
+  amount,
+  percentage,
+}: {
+  amount: number;
+  percentage?: number;
+}) {
   const formatted = integerToCurrency(amount);
   const colorStyle = makeAmountGrey(amount) ?? {
     color: amount < 0 ? theme.errorText : theme.tableText,
   };
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+      }}
+    >
       {percentage !== undefined && (
-        <Text style={{ fontSize: 11, color: theme.pageTextSubdued, marginRight: 8 }}>
+        <Text
+          style={{ fontSize: 11, color: theme.pageTextSubdued, marginRight: 8 }}
+        >
           {percentage.toFixed(1)}%
         </Text>
       )}
@@ -118,7 +132,7 @@ function CspAmountCell({ amount, percentage }: { amount: number; percentage?: nu
   );
 }
 
-const CspNetIncomeContext = createContext<number>(0);
+export const CspNetIncomeContext = createContext<number>(0);
 
 const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
   category,
@@ -126,9 +140,12 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
   const actuals = useContext(CspActualsContext);
   const netIncome = useContext(CspNetIncomeContext);
   const amount = actuals[category.id] ?? 0;
-  
+
   // Calculate percentage (expense amount / net income * 100). Expenses are usually negative.
-  const percentage = netIncome > 0 && category.group !== 'income-group-id-placeholder' ? (Math.abs(amount) / netIncome) * 100 : undefined;
+  const percentage =
+    netIncome > 0 && category.group !== 'income-group-id-placeholder'
+      ? (Math.abs(amount) / netIncome) * 100
+      : undefined;
 
   return (
     <View
@@ -154,9 +171,12 @@ const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
     (sum, cat) => sum + (actuals[cat.id] ?? 0),
     0,
   );
-  
+
   const isIncome = group.name.toLowerCase().includes('income');
-  const percentage = netIncome > 0 && !isIncome ? (Math.abs(total) / netIncome) * 100 : undefined;
+  const percentage =
+    netIncome > 0 && !isIncome
+      ? (Math.abs(total) / netIncome) * 100
+      : undefined;
 
   return (
     <View
@@ -284,7 +304,7 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
           .filter({ tombstone: false })
           .groupBy('account')
           .select(['account', { sum: { $sum: '$amount' } }])
-          .serialize()
+          .serialize(),
       );
       const res: Record<string, number> = {};
       data.forEach((row: any) => {
@@ -298,18 +318,22 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
   let investmentsTotal = 0;
   let debtTotal = 0;
 
-  accounts.filter(a => !a.closed).forEach(a => {
-    const bal = balances[a.id] || 0;
-    const type = accountTypes[a.id];
+  accounts
+    .filter(a => !a.closed)
+    .forEach(a => {
+      const bal = balances[a.id] || 0;
+      const type = accountTypes[a.id];
 
-    if (type === 'savings') savingsTotal += bal;
-    else if (type === 'investments') investmentsTotal += bal;
-    else if (type === 'debt') debtTotal += bal;
-  });
+      if (type === 'savings') savingsTotal += bal;
+      else if (type === 'investments') investmentsTotal += bal;
+      else if (type === 'debt') debtTotal += bal;
+    });
 
   const netWorth = savingsTotal + investmentsTotal + debtTotal;
 
-  const ExpandOrCollapseIcon = collapsed ? SvgArrowButtonDown1 : SvgArrowButtonUp1;
+  const ExpandOrCollapseIcon = collapsed
+    ? SvgArrowButtonDown1
+    : SvgArrowButtonUp1;
 
   function CspTotalNetWorth() {
     return (
@@ -437,16 +461,30 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
               }}
             >
               <Block style={{ fontWeight: 600 }}>{integerToCurrency(0)}</Block>
-              <Block style={{ fontWeight: 600 }}>{integerToCurrency(investmentsTotal)}</Block>
-              <Block style={{ fontWeight: 600 }}>{integerToCurrency(savingsTotal)}</Block>
-              <Block style={{ fontWeight: 600 }}>{integerToCurrency(debtTotal)}</Block>
+              <Block style={{ fontWeight: 600 }}>
+                {integerToCurrency(investmentsTotal)}
+              </Block>
+              <Block style={{ fontWeight: 600 }}>
+                {integerToCurrency(savingsTotal)}
+              </Block>
+              <Block style={{ fontWeight: 600 }}>
+                {integerToCurrency(debtTotal)}
+              </Block>
             </View>
 
             <View>
-              <Block>Assets</Block>
-              <Block>Investments</Block>
-              <Block>Savings</Block>
-              <Block>Debt</Block>
+              <Block>
+                <Trans>Assets</Trans>
+              </Block>
+              <Block>
+                <Trans>Investments</Trans>
+              </Block>
+              <Block>
+                <Trans>Savings</Trans>
+              </Block>
+              <Block>
+                <Trans>Debt</Trans>
+              </Block>
             </View>
           </View>
           <View style={{ margin: '23px 0' }}>
@@ -462,7 +500,7 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
 // Adapt CSP categories → CategoryGroupEntity[] for BudgetTable reuse
 // ---------------------------------------------------------------------------
 
-function useCspCategoryGroups(): CategoryGroupEntity[] {
+export function useCspCategoryGroups(): CategoryGroupEntity[] {
   const { data: categoriesData } = useCspCategories();
   const { grouped = [] } = categoriesData ?? {};
 
@@ -471,9 +509,16 @@ function useCspCategoryGroups(): CategoryGroupEntity[] {
     const filteredGroups = grouped
       .map(g => ({
         ...g,
-        categories: (g.categories ?? []).filter(c => !c.name.includes('N/A') && !c.name.includes('Ignored'))
+        categories: (g.categories ?? []).filter(
+          c => !c.name.includes('N/A') && !c.name.includes('Ignored'),
+        ),
       }))
-      .filter(g => !g.name.includes('N/A') && !g.name.includes('Ignored') && g.categories.length > 0);
+      .filter(
+        g =>
+          !g.name.includes('N/A') &&
+          !g.name.includes('Ignored') &&
+          g.categories.length > 0,
+      );
 
     const mapped = filteredGroups.map(
       (g): CategoryGroupEntity => ({
@@ -496,7 +541,7 @@ function useCspCategoryGroups(): CategoryGroupEntity[] {
         ),
       }),
     );
-    
+
     // Sort income group to the top
     mapped.sort((a, b) => {
       const isAIncome = a.name.toLowerCase().includes('income');
@@ -505,7 +550,7 @@ function useCspCategoryGroups(): CategoryGroupEntity[] {
       if (!isAIncome && isBIncome) return 1;
       return (a.sort_order ?? 0) - (b.sort_order ?? 0);
     });
-    
+
     return mapped;
   }, [grouped]);
 }
@@ -542,7 +587,12 @@ export function Csp() {
       const { start, end } = await send('get-budget-bounds');
       setBounds({ start, end });
 
-      await prewarmAllMonths(budgetType, spreadsheet, { start, end }, startMonth);
+      await prewarmAllMonths(
+        budgetType,
+        spreadsheet,
+        { start, end },
+        startMonth,
+      );
 
       setInitialized(true);
     }
@@ -630,9 +680,14 @@ export function Csp() {
   );
 
   // Calculate Net Income dynamically for percentages
-  const incomeGroup = categoryGroups.find(g => g.name.toLowerCase().includes('income'));
+  const incomeGroup = categoryGroups.find(g =>
+    g.name.toLowerCase().includes('income'),
+  );
   const netIncome = incomeGroup
-    ? (incomeGroup.categories ?? []).reduce((sum, cat) => sum + (actuals[cat.id] || 0), 0)
+    ? (incomeGroup.categories ?? []).reduce(
+        (sum, cat) => sum + (actuals[cat.id] || 0),
+        0,
+      )
     : 0;
 
   if (!initialized || categoryGroups.length === 0) {
@@ -661,28 +716,28 @@ export function Csp() {
                   onBudgetAction={noopBudgetAction}
                   onToggleSummaryCollapse={onToggleCollapse}
                 >
-                <View style={{ flex: 1 }}>
-                  <AutoSizingBudgetTable
-                    type={budgetType}
-                    prewarmStartMonth={startMonth}
-                    startMonth={startMonth}
-                    monthBounds={bounds}
-                    maxMonths={maxMonths}
-                    onMonthSelect={onMonthSelect}
-                    onDeleteCategory={noop}
-                    onDeleteGroup={noop}
-                    onSaveCategory={noop}
-                    onSaveGroup={noop}
-                    onBudgetAction={noopBudgetAction}
-                    onShowActivity={onShowActivity}
-                    onReorderCategory={noop}
-                    onReorderGroup={noop}
-                    onApplyBudgetTemplatesInGroup={noop}
-                    onSortCategories={noop}
-                  />
-                </View>
-              </BudgetProvider>
-            </View>
+                  <View style={{ flex: 1 }}>
+                    <AutoSizingBudgetTable
+                      type={budgetType}
+                      prewarmStartMonth={startMonth}
+                      startMonth={startMonth}
+                      monthBounds={bounds}
+                      maxMonths={maxMonths}
+                      onMonthSelect={onMonthSelect}
+                      onDeleteCategory={noop}
+                      onDeleteGroup={noop}
+                      onSaveCategory={noop}
+                      onSaveGroup={noop}
+                      onBudgetAction={noopBudgetAction}
+                      onShowActivity={onShowActivity}
+                      onReorderCategory={noop}
+                      onReorderGroup={noop}
+                      onApplyBudgetTemplatesInGroup={noop}
+                      onSortCategories={noop}
+                    />
+                  </View>
+                </BudgetProvider>
+              </View>
             </SheetNameProvider>
           </CspNetIncomeContext.Provider>
         </CspActualsContext.Provider>

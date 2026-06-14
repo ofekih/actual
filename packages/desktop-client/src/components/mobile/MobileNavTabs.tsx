@@ -100,6 +100,12 @@ export function MobileNavTabs() {
       Icon: SvgWallet,
     },
     {
+      name: t('CSP'),
+      path: '/csp',
+      style: navTabStyle,
+      Icon: SvgWallet,
+    },
+    {
       name: t('Transaction'),
       path: '/transactions/new',
       style: navTabStyle,

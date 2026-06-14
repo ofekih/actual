@@ -177,7 +177,7 @@ type ExpenseGroupNameProps = {
   show3Columns: boolean;
 };
 
-function ExpenseGroupName({
+export function ExpenseGroupName({
   group,
   onEditCategoryGroup,
   isCollapsed,

@@ -989,7 +989,7 @@ function OverspendingBanner({ month, onBudgetAction, budgetType, ...props }) {
   );
 }
 
-function MonthSelector({
+export function MonthSelector({
   month,
   monthBounds,
   onOpenMonthMenu,

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import type { BudgetComponents } from '../budget';
+import type { BudgetComponents } from '#components/budget';
 
 /**
  * Context that allows the CSP page to override the budget components

@@ -35,7 +35,7 @@ type ExpenseCategoryNameProps = {
   show3Columns: boolean;
 };
 
-function ExpenseCategoryName({
+export function ExpenseCategoryName({
   category,
   onEditCategory,
   show3Columns,

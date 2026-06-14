@@ -5,11 +5,11 @@ import { useTranslation } from 'react-i18next';
 
 import { AlignedText } from '@actual-app/components/aligned-text';
 import { Button } from '@actual-app/components/button';
+import { SvgCheckmark } from '@actual-app/components/icons/v1';
 import {
   SvgArrowButtonDown1,
   SvgArrowButtonUp1,
 } from '@actual-app/components/icons/v2';
-import { SvgCheckmark } from '@actual-app/components/icons/v1';
 import { InitialFocus } from '@actual-app/components/initial-focus';
 import { Input } from '@actual-app/components/input';
 import { Menu } from '@actual-app/components/menu';
@@ -125,7 +125,7 @@ export function Account<FieldName extends SheetFields<'account'>>({
 
   const [accountTypesRaw, setAccountTypes] = useSyncedPref('csp-account-types');
   const accountTypes = accountTypesRaw ? JSON.parse(accountTypesRaw) : {};
-  const currentCspType = account ? (accountTypes[account.id] || 'auto') : 'auto';
+  const currentCspType = account ? accountTypes[account.id] || 'auto' : 'auto';
 
   const accountNote = useNotes(`account-${account?.id}`);
   const isTouchDevice =
@@ -303,11 +303,35 @@ export function Account<FieldName extends SheetFields<'account'>>({
                     ? { name: 'reopen', text: t('Reopen') }
                     : { name: 'close', text: t('Close') },
                   Menu.line,
-                  { name: t('CSP Category') as any, text: '', type: Menu.label as any },
-                  { name: 'csp-auto', text: t('Uncategorized'), icon: currentCspType === 'auto' ? SvgCheckmark : undefined },
-                  { name: 'csp-savings', text: t('Savings'), icon: currentCspType === 'savings' ? SvgCheckmark : undefined },
-                  { name: 'csp-investments', text: t('Investments'), icon: currentCspType === 'investments' ? SvgCheckmark : undefined },
-                  { name: 'csp-debt', text: t('Debt'), icon: currentCspType === 'debt' ? SvgCheckmark : undefined },
+                  {
+                    name: t('CSP Category') as any,
+                    text: '',
+                    type: Menu.label as any,
+                  },
+                  {
+                    name: 'csp-auto',
+                    text: t('Uncategorized'),
+                    icon: currentCspType === 'auto' ? SvgCheckmark : undefined,
+                  },
+                  {
+                    name: 'csp-savings',
+                    text: t('Savings'),
+                    icon:
+                      currentCspType === 'savings' ? SvgCheckmark : undefined,
+                  },
+                  {
+                    name: 'csp-investments',
+                    text: t('Investments'),
+                    icon:
+                      currentCspType === 'investments'
+                        ? SvgCheckmark
+                        : undefined,
+                  },
+                  {
+                    name: 'csp-debt',
+                    text: t('Debt'),
+                    icon: currentCspType === 'debt' ? SvgCheckmark : undefined,
+                  },
                 ]}
               />
             </Popover>

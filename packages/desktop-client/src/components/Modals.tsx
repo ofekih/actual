@@ -34,6 +34,7 @@ import { CoverModal } from './modals/CoverModal';
 import { CreateAccountModal } from './modals/CreateAccountModal';
 import { CreateEncryptionKeyModal } from './modals/CreateEncryptionKeyModal';
 import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
+import { CspBudgetSummaryModal } from './modals/CspBudgetSummaryModal';
 import { CspCategoryAutocompleteModal } from './modals/CspCategoryAutocompleteModal';
 import { EditUserAccess } from './modals/EditAccess';
 import { EditFieldModal } from './modals/EditFieldModal';
@@ -260,6 +261,9 @@ export function Modals() {
 
         case 'tracking-budget-summary':
           return <TrackingBudgetSummaryModal key={key} {...modal.options} />;
+
+        case 'csp-budget-summary':
+          return <CspBudgetSummaryModal key={key} {...modal.options} />;
 
         case 'schedule-edit':
           return <ScheduleEditModal key={key} {...modal.options} />;

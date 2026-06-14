@@ -341,6 +341,12 @@ export type Modal =
       };
     }
   | {
+      name: 'csp-budget-summary';
+      options: {
+        month: string;
+      };
+    }
+  | {
       name: 'schedule-edit';
       options: { id?: string; transaction?: TransactionEntity } | null;
     }

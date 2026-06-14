@@ -16,11 +16,10 @@ import { useCategories } from '#hooks/useCategories';
 import { useGlobalPref } from '#hooks/useGlobalPref';
 import { useLocalPref } from '#hooks/useLocalPref';
 
-import { useCategoriesOverride } from './CategoriesOverrideContext';
-
 import { BudgetCategories } from './BudgetCategories';
 import { BudgetSummaries } from './BudgetSummaries';
 import { BudgetTotals } from './BudgetTotals';
+import { useCategoriesOverride } from './CategoriesOverrideContext';
 import { MonthsProvider } from './MonthsContext';
 import type { MonthBounds } from './MonthsContext';
 import {
