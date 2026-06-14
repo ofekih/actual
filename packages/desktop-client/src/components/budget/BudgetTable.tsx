@@ -16,6 +16,8 @@ import { useCategories } from '#hooks/useCategories';
 import { useGlobalPref } from '#hooks/useGlobalPref';
 import { useLocalPref } from '#hooks/useLocalPref';
 
+import { useCategoriesOverride } from './CategoriesOverrideContext';
+
 import { BudgetCategories } from './BudgetCategories';
 import { BudgetSummaries } from './BudgetSummaries';
 import { BudgetTotals } from './BudgetTotals';
@@ -77,8 +79,10 @@ export function BudgetTable(props: BudgetTableProps) {
     onBudgetAction,
   } = props;
 
-  const { data: { grouped: categoryGroups } = { grouped: [] } } =
+  const categoriesOverride = useCategoriesOverride();
+  const { data: { grouped: defaultCategoryGroups } = { grouped: [] } } =
     useCategories();
+  const categoryGroups = categoriesOverride ?? defaultCategoryGroups;
   const [collapsedGroupIds = [], setCollapsedGroupIdsPref] =
     useLocalPref('budget.collapsed');
   const [showHiddenCategories, setShowHiddenCategoriesPef] = useLocalPref(

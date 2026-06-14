@@ -265,6 +265,10 @@ export function FinancesApp() {
                     path="/budget"
                     element={<NarrowAlternate name="Budget" />}
                   />
+                  <Route
+                    path="/csp"
+                    element={<NarrowAlternate name="Csp" />}
+                  />
 
                   <Route
                     path="/schedules"

@@ -35,6 +35,7 @@ import { EnvelopeBudgetProvider } from './envelope/EnvelopeBudgetContext';
 import * as trackingBudget from './tracking/TrackingBudgetComponents';
 import { TrackingBudgetProvider } from './tracking/TrackingBudgetContext';
 import { prewarmAllMonths, prewarmMonth } from './util';
+import { useCspBudgetComponents as useCspBudgetComponentsContext } from '../csp/CspComponentsContext';
 
 export function Budget() {
   const currentMonth = monthUtils.currentMonth();
@@ -292,9 +293,14 @@ export type BudgetComponents = {
 };
 
 export function useBudgetComponents(): BudgetComponents {
+  const cspOverride = useCspBudgetComponentsContext();
   const [budgetType = 'envelope'] = useSyncedPref('budgetType');
   const envelopeComponents = useEnvelopeBudgetComponents();
   const trackingComponents = useTrackingBudgetComponents();
+
+  if (cspOverride) {
+    return cspOverride;
+  }
 
   return budgetType === 'envelope' ? envelopeComponents : trackingComponents;
 }

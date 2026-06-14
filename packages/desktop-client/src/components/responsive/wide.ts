@@ -1,4 +1,5 @@
 export { Budget } from '#components/budget';
+export { Csp } from '#components/csp/index';
 
 export { Schedules } from '#components/schedules';
 export { Schedules as ScheduleEdit } from '#components/schedules';
