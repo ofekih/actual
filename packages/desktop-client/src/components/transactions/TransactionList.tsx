@@ -14,6 +14,7 @@ import {
   addSplitTransaction,
   applyTransactionDiff,
   isPreviewId,
+  makeEmptySplitSubtransactions,
   realizeTempTransactions,
   splitTransaction,
   updateTransaction,
@@ -500,7 +501,11 @@ export function TransactionList({
 
   const onSplit = useCallback(
     (id: TransactionEntity['id']) => {
-      const changes = splitTransaction(transactionsLatest.current, id);
+      const changes = splitTransaction(
+        transactionsLatest.current,
+        id,
+        makeEmptySplitSubtransactions,
+      );
       onChange(changes.newTransaction, changes.data);
       void saveDiffAndApply(
         changes.diff,

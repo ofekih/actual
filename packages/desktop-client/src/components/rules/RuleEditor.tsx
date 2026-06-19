@@ -1029,7 +1029,7 @@ type RuleEditorProps = {
 
 export function RuleEditor({
   rule: defaultRule,
-  onSave: originalOnSave = undefined,
+  onSave: originalOnSave,
   onDelete,
   onCancel,
   style,
