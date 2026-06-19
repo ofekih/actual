@@ -5,6 +5,8 @@ import type { IntegerAmount } from '@actual-app/core/shared/util';
 import type {
   CategoryEntity,
   CategoryGroupEntity,
+  CSPCategoryEntity,
+  CSPCategoryGroupEntity,
 } from '@actual-app/core/types/models';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
@@ -834,6 +836,218 @@ export function useBudgetActions() {
       dispatchErrorNotification(
         dispatch,
         t('There was an error applying the budget action. Please try again.'),
+        error,
+      );
+    },
+  });
+}
+
+type CreateCspCategoryPayload = {
+  name: string;
+  groupId: string;
+};
+
+export function useCreateCspCategoryMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ name, groupId }: CreateCspCategoryPayload) => {
+      const id = await send('csp-category-create', { name, groupId });
+      return id;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+    onError: error => {
+      console.error('Error creating CSP category:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t('There was an error creating the CSP category. Please try again.'),
+        error,
+      );
+    },
+  });
+}
+
+type UpdateCspCategoryPayload = {
+  category: CSPCategoryEntity;
+};
+
+export function useUpdateCspCategoryMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ category }: UpdateCspCategoryPayload) => {
+      await send('csp-category-update', category);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+    onError: error => {
+      console.error('Error updating CSP category:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t('There was an error updating the CSP category. Please try again.'),
+        error,
+      );
+    },
+  });
+}
+
+type SaveCspCategoryPayload = {
+  category: CSPCategoryEntity;
+};
+
+export function useSaveCspCategoryMutation() {
+  const createCategory = useCreateCspCategoryMutation();
+  const updateCategory = useUpdateCspCategoryMutation();
+
+  return useMutation({
+    mutationFn: async ({ category }: SaveCspCategoryPayload) => {
+      if (category.id === 'new') {
+        await createCategory.mutateAsync({
+          name: category.name,
+          groupId: category.group,
+        });
+      } else {
+        await updateCategory.mutateAsync({ category });
+      }
+    },
+  });
+}
+
+type DeleteCspCategoryPayload = {
+  id: string;
+};
+
+export function useDeleteCspCategoryMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ id }: DeleteCspCategoryPayload) => {
+      await send('csp-category-delete', { id });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+    onError: error => {
+      console.error('Error deleting CSP category:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t('There was an error deleting the CSP category. Please try again.'),
+        error,
+      );
+    },
+  });
+}
+
+type CreateCspCategoryGroupPayload = {
+  name: string;
+};
+
+export function useCreateCspCategoryGroupMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ name }: CreateCspCategoryGroupPayload) => {
+      const id = await send('csp-category-group-create', { name });
+      return id;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+    onError: error => {
+      console.error('Error creating CSP category group:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t(
+          'There was an error creating the CSP category group. Please try again.',
+        ),
+        error,
+      );
+    },
+  });
+}
+
+type UpdateCspCategoryGroupPayload = {
+  group: CSPCategoryGroupEntity;
+};
+
+export function useUpdateCspCategoryGroupMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ group }: UpdateCspCategoryGroupPayload) => {
+      await send('csp-category-group-update', group);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+    onError: error => {
+      console.error('Error updating CSP category group:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t(
+          'There was an error updating the CSP category group. Please try again.',
+        ),
+        error,
+      );
+    },
+  });
+}
+
+type SaveCspCategoryGroupPayload = {
+  group: CSPCategoryGroupEntity;
+};
+
+export function useSaveCspCategoryGroupMutation() {
+  const createCategoryGroup = useCreateCspCategoryGroupMutation();
+  const updateCategoryGroup = useUpdateCspCategoryGroupMutation();
+
+  return useMutation({
+    mutationFn: async ({ group }: SaveCspCategoryGroupPayload) => {
+      if (group.id === 'new') {
+        await createCategoryGroup.mutateAsync({ name: group.name });
+      } else {
+        await updateCategoryGroup.mutateAsync({ group });
+      }
+    },
+  });
+}
+
+type DeleteCspCategoryGroupPayload = {
+  id: string;
+};
+
+export function useDeleteCspCategoryGroupMutation() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ id }: DeleteCspCategoryGroupPayload) => {
+      await send('csp-category-group-delete', { id });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+    onError: error => {
+      console.error('Error deleting CSP category group:', error);
+      dispatchErrorNotification(
+        dispatch,
+        t(
+          'There was an error deleting the CSP category group. Please try again.',
+        ),
         error,
       );
     },

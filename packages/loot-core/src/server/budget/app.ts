@@ -2,7 +2,12 @@ import { createApp } from '#server/app';
 import { aqlQuery } from '#server/aql';
 import * as db from '#server/db';
 import { APIError } from '#server/errors';
-import { categoryGroupModel, categoryModel } from '#server/models';
+import {
+  categoryGroupModel,
+  categoryModel,
+  cspCategoryGroupModel,
+  cspCategoryModel,
+} from '#server/models';
 import { mutator } from '#server/mutators';
 import * as sheet from '#server/sheet';
 import { resolveName } from '#server/spreadsheet/util';
@@ -10,7 +15,12 @@ import { batchMessages } from '#server/sync';
 import { undoable } from '#server/undo';
 import * as monthUtils from '#shared/months';
 import { q } from '#shared/query';
-import type { CategoryEntity, CategoryGroupEntity } from '#types/models';
+import type {
+  CategoryEntity,
+  CategoryGroupEntity,
+  CSPCategoryEntity,
+  CSPCategoryGroupEntity,
+} from '#types/models';
 
 import * as actions from './actions';
 import * as budget from './base';
@@ -67,6 +77,12 @@ export type BudgetHandlers = {
   'budget/store-note-cleanups': typeof storeNoteCleanups;
   'budget/render-note-templates': typeof goalNoteActions.unparse;
   'budget/create-cleanup-group': typeof cleanupGroupActions.createCleanupGroup;
+  'csp-category-create': typeof createCspCategory;
+  'csp-category-update': typeof updateCspCategory;
+  'csp-category-delete': typeof deleteCspCategory;
+  'csp-category-group-create': typeof createCspCategoryGroup;
+  'csp-category-group-update': typeof updateCspCategoryGroup;
+  'csp-category-group-delete': typeof deleteCspCategoryGroup;
 };
 
 export const app = createApp<BudgetHandlers>();
@@ -157,6 +173,21 @@ app.method('category-group-update', mutator(undoable(updateCategoryGroup)));
 app.method('category-group-move', mutator(undoable(moveCategoryGroup)));
 app.method('category-group-delete', mutator(undoable(deleteCategoryGroup)));
 app.method('must-category-transfer', isCategoryTransferRequired);
+app.method('csp-category-create', mutator(undoable(createCspCategory)));
+app.method('csp-category-update', mutator(undoable(updateCspCategory)));
+app.method('csp-category-delete', mutator(undoable(deleteCspCategory)));
+app.method(
+  'csp-category-group-create',
+  mutator(undoable(createCspCategoryGroup)),
+);
+app.method(
+  'csp-category-group-update',
+  mutator(undoable(updateCspCategoryGroup)),
+);
+app.method(
+  'csp-category-group-delete',
+  mutator(undoable(deleteCspCategoryGroup)),
+);
 
 app.method(
   'budget/get-category-automations',
@@ -507,5 +538,88 @@ async function isCategoryTransferRequired({
     const value = sheet.get().getCellValue(sheetName, 'budget-' + id);
 
     return value != null && value !== 0;
+  });
+}
+
+async function createCspCategory({
+  name,
+  groupId,
+}: {
+  name: string;
+  groupId: string;
+}): Promise<string> {
+  if (!groupId) {
+    throw APIError('Creating a CSP category: groupId is required');
+  }
+
+  return await db.insertWithUUID('csp_categories', {
+    name: name.trim(),
+    cat_group: groupId,
+  });
+}
+
+async function updateCspCategory(category: CSPCategoryEntity): Promise<void> {
+  await db.update(
+    'csp_categories',
+    cspCategoryModel.toDb(
+      {
+        ...category,
+        name: category.name.trim(),
+      },
+      { update: true },
+    ),
+  );
+}
+
+async function deleteCspCategory({ id }: { id: string }): Promise<void> {
+  await batchMessages(async () => {
+    await db.run(
+      'UPDATE transactions SET csp_category = NULL WHERE csp_category = ?',
+      [id],
+    );
+    await db.delete_('csp_categories', id);
+  });
+}
+
+async function createCspCategoryGroup({
+  name,
+}: {
+  name: string;
+}): Promise<string> {
+  return await db.insertWithUUID('csp_category_groups', {
+    name: name.trim(),
+  });
+}
+
+async function updateCspCategoryGroup(
+  group: CSPCategoryGroupEntity,
+): Promise<void> {
+  const { categories: _categories, ...groupNoCategories } = group;
+  await db.update(
+    'csp_category_groups',
+    cspCategoryGroupModel.toDb(
+      {
+        ...groupNoCategories,
+        name: groupNoCategories.name.trim(),
+      },
+      { update: true },
+    ),
+  );
+}
+
+async function deleteCspCategoryGroup({ id }: { id: string }): Promise<void> {
+  const groupCategories = await db.all<Pick<CSPCategoryEntity, 'id'>>(
+    'SELECT id FROM csp_categories WHERE cat_group = ? AND tombstone = 0',
+    [id],
+  );
+  await batchMessages(async () => {
+    for (const cat of groupCategories) {
+      await db.run(
+        'UPDATE transactions SET csp_category = NULL WHERE csp_category = ?',
+        [cat.id],
+      );
+      await db.delete_('csp_categories', cat.id);
+    }
+    await db.delete_('csp_category_groups', id);
   });
 }

@@ -30,6 +30,12 @@ import type {
 import { css } from '@emotion/css';
 import { useQuery } from '@tanstack/react-query';
 
+import {
+  useDeleteCspCategoryGroupMutation,
+  useDeleteCspCategoryMutation,
+  useSaveCspCategoryGroupMutation,
+  useSaveCspCategoryMutation,
+} from '#budget';
 import type {
   BudgetComponents,
   BudgetSummaryProps,
@@ -637,7 +643,12 @@ export function Csp() {
     setSummaryCollapsedPref(!summaryCollapsed);
   };
 
-  // No-op handlers for budget-specific actions (CSP is read-only for now)
+  const saveCategory = useSaveCspCategoryMutation();
+  const deleteCategory = useDeleteCspCategoryMutation();
+  const saveCategoryGroup = useSaveCspCategoryGroupMutation();
+  const deleteCategoryGroup = useDeleteCspCategoryGroupMutation();
+
+  // No-op handlers for budget-specific actions
   const noop = () => {
     /* no-op */
   };
@@ -728,10 +739,12 @@ export function Csp() {
                       monthBounds={bounds}
                       maxMonths={maxMonths}
                       onMonthSelect={onMonthSelect}
-                      onDeleteCategory={noop}
-                      onDeleteGroup={noop}
-                      onSaveCategory={noop}
-                      onSaveGroup={noop}
+                      onDeleteCategory={id => deleteCategory.mutate({ id })}
+                      onDeleteGroup={id => deleteCategoryGroup.mutate({ id })}
+                      onSaveCategory={category =>
+                        saveCategory.mutate({ category })
+                      }
+                      onSaveGroup={group => saveCategoryGroup.mutate({ group })}
                       onBudgetAction={noopBudgetAction}
                       onShowActivity={onShowActivity}
                       onReorderCategory={noop}
