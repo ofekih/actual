@@ -63,6 +63,7 @@ export type BuiltInBankSyncProviderState = {
   onConfigure: ProviderAction;
   onLink: ProviderAction;
   onReset: ProviderAction;
+  linkButtonText?: string;
 };
 
 type SecretSetResponse = {
@@ -699,6 +700,7 @@ export function useBuiltInBankSyncProviders({
             onConfigure: onAutohubInit,
             onLink: onConnectAutohub,
             onReset: onAutohubReset,
+            linkButtonText: t('Link vehicle'),
           };
         }
 

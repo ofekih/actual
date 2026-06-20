@@ -392,19 +392,45 @@ async function downloadEnableBankingTransactions(
 }
 
 async function downloadAutohubAssetValue(id: string, acctId: string) {
-  const accountIdRaw = acctId; // We store 'vin|mileage' in account_id
-  if (!accountIdRaw) {
+  if (!acctId) {
     throw BankSyncError('ACCOUNT_MISSING', 'ACCOUNT_MISSING');
   }
 
-  const parts = accountIdRaw.split('|');
-  if (parts.length !== 2) {
+  let vin = acctId;
+  let mileage: string | null = null;
+
+  // Fallback to legacy format: check if account_id contains a pipe
+  if (acctId.includes('|')) {
+    const parts = acctId.split('|');
+    vin = parts[0];
+    mileage = parts[1];
+  }
+
+  // Retrieve the latest mileage from notes table
+  const noteRow = await db.first<{ note: string }>(
+    'SELECT note FROM notes WHERE id = ?',
+    [`mileage-${id}`],
+  );
+  if (noteRow?.note) {
+    const parts = noteRow.note.split('|');
+    const parsedMileage = parseInt(parts[0], 10);
+    if (!isNaN(parsedMileage)) {
+      mileage = String(parsedMileage);
+    }
+  }
+
+  if (!vin) {
     throw BankSyncError(
       'Configuration',
-      'Invalid asset configuration: Expected VIN|Mileage',
+      'Invalid asset configuration: Missing VIN',
     );
   }
-  const [vin, mileage] = parts;
+  if (!mileage) {
+    throw BankSyncError(
+      'Configuration',
+      'Invalid asset configuration: Missing Mileage. Please set mileage on the account page first.',
+    );
+  }
 
   const apiKeyRow = await db.first<{ value: string }>(
     'SELECT value FROM preferences WHERE id = ?',
@@ -479,7 +505,7 @@ async function downloadAutohubAssetValue(id: string, acctId: string) {
       transactions.push({
         date: monthUtils.currentDay(),
         payeeName: 'Autohub Value Adjustment',
-        amount: adjustment,
+        amount: integerToAmount(adjustment),
         cleared: true,
       });
     }

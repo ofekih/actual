@@ -56,8 +56,14 @@ export function CreateAssetAccountModal() {
           await send('account-update', {
             id,
             name,
-            account_id: `${vin}|${mileage}`,
+            account_id: vin,
             account_sync_source: 'autohub',
+          });
+
+          // Create the mileage note
+          await send('notes-save', {
+            id: `mileage-${id}`,
+            note: `${mileage}|${new Date().toISOString()}`,
           });
 
           // Sync the newly created account so we fetch the initial depreciation value
