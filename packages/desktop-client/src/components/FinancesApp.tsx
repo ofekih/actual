@@ -43,7 +43,7 @@ import { ManageTagsPage } from './tags/ManageTagsPage';
 import { Titlebar } from './Titlebar';
 
 function NarrowNotSupported({
-  redirectTo = '/budget',
+  redirectTo = '/csp',
   children,
 }: {
   redirectTo?: string;
@@ -61,7 +61,7 @@ function NarrowNotSupported({
 
 function WideNotSupported({
   children,
-  redirectTo = '/budget',
+  redirectTo = '/csp',
 }: {
   redirectTo?: string;
   children: ReactElement;
@@ -250,7 +250,7 @@ export function FinancesApp() {
                       isAccountsFetching || !accounts ? (
                         <LoadingIndicator />
                       ) : accounts.length > 0 ? (
-                        <Navigate to="/budget" replace />
+                        <Navigate to="/csp" replace />
                       ) : (
                         // If there are no accounts, we want to redirect the user to
                         // the All Accounts screen which will prompt them to add an account
@@ -389,16 +389,14 @@ export function FinancesApp() {
                       }
                     />
                   )}
-                  {/* redirect all other traffic to the budget page */}
-                  <Route
-                    path="/*"
-                    element={<Navigate to="/budget" replace />}
-                  />
+                  {/* redirect all other traffic to the csp page */}
+                  <Route path="/*" element={<Navigate to="/csp" replace />} />
                 </Routes>
               </View>
 
               <Routes>
                 <Route path="/budget" element={<MobileNavTabs />} />
+                <Route path="/csp" element={<MobileNavTabs />} />
                 <Route path="/accounts" element={<MobileNavTabs />} />
                 <Route path="/settings" element={<MobileNavTabs />} />
                 <Route path="/reports" element={<MobileNavTabs />} />
