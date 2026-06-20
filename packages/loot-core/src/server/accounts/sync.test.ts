@@ -13,6 +13,7 @@ import {
   addTransactions,
   reconcileTransactions,
   simpleFinBatchSync,
+  syncAccount,
 } from './sync';
 
 vi.mock('#shared/months', async () => ({
@@ -757,5 +758,115 @@ describe('SimpleFin batch sync', () => {
     expect(missingResult).toBeDefined();
     expect(missingResult.res.error_code).toBe('ACCOUNT_MISSING');
     expect(missingResult.res.error_type).toBe('ACCOUNT_MISSING');
+  });
+
+  describe('Autohub sync', () => {
+    let originalFetch: typeof global.fetch;
+
+    beforeEach(() => {
+      originalFetch = global.fetch;
+    });
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    test('syncAccount fetches depreciation with mileage note', async () => {
+      // 1. Set preferences for autohubApiKey
+      db.runQuery(
+        "INSERT INTO preferences (id, value) VALUES ('autohubApiKey', 'test-api-key')",
+      );
+
+      // 2. Insert account with account_id = 'vin123'
+      const acctId = await db.insertAccount({
+        id: 'car-acct',
+        account_id: 'vin123',
+        name: 'My Car',
+        account_sync_source: 'autohub',
+      });
+
+      // 3. Create the mileage note
+      await db.update('notes', {
+        id: `mileage-${acctId}`,
+        note: '45000|2023-01-01T00:00:00.000Z',
+      });
+
+      // 4. Mock the fetch call
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          body: {
+            depreciation_data: [{ private_party_value: 15000 }],
+          },
+        }),
+      });
+      global.fetch = mockFetch;
+
+      // 5. Run the first sync
+      await syncAccount(undefined, undefined, acctId, 'vin123');
+
+      // 6. Assertions for first sync
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('vin=vin123');
+      expect(calledUrl).toContain('mileage=45000');
+
+      let transactions = await getAllTransactions();
+      expect(transactions).toHaveLength(1);
+      expect(transactions[0].amount).toBe(1500000);
+      expect(transactions[0].payee_name).toBe('Starting Balance');
+
+      // 7. Mock fetch with a lower resale value for the second sync
+      const mockFetch2 = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          body: {
+            depreciation_data: [{ private_party_value: 14000 }],
+          },
+        }),
+      });
+      global.fetch = mockFetch2;
+
+      await syncAccount(undefined, undefined, acctId, 'vin123');
+
+      // 9. Assertions for second sync (new transaction adjusting value by -100000 cents)
+      transactions = await getAllTransactions();
+      expect(transactions).toHaveLength(2);
+      const adjustmentTx = transactions.find(
+        t => t.payee_name === 'Autohub Value Adjustment',
+      );
+      expect(adjustmentTx).toBeDefined();
+      expect(adjustmentTx.amount).toBe(-100000);
+    });
+
+    test('syncAccount falls back to legacy vin|mileage in account_id', async () => {
+      db.runQuery(
+        "INSERT INTO preferences (id, value) VALUES ('autohubApiKey', 'test-api-key')",
+      );
+
+      const acctId = await db.insertAccount({
+        id: 'car-acct-legacy',
+        account_id: 'vin999|60000',
+        name: 'Legacy Car',
+        account_sync_source: 'autohub',
+      });
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          body: {
+            depreciation_data: [{ private_party_value: 12000 }],
+          },
+        }),
+      });
+      global.fetch = mockFetch;
+
+      await syncAccount(undefined, undefined, acctId, 'vin999|60000');
+
+      expect(mockFetch).toHaveBeenCalled();
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('vin=vin999');
+      expect(calledUrl).toContain('mileage=60000');
+    });
   });
 });

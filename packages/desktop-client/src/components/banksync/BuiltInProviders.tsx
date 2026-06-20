@@ -188,7 +188,7 @@ export function BuiltInProviders({
                   isLoading={provider.isLoading}
                   onPress={() => provider.onLink()}
                 >
-                  <Trans>Link bank account</Trans>
+                  {provider.linkButtonText || <Trans>Link bank account</Trans>}
                 </ButtonWithLoading>
               </View>
             </View>
