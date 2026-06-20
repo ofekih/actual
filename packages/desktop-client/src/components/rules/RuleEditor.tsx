@@ -86,11 +86,12 @@ function getTransactionFields(conditions, actions) {
     fields.push('category');
   } else if (
     actions.length > 0 &&
-    !['payee', 'date', 'amount'].includes(actions[0].field)
+    !['payee', 'date', 'amount', 'csp_category'].includes(actions[0].field)
   ) {
     fields.push(actions[0].field);
   }
 
+  fields.push('csp_category');
   fields.push('amount');
 
   return fields;

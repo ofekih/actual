@@ -37,14 +37,14 @@ import {
 import { makeAmountFullStyle } from '#components/budget/util';
 import { useAccount } from '#hooks/useAccount';
 import { useCachedSchedules } from '#hooks/useCachedSchedules';
-import { useCategories } from '#hooks/useCategories';
-import { useCspCategories } from '#hooks/useCspCategories';
+import { useCategory } from '#hooks/useCategory';
+import { useCspCategory } from '#hooks/useCspCategories';
 import { useDisplayPayee } from '#hooks/useDisplayPayee';
 import { usePayee } from '#hooks/usePayee';
 import { NotesTagFormatter } from '#notes/NotesTagFormatter';
 import { useSelector } from '#redux';
 
-import { lookupName, Status } from './TransactionEdit';
+import { Status } from './TransactionEdit';
 
 export const ROW_HEIGHT = 60;
 
@@ -87,8 +87,8 @@ export function TransactionListItem({
   ...itemProps
 }: TransactionListItemProps) {
   const { t } = useTranslation();
-  const { data: { list: categories } = { list: [] } } = useCategories();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
+  const { data: category } = useCategory(transaction?.category);
+  const { data: cspCategory } = useCspCategory(transaction?.csp_category);
 
   const { data: payee } = usePayee(transaction?.payee);
   const displayPayee = useDisplayPayee({ transaction });
@@ -137,7 +137,7 @@ export function TransactionListItem({
   const previewStatus = forceUpcoming ? 'upcoming' : categoryId;
 
   const isAdded = newTransactions.includes(id);
-  const categoryName = lookupName(categories, categoryId);
+  const categoryName = category?.name;
   const specialCategory = account?.offbudget
     ? t('Off budget')
     : transferAccount && !transferAccount.offbudget
@@ -147,7 +147,7 @@ export function TransactionListItem({
         : null;
 
   const prettyCategory = specialCategory || categoryName;
-  const cspCategoryName = lookupName(cspCategories, transaction.csp_category);
+  const cspCategoryName = cspCategory?.name;
   const textStyle = getTextStyle({ isPreview });
 
   return (

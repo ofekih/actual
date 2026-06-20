@@ -84,7 +84,8 @@ import { MobilePageHeader, Page } from '#components/Page';
 import { createSingleTimeScheduleFromTransaction } from '#components/transactions/TransactionList';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
-import { useCspCategories } from '#hooks/useCspCategories';
+import { useCategory } from '#hooks/useCategory';
+import { useCspCategories, useCspCategory } from '#hooks/useCspCategories';
 import { useCurrentWordRange } from '#hooks/useCurrentWordRange';
 import { useCursorPosition } from '#hooks/useCursorPosition';
 import { useDateFormat } from '#hooks/useDateFormat';
@@ -167,16 +168,6 @@ function deserializeTransaction(
   }
 
   return { ...realTransaction, date, amount: amountToInteger(amount || 0) };
-}
-
-export function lookupName<T extends { id: string; name: string }>(
-  items: T[],
-  id?: string,
-) {
-  if (!id) {
-    return null;
-  }
-  return items.find(item => item.id === id)?.name;
 }
 
 const dropdownChevron = (
@@ -391,7 +382,11 @@ type ChildTransactionEditProps = {
   transaction: TransactionEntity;
   negate: boolean;
   amountFocused: boolean;
-  getCategory: (transaction: TransactionEntity, isOffBudget: boolean) => string;
+  getCategory: (
+    transaction: TransactionEntity,
+    isOffBudget: boolean,
+    categoryName?: string,
+  ) => string;
   getPayee: (transaction: TransactionEntity) => PayeeEntity | undefined;
   getTransferAccount: (
     transaction: TransactionEntity,
@@ -439,7 +434,8 @@ const ChildTransactionEdit = forwardRef<
     ref,
   ) => {
     const { t } = useTranslation();
-    const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
+    const { data: category } = useCategory(transaction.category);
+    const { data: cspCategory } = useCspCategory(transaction.csp_category);
     const { editingField, onRequestActiveEdit, onClearActiveEdit } =
       useSingleActiveEditForm()!;
     const noteRef = useRef<HTMLInputElement | null>(null);
@@ -523,7 +519,7 @@ const ChildTransactionEdit = forwardRef<
                 fontWeight: 300,
               }),
             }}
-            value={getCategory(transaction, isOffBudget)}
+            value={getCategory(transaction, isOffBudget, category?.name)}
             isDisabled={
               (!!editingField &&
                 editingField !== getFieldName(transaction.id, 'category')) ||
@@ -541,7 +537,7 @@ const ChildTransactionEdit = forwardRef<
             icon={<SvgTag width={17} height={17} />}
             placeholder={t('Select a CSP category')}
             rightContent={dropdownChevron}
-            value={lookupName(cspCategories, transaction.csp_category) ?? ''}
+            value={cspCategory?.name ?? ''}
             isDisabled={
               !!editingField &&
               editingField !== getFieldName(transaction.id, 'csp_category')
@@ -609,7 +605,6 @@ ChildTransactionEdit.displayName = 'ChildTransactionEdit';
 type TransactionEditInnerProps = {
   isAdding: boolean;
   accounts: AccountEntity[];
-  categories: CategoryEntity[];
   payees: PayeeEntity[];
   dateFormat: string;
   transactions: TransactionEntity[];
@@ -633,7 +628,6 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
   function TransactionEditInner({
     isAdding,
     accounts,
-    categories,
     payees,
     dateFormat,
     transactions: unserializedTransactions,
@@ -665,8 +659,7 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
     const { data: { grouped: categoryGroups } = { grouped: [] } } =
       useCategories();
     const {
-      data: { list: cspCategories, grouped: defaultCspGroups } = {
-        list: [],
+      data: { grouped: defaultCspGroups } = {
         grouped: [],
       },
     } = useCspCategories();
@@ -680,6 +673,11 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
     }, []);
 
     const [transaction, ...childTransactions] = transactions;
+
+    const { data: parentCategory } = useCategory(transaction?.category);
+    const { data: parentCspCategory } = useCspCategory(
+      transaction?.csp_category,
+    );
 
     const { editingField, onRequestActiveEdit, onClearActiveEdit } =
       useSingleActiveEditForm()!;
@@ -724,16 +722,20 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
     );
 
     const getCategory = useCallback(
-      (trans: TransactionEntity, isOffBudget: boolean) => {
+      (
+        trans: TransactionEntity,
+        isOffBudget: boolean,
+        categoryName?: string,
+      ) => {
         if (isOffBudget) {
           return t('Off budget');
         } else if (isBudgetTransfer(trans)) {
           return t('Transfer');
         } else {
-          return lookupName(categories, trans.category) ?? '';
+          return categoryName ?? '';
         }
       },
-      [categories, isBudgetTransfer, t],
+      [isBudgetTransfer, t],
     );
 
     const onSaveInner = useCallback(async () => {
@@ -1341,7 +1343,11 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
                       fontWeight: 300,
                     }),
                   }}
-                  value={getCategory(transaction, isOffBudget)}
+                  value={getCategory(
+                    transaction,
+                    isOffBudget,
+                    parentCategory?.name,
+                  )}
                   isDisabled={
                     (!!editingField &&
                       editingField !==
@@ -1360,9 +1366,7 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
                   icon={<SvgTag width={17} height={17} />}
                   placeholder={t('Select a CSP category')}
                   rightContent={dropdownChevron}
-                  value={
-                    lookupName(cspCategories, transaction.csp_category) ?? ''
-                  }
+                  value={parentCspCategory?.name ?? ''}
                   isDisabled={
                     !!editingField &&
                     editingField !==
@@ -2165,7 +2169,6 @@ function TransactionEditUnconnected({
       <TransactionEditInner
         transactions={transactions}
         isAdding={isAdding.current}
-        categories={categories}
         accounts={accounts}
         payees={payees}
         dateFormat={dateFormat}

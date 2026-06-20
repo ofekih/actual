@@ -17,6 +17,7 @@ import { Cell, Field, Row, SelectCell, Table } from '#components/table';
 import { DisplayId } from '#components/util/DisplayId';
 import { useAccount } from '#hooks/useAccount';
 import { useCategory } from '#hooks/useCategory';
+import { useCspCategory } from '#hooks/useCspCategories';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { useFormat } from '#hooks/useFormat';
 import type { FormatType } from '#hooks/useFormat';
@@ -56,6 +57,7 @@ function TransactionRow({
   const { t } = useTranslation();
 
   const { data: category } = useCategory(transaction.category);
+  const { data: cspCategory } = useCspCategory(transaction.csp_category);
   const account = useAccount(transaction.account);
 
   const dispatchSelected = useSelectedDispatch();
@@ -131,6 +133,12 @@ function TransactionRow({
             return (
               <Field key={i} width="flex" title={category?.name}>
                 {category?.name || ''}
+              </Field>
+            );
+          case 'csp_category':
+            return (
+              <Field key={i} width="flex" title={cspCategory?.name}>
+                {cspCategory?.name || ''}
               </Field>
             );
           case 'account':
@@ -247,6 +255,12 @@ export function SimpleTransactionsTable({
                 return (
                   <Field key={i} width="flex">
                     <Trans>Category</Trans>
+                  </Field>
+                );
+              case 'csp_category':
+                return (
+                  <Field key={i} width="flex">
+                    <Trans>CSP Category</Trans>
                   </Field>
                 );
               case 'account':
