@@ -5,8 +5,10 @@ import React, {
   useEffect,
   useEffectEvent,
   useMemo,
+  useRef,
   useState,
 } from 'react';
+import type { ReactNode } from 'react';
 import { Trans } from 'react-i18next';
 
 import { Block } from '@actual-app/components/block';
@@ -15,6 +17,7 @@ import {
   SvgArrowButtonDown1,
   SvgArrowButtonUp1,
 } from '@actual-app/components/icons/v2';
+import { Popover } from '@actual-app/components/popover';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
@@ -24,6 +27,7 @@ import * as monthUtils from '@actual-app/core/shared/months';
 import { q } from '@actual-app/core/shared/query';
 import { integerToCurrency } from '@actual-app/core/shared/util';
 import type {
+  AccountEntity,
   CategoryEntity,
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
@@ -292,6 +296,171 @@ const CspBudgetTotalsMonth = memo(function CspBudgetTotalsMonth() {
 // Net Worth Component
 // ---------------------------------------------------------------------------
 
+export type AccountGroupRowProps = {
+  layout?: 'row-between' | 'row-center';
+  label: ReactNode;
+  amount: number;
+  accounts: AccountEntity[];
+  balances: Record<string, number>;
+};
+
+export function AccountGroupRow({
+  layout = 'row-between',
+  label,
+  amount,
+  accounts,
+  balances,
+}: AccountGroupRowProps) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <View
+      style={
+        layout === 'row-between'
+          ? {
+              borderBottomWidth: 1,
+              borderBottomStyle: 'solid',
+              borderColor: theme.tableBorder,
+            }
+          : undefined
+      }
+    >
+      <Button
+        ref={triggerRef}
+        variant="bare"
+        onPress={() => setIsOpen(true)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: layout === 'row-between' ? '10px 0' : '2px 8px',
+          borderRadius: 4,
+          width: '100%',
+          justifyContent: layout === 'row-between' ? 'space-between' : 'center',
+        }}
+      >
+        {layout === 'row-between' ? (
+          <>
+            <Text style={{ fontWeight: 500 }}>{label}</Text>
+            <Text
+              style={{
+                ...styles.tnum,
+                fontWeight: 500,
+                color: amount < 0 ? theme.errorText : theme.tableText,
+              }}
+            >
+              {integerToCurrency(amount)}
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text
+              style={{
+                textAlign: 'right',
+                marginRight: 10,
+                minWidth: 70,
+                fontWeight: 600,
+                ...styles.tnum,
+                color: amount < 0 ? theme.errorText : theme.tableText,
+              }}
+            >
+              {integerToCurrency(amount)}
+            </Text>
+            <Text style={{ minWidth: 80, textAlign: 'left' }}>{label}</Text>
+          </>
+        )}
+      </Button>
+
+      {isOpen && (
+        <Popover
+          triggerRef={triggerRef}
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          placement="bottom start"
+          style={{
+            padding: 12,
+            minWidth: 220,
+            maxWidth: 320,
+          }}
+        >
+          <View style={{ gap: 8 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                borderBottom: `1px solid ${theme.tableBorder}`,
+                paddingBottom: 6,
+                gap: 10,
+              }}
+            >
+              <Text style={{ fontWeight: 'bold' }}>{label}</Text>
+              <Text
+                style={{
+                  fontWeight: 'bold',
+                  ...styles.tnum,
+                  color: amount < 0 ? theme.errorText : theme.tableText,
+                }}
+              >
+                {integerToCurrency(amount)}
+              </Text>
+            </View>
+            {accounts.length === 0 ? (
+              <Text
+                style={{
+                  fontStyle: 'italic',
+                  color: theme.pageTextSubdued,
+                  fontSize: 12,
+                  padding: '4px 0',
+                }}
+              >
+                <Trans>No accounts</Trans>
+              </Text>
+            ) : (
+              <View style={{ gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                {accounts.map(acc => {
+                  const bal = balances[acc.id] || 0;
+                  return (
+                    <View
+                      key={acc.id}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: 12,
+                        gap: 15,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          flex: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={acc.name}
+                      >
+                        {acc.name}
+                      </Text>
+                      <Text
+                        style={{
+                          ...styles.tnum,
+                          color: bal < 0 ? theme.errorText : theme.tableText,
+                        }}
+                      >
+                        {integerToCurrency(bal)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </Popover>
+      )}
+    </View>
+  );
+}
+
 function CspBudgetSummary({ month }: BudgetSummaryProps) {
   const currentMonth = monthUtils.currentMonth();
   const [collapsed, setCollapsed] = useLocalPref('budget.summaryCollapsed');
@@ -334,10 +503,25 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
       if (type === 'savings') savingsTotal += bal;
       else if (type === 'investments') investmentsTotal += bal;
       else if (type === 'assets' || type === 'auto') assetsTotal += bal;
-      else if (type === 'debt') debtTotal -= bal;
+      else if (type === 'debt') debtTotal += bal;
     });
 
   const netWorth = savingsTotal + investmentsTotal + assetsTotal + debtTotal;
+
+  const savingsAccounts = accounts.filter(
+    a => !a.closed && accountTypes[a.id] === 'savings',
+  );
+  const investmentsAccounts = accounts.filter(
+    a => !a.closed && accountTypes[a.id] === 'investments',
+  );
+  const assetsAccounts = accounts.filter(
+    a =>
+      !a.closed &&
+      (accountTypes[a.id] === 'assets' || accountTypes[a.id] === 'auto'),
+  );
+  const debtAccounts = accounts.filter(
+    a => !a.closed && accountTypes[a.id] === 'debt',
+  );
 
   const ExpandOrCollapseIcon = collapsed
     ? SvgArrowButtonDown1
@@ -449,53 +633,47 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
         <>
           <View
             style={{
-              flexDirection: 'row',
+              flexDirection: 'column',
               lineHeight: 1.5,
-              justifyContent: 'center',
+              alignItems: 'center',
               ...styles.smallText,
-              padding: '5px 0',
+              padding: '6px 0',
               marginTop: 17,
               backgroundColor: theme.budgetHeaderCurrentMonth,
               borderTopWidth: 1,
               borderBottomWidth: 1,
               borderColor: theme.tableBorder,
+              gap: 2,
             }}
           >
-            <View
-              style={{
-                textAlign: 'right',
-                marginRight: 10,
-                minWidth: 50,
-              }}
-            >
-              <Block style={{ fontWeight: 600 }}>
-                {integerToCurrency(assetsTotal)}
-              </Block>
-              <Block style={{ fontWeight: 600 }}>
-                {integerToCurrency(investmentsTotal)}
-              </Block>
-              <Block style={{ fontWeight: 600 }}>
-                {integerToCurrency(savingsTotal)}
-              </Block>
-              <Block style={{ fontWeight: 600 }}>
-                {integerToCurrency(debtTotal)}
-              </Block>
-            </View>
-
-            <View>
-              <Block>
-                <Trans>Assets</Trans>
-              </Block>
-              <Block>
-                <Trans>Investments</Trans>
-              </Block>
-              <Block>
-                <Trans>Savings</Trans>
-              </Block>
-              <Block>
-                <Trans>Debt</Trans>
-              </Block>
-            </View>
+            <AccountGroupRow
+              layout="row-center"
+              label={<Trans>Assets</Trans>}
+              amount={assetsTotal}
+              accounts={assetsAccounts}
+              balances={balances}
+            />
+            <AccountGroupRow
+              layout="row-center"
+              label={<Trans>Investments</Trans>}
+              amount={investmentsTotal}
+              accounts={investmentsAccounts}
+              balances={balances}
+            />
+            <AccountGroupRow
+              layout="row-center"
+              label={<Trans>Savings</Trans>}
+              amount={savingsTotal}
+              accounts={savingsAccounts}
+              balances={balances}
+            />
+            <AccountGroupRow
+              layout="row-center"
+              label={<Trans>Debt</Trans>}
+              amount={debtTotal}
+              accounts={debtAccounts}
+              balances={balances}
+            />
           </View>
           <View style={{ margin: '23px 0' }}>
             <CspTotalNetWorth />

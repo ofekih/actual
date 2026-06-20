@@ -11,6 +11,7 @@ import { integerToCurrency } from '@actual-app/core/shared/util';
 import { useQuery } from '@tanstack/react-query';
 
 import { Modal, ModalCloseButton, ModalHeader } from '#components/common/Modal';
+import { AccountGroupRow } from '#components/csp/index';
 import { useAccounts } from '#hooks/useAccounts';
 import { useSyncedPref } from '#hooks/useSyncedPref';
 import type { Modal as ModalType } from '#modals/modalsSlice';
@@ -60,10 +61,25 @@ export function CspBudgetSummaryModal(_props: CspBudgetSummaryModalProps) {
       if (type === 'savings') savingsTotal += bal;
       else if (type === 'investments') investmentsTotal += bal;
       else if (type === 'assets' || type === 'auto') assetsTotal += bal;
-      else if (type === 'debt') debtTotal -= bal;
+      else if (type === 'debt') debtTotal += bal;
     });
 
   const netWorth = savingsTotal + investmentsTotal + assetsTotal + debtTotal;
+
+  const savingsAccounts = accounts.filter(
+    a => !a.closed && accountTypes[a.id] === 'savings',
+  );
+  const investmentsAccounts = accounts.filter(
+    a => !a.closed && accountTypes[a.id] === 'investments',
+  );
+  const assetsAccounts = accounts.filter(
+    a =>
+      !a.closed &&
+      (accountTypes[a.id] === 'assets' || accountTypes[a.id] === 'auto'),
+  );
+  const debtAccounts = accounts.filter(
+    a => !a.closed && accountTypes[a.id] === 'debt',
+  );
 
   return (
     <Modal name="csp-budget-summary">
@@ -74,79 +90,37 @@ export function CspBudgetSummaryModal(_props: CspBudgetSummaryModalProps) {
             rightContent={<ModalCloseButton onPress={() => state.close()} />}
           />
           <View style={{ padding: '20px 15px', gap: 15 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottomWidth: 1,
-                borderColor: theme.tableBorder,
-              }}
-            >
-              <Text style={{ fontWeight: 500 }}>
-                <Trans>Investments</Trans>
-              </Text>
-              <Text style={{ ...styles.tnum, fontWeight: 500 }}>
-                {integerToCurrency(investmentsTotal)}
-              </Text>
-            </View>
+            <AccountGroupRow
+              layout="row-between"
+              label={<Trans>Investments</Trans>}
+              amount={investmentsTotal}
+              accounts={investmentsAccounts}
+              balances={balances}
+            />
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottomWidth: 1,
-                borderColor: theme.tableBorder,
-              }}
-            >
-              <Text style={{ fontWeight: 500 }}>
-                <Trans>Savings</Trans>
-              </Text>
-              <Text style={{ ...styles.tnum, fontWeight: 500 }}>
-                {integerToCurrency(savingsTotal)}
-              </Text>
-            </View>
+            <AccountGroupRow
+              layout="row-between"
+              label={<Trans>Savings</Trans>}
+              amount={savingsTotal}
+              accounts={savingsAccounts}
+              balances={balances}
+            />
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottomWidth: 1,
-                borderColor: theme.tableBorder,
-              }}
-            >
-              <Text style={{ fontWeight: 500 }}>
-                <Trans>Assets</Trans>
-              </Text>
-              <Text style={{ ...styles.tnum, fontWeight: 500 }}>
-                {integerToCurrency(assetsTotal)}
-              </Text>
-            </View>
+            <AccountGroupRow
+              layout="row-between"
+              label={<Trans>Assets</Trans>}
+              amount={assetsTotal}
+              accounts={assetsAccounts}
+              balances={balances}
+            />
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottomWidth: 1,
-                borderColor: theme.tableBorder,
-              }}
-            >
-              <Text style={{ fontWeight: 500 }}>
-                <Trans>Debt</Trans>
-              </Text>
-              <Text
-                style={{
-                  ...styles.tnum,
-                  fontWeight: 500,
-                  color: debtTotal < 0 ? theme.errorText : theme.tableText,
-                }}
-              >
-                {integerToCurrency(debtTotal)}
-              </Text>
-            </View>
+            <AccountGroupRow
+              layout="row-between"
+              label={<Trans>Debt</Trans>}
+              amount={debtTotal}
+              accounts={debtAccounts}
+              balances={balances}
+            />
 
             <View
               style={{
