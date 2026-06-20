@@ -248,7 +248,7 @@ export function ExperimentalFeatures() {
               flag="akahuBankSync"
               feedbackLink="https://github.com/actualbudget/actual/issues/8020"
             >
-              <Trans>Akahu Bank Sync (NZ banks)</Trans>
+              <Trans>Akahu Account Sync (NZ banks)</Trans>
             </FeatureToggle>
             {showServerPrefs && (
               <ServerFeatureToggle

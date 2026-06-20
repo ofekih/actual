@@ -123,9 +123,9 @@ export function EnableBankingInitialiseModal({
           <View style={{ display: 'flex', gap: 10 }}>
             <Text>
               <Trans>
-                In order to enable bank sync via Enable Banking (for EU banks)
-                you will need to create application credentials. This can be
-                done by creating an account at{' '}
+                In order to enable account sync via Enable Banking (for EU
+                banks) you will need to create application credentials. This can
+                be done by creating an account at{' '}
                 <Link
                   variant="external"
                   to="https://enablebanking.com/cp/applications"

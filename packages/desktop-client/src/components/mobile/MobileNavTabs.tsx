@@ -144,7 +144,7 @@ export function MobileNavTabs() {
     ...(isUsingServer
       ? [
           {
-            name: t('Bank Sync'),
+            name: t('Account Sync'),
             path: '/bank-sync',
             style: navTabStyle,
             Icon: SvgCreditCard,

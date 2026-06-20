@@ -702,6 +702,7 @@ export function MobileCspPage() {
   const netWorth = useMemo(() => {
     let savingsTotal = 0;
     let investmentsTotal = 0;
+    let assetsTotal = 0;
     let debtTotal = 0;
 
     accounts
@@ -712,10 +713,11 @@ export function MobileCspPage() {
 
         if (type === 'savings') savingsTotal += bal;
         else if (type === 'investments') investmentsTotal += bal;
+        else if (type === 'assets' || type === 'auto') assetsTotal += bal;
         else if (type === 'debt') debtTotal -= bal;
       });
 
-    return savingsTotal + investmentsTotal + debtTotal;
+    return savingsTotal + investmentsTotal + assetsTotal + debtTotal;
   }, [accounts, balances, accountTypes]);
 
   const cspOverrides = useMemo(

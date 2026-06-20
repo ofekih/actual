@@ -1812,53 +1812,83 @@ const Transaction = memo(function Transaction({
           </CustomCell>
         )}
 
-        <CustomCell
-          name="csp_category"
-          width="flex"
-          textAlign="flex"
-          value={transaction.csp_category}
-          formatter={value =>
-            value
-              ? (cspCategories.find(c => c.id === value)?.name ?? '')
-              : transaction.id
-                ? t('Categorize')
-                : ''
-          }
-          exposed={focusedField === 'csp_category'}
-          onExpose={name => !isPreview && onEdit(id, name)}
-          valueStyle={
-            !transaction.csp_category && transaction.id
-              ? {
-                  // uncategorized — match standard category column styling
-                  fontStyle: 'italic',
-                  fontWeight: 300,
-                  color: theme.formInputTextHighlight,
-                }
-              : valueStyle
-          }
-          onUpdate={async value => {
-            onUpdate('csp_category', value);
-          }}
-        >
-          {({
-            onBlur,
-            onKeyDown,
-            onUpdate,
-            onSave,
-            shouldSaveFromKey,
-            inputStyle,
-          }) => (
-            <CspCategoryAutocomplete
-              value={transaction.csp_category ?? null}
-              focused
-              clearOnBlur={false}
-              shouldSaveFromKey={shouldSaveFromKey}
-              inputProps={{ onBlur, onKeyDown, style: inputStyle }}
-              onUpdate={onUpdate}
-              onSelect={onSave}
-            />
-          )}
-        </CustomCell>
+        {isBudgetTransfer || isOffBudget ? (
+          <InputCell
+            /* CSP Category field for transfer and off budget transactions */
+            name="csp_category"
+            width="flex"
+            exposed={focusedField === 'csp_category'}
+            focused={focusedField === 'csp_category'}
+            onExpose={name => onEdit(id, name)}
+            value={
+              isOffBudget
+                ? t('Off budget')
+                : isBudgetTransfer
+                  ? transaction.csp_category != null
+                    ? t('Needs Repair')
+                    : t('Transfer')
+                  : ''
+            }
+            valueStyle={valueStyle}
+            style={{
+              fontStyle: 'italic',
+              color: theme.pageTextSubdued,
+              fontWeight: 300,
+            }}
+            inputProps={{
+              readOnly: true,
+              style: { fontStyle: 'italic' },
+            }}
+          />
+        ) : (
+          <CustomCell
+            name="csp_category"
+            width="flex"
+            textAlign="flex"
+            value={transaction.csp_category}
+            formatter={value =>
+              value
+                ? (cspCategories.find(c => c.id === value)?.name ?? '')
+                : transaction.id
+                  ? t('Categorize')
+                  : ''
+            }
+            exposed={focusedField === 'csp_category'}
+            onExpose={name => !isPreview && onEdit(id, name)}
+            valueStyle={
+              !transaction.csp_category && transaction.id
+                ? {
+                    // uncategorized — match standard category column styling
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    color: theme.formInputTextHighlight,
+                  }
+                : valueStyle
+            }
+            onUpdate={async value => {
+              onUpdate('csp_category', value);
+            }}
+          >
+            {({
+              onBlur,
+              onKeyDown,
+              onUpdate,
+              onSave,
+              shouldSaveFromKey,
+              inputStyle,
+            }) => (
+              <CspCategoryAutocomplete
+                value={transaction.csp_category ?? null}
+                focused
+                clearOnBlur={false}
+                shouldSaveFromKey={shouldSaveFromKey}
+                inputProps={{ onBlur, onKeyDown, style: inputStyle }}
+                onUpdate={onUpdate}
+                onSelect={onSave}
+              />
+            )}
+          </CustomCell>
+        )}
 
         <InputCell
           /* Debit field for all transactions */

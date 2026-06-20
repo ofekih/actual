@@ -9,7 +9,6 @@ import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
 
 import { Error } from '#components/alerts';
-import { Link } from '#components/common/Link';
 import {
   Modal,
   ModalButtons,
@@ -20,22 +19,24 @@ import { FormField, FormLabel } from '#components/forms';
 import type { Modal as ModalType } from '#modals/modalsSlice';
 import { getSecretsError } from '#util/error';
 
-type SimpleFinInitialiseModalProps = Extract<
+type AutohubInitialiseModalProps = Extract<
   ModalType,
-  { name: 'simplefin-init' }
+  { name: 'autohub-init' }
 >['options'];
 
-export const SimpleFinInitialiseModal = ({
+export const AutohubInitialiseModal = ({
   onSuccess,
-}: SimpleFinInitialiseModalProps) => {
+}: AutohubInitialiseModalProps) => {
   const { t } = useTranslation();
-  const [token, setToken] = useState('');
+  const [key, setKey] = useState('');
   const [isValid, setIsValid] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(t('It is required to provide a token.'));
+  const [error, setError] = useState(
+    t('It is required to provide an API key.'),
+  );
 
   const onSubmit = async (close: () => void) => {
-    if (!token) {
+    if (!key) {
       setIsValid(false);
       return;
     }
@@ -44,8 +45,8 @@ export const SimpleFinInitialiseModal = ({
 
     const { error, reason } =
       (await send('secret-set', {
-        name: 'simplefin_token',
-        value: token,
+        name: 'autohub_apiKey',
+        value: key,
       })) || {};
 
     if (error) {
@@ -59,38 +60,30 @@ export const SimpleFinInitialiseModal = ({
   };
 
   return (
-    <Modal name="simplefin-init" containerProps={{ style: { width: 300 } }}>
+    <Modal name="autohub-init" containerProps={{ style: { width: 300 } }}>
       {({ state }) => (
         <>
           <ModalHeader
-            title={t('Set-up SimpleFIN')}
+            title={t('Set up Autohub')}
             rightContent={<ModalCloseButton onPress={() => state.close()} />}
           />
           <View style={{ display: 'flex', gap: 10 }}>
             <Text>
               <Trans>
-                In order to enable account sync via SimpleFIN (only for North
-                American banks), you will need to create a token. This can be
-                done by creating an account with{' '}
-                <Link
-                  variant="external"
-                  to="https://bridge.simplefin.org/"
-                  linkColor="purple"
-                >
-                  SimpleFIN
-                </Link>
-                .
+                In order to enable Account Sync via Autohub (for vehicle
+                depreciation tracking), you will need to provide your RapidAPI
+                key for the Autohub API.
               </Trans>
             </Text>
 
             <FormField>
-              <FormLabel title={t('Token:')} htmlFor="token-field" />
+              <FormLabel title={t('API Key:')} htmlFor="key-field" />
               <Input
-                id="token-field"
+                id="key-field"
                 type="password"
-                value={token}
+                value={key}
                 onChangeValue={value => {
-                  setToken(value);
+                  setKey(value);
                   setIsValid(true);
                 }}
               />
@@ -108,7 +101,7 @@ export const SimpleFinInitialiseModal = ({
                 void onSubmit(() => state.close());
               }}
             >
-              <Trans>Save and continue</Trans>
+              <Trans>Save and exit</Trans>
             </ButtonWithLoading>
           </ModalButtons>
         </>

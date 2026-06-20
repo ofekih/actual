@@ -617,8 +617,11 @@ export function useSyncAccountsMutation() {
         const targetOffbudget = id === 'offbudget' ? 1 : 0;
         accountIdsToSync = accounts
           .filter(
-            ({ bank, closed, tombstone, offbudget }) =>
-              !!bank && !closed && !tombstone && offbudget === targetOffbudget,
+            ({ bank, account_sync_source, closed, tombstone, offbudget }) =>
+              (!!bank || account_sync_source === 'autohub') &&
+              !closed &&
+              !tombstone &&
+              offbudget === targetOffbudget,
           )
           .sort((a, b) => a.sort_order - b.sort_order)
           .map(({ id }) => id);
@@ -628,7 +631,10 @@ export function useSyncAccountsMutation() {
         // Default: all accounts
         accountIdsToSync = accounts
           .filter(
-            ({ bank, closed, tombstone }) => !!bank && !closed && !tombstone,
+            ({ bank, account_sync_source, closed, tombstone }) =>
+              (!!bank || account_sync_source === 'autohub') &&
+              !closed &&
+              !tombstone,
           )
           .sort((a, b) =>
             a.offbudget === b.offbudget

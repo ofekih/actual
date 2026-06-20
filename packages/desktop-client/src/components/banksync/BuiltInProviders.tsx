@@ -38,7 +38,7 @@ export function BuiltInProviders({
         </Text>
         <Paragraph style={{ fontSize: 15, color: theme.pageTextSubdued }}>
           <Trans>
-            Set up a bank sync provider, then link new accounts or connect an
+            Set up a account sync provider, then link new accounts or connect an
             existing Actual account.
           </Trans>
         </Paragraph>
@@ -54,7 +54,7 @@ export function BuiltInProviders({
           }}
         >
           <Button isDisabled style={{ padding: '10px 0', fontSize: 15 }}>
-            <Trans>Set up bank sync</Trans>
+            <Trans>Set up account sync</Trans>
           </Button>
           <Paragraph style={{ fontSize: 15, marginTop: 10 }}>
             <Trans>
@@ -199,8 +199,8 @@ export function BuiltInProviders({
       {showPermissionWarning && (
         <Warning>
           <Trans>
-            You don&apos;t have the required permissions to configure bank sync
-            providers. Please contact an Admin to configure
+            You don&apos;t have the required permissions to configure account
+            sync providers. Please contact an Admin to configure
           </Trans>{' '}
           {providersNeedingConfiguration
             .map(provider => provider.displayName)

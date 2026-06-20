@@ -90,7 +90,7 @@ export function MobileBankSyncPage() {
   }, []);
 
   return (
-    <Page header={<MobilePageHeader title={t('Bank Sync')} />} padding={0}>
+    <Page header={<MobilePageHeader title={t('Account Sync')} />} padding={0}>
       <View
         style={{
           flexDirection: 'row',
@@ -134,7 +134,8 @@ export function MobileBankSyncPage() {
             }}
           >
             <Trans>
-              To use the bank syncing features, you must first add an account.
+              To use the account syncing features, you must first add an
+              account.
             </Trans>
           </Text>
         </View>

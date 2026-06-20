@@ -88,7 +88,7 @@ export const AkahuInitialiseModal = ({
           <View style={{ display: 'flex', gap: 10 }}>
             <Text>
               <Trans>
-                In order to enable bank sync via Akahu (only for New Zealand
+                In order to enable account sync via Akahu (only for New Zealand
                 banks), you will need to create a token. This can be done by
                 creating an account with{' '}
                 <Link

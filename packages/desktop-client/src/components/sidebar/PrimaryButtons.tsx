@@ -75,7 +75,7 @@ export function PrimaryButtons() {
           />
           {isUsingServer && (
             <SecondaryItem
-              title={t('Bank Sync')}
+              title={t('Account Sync')}
               Icon={SvgCreditCard}
               to="/bank-sync"
               indent={15}

@@ -69,6 +69,7 @@ export type AccountHandlers = {
   'gocardless-poll-web-token-stop': typeof stopGoCardlessWebTokenPolling;
   'gocardless-status': typeof goCardlessStatus;
   'simplefin-status': typeof simpleFinStatus;
+  'autohub-status': typeof autohubStatus;
   'pluggyai-status': typeof pluggyAiStatus;
   'akahu-status': typeof akahuStatus;
   'enablebanking-status': typeof enableBankingStatus;
@@ -93,12 +94,21 @@ async function updateAccount({
   id,
   name,
   last_reconciled,
+  account_id,
+  account_sync_source,
 }: Pick<AccountEntity, 'id' | 'name'> &
-  Partial<Pick<AccountEntity, 'last_reconciled'>>) {
+  Partial<
+    Pick<
+      AccountEntity,
+      'last_reconciled' | 'account_id' | 'account_sync_source'
+    >
+  >) {
   await db.update('accounts', {
     id,
     name,
     ...(last_reconciled && { last_reconciled }),
+    ...(account_id && { account_id }),
+    ...(account_sync_source && { account_sync_source }),
   });
   return {};
 }
@@ -890,6 +900,27 @@ async function simpleFinStatus() {
   );
 }
 
+async function autohubStatus() {
+  const userToken = await asyncStorage.getItem('user-token');
+
+  if (!userToken) {
+    return { error: 'unauthorized' };
+  }
+
+  const serverConfig = getServer();
+  if (!serverConfig) {
+    throw new Error('Failed to get server config.');
+  }
+
+  return post(
+    serverConfig.BASE_SERVER + '/autohub/status',
+    {},
+    {
+      'X-ACTUAL-TOKEN': userToken,
+    },
+  );
+}
+
 async function pluggyAiStatus() {
   const userToken = await asyncStorage.getItem('user-token');
 
@@ -1434,7 +1465,10 @@ async function accountsBankSync({
   const updatedAccounts: Array<AccountEntity['id']> = [];
 
   for (const acct of accounts) {
-    if (acct.bankId && acct.account_id) {
+    if (
+      (acct.bankId || acct.account_sync_source === 'autohub') &&
+      acct.account_id
+    ) {
       try {
         logger.group('Bank Sync operation for account:', acct.name);
         const syncResponse = await bankSync.syncAccount(
@@ -1750,6 +1784,7 @@ app.method('gocardless-poll-web-token', pollGoCardlessWebToken);
 app.method('gocardless-poll-web-token-stop', stopGoCardlessWebTokenPolling);
 app.method('gocardless-status', goCardlessStatus);
 app.method('simplefin-status', simpleFinStatus);
+app.method('autohub-status', autohubStatus);
 app.method('pluggyai-status', pluggyAiStatus);
 app.method('akahu-status', akahuStatus);
 app.method('enablebanking-status', enableBankingStatus);

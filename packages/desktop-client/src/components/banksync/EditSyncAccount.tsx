@@ -207,7 +207,7 @@ export function EditSyncAccount({ account }: EditSyncAccountProps) {
       {({ state }) => (
         <>
           <ModalHeader
-            title={t('{{accountName}} bank sync settings', {
+            title={t('{{accountName}} account sync settings', {
               accountName: potentiallyTruncatedAccountName,
             })}
             rightContent={<ModalCloseButton onPress={() => state.close()} />}

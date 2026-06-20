@@ -90,7 +90,7 @@ export function BankSync() {
 
   return (
     <Page
-      header={t('Bank Sync')}
+      header={t('Account Sync')}
       style={{
         minHeight: 'initial',
         marginInline: floatingSidebar && !isNarrowWidth ? 'auto' : 0,
@@ -108,7 +108,8 @@ export function BankSync() {
         {openAccounts.length === 0 && (
           <Text style={{ fontSize: '1.1rem' }}>
             <Trans>
-              To use the bank syncing features, you must first add an account.
+              To use the account syncing features, you must first add an
+              account.
             </Trans>
           </Text>
         )}

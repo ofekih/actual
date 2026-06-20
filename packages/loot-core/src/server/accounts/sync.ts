@@ -391,6 +391,110 @@ async function downloadEnableBankingTransactions(
   };
 }
 
+async function downloadAutohubAssetValue(id: string, acctId: string) {
+  const accountIdRaw = acctId; // We store 'vin|mileage' in account_id
+  if (!accountIdRaw) {
+    throw BankSyncError('ACCOUNT_MISSING', 'ACCOUNT_MISSING');
+  }
+
+  const parts = accountIdRaw.split('|');
+  if (parts.length !== 2) {
+    throw BankSyncError(
+      'Configuration',
+      'Invalid asset configuration: Expected VIN|Mileage',
+    );
+  }
+  const [vin, mileage] = parts;
+
+  const apiKeyRow = await db.first<{ value: string }>(
+    'SELECT value FROM preferences WHERE id = ?',
+    ['autohubApiKey'],
+  );
+  const apiKey = apiKeyRow?.value;
+
+  if (!apiKey) {
+    throw BankSyncError('Configuration', 'Autohub API key is not configured');
+  }
+
+  logger.log(`Pulling asset value from Autohub for VIN ${vin}`);
+
+  const serverConfig = getServer();
+  let url: string;
+
+  if (serverConfig) {
+    url = `${serverConfig.BASE_SERVER}/autohub/depreciation?vin=${encodeURIComponent(vin)}&mileage=${encodeURIComponent(mileage)}`;
+  } else {
+    // Note: Calling RapidAPI directly in the browser will likely fail due to CORS and multiple endpoints.
+    // We require a sync server for this integration.
+    throw BankSyncError(
+      'Configuration',
+      'A Sync Server is required to securely fetch Autohub data',
+    );
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': apiKey,
+      },
+    });
+
+    if (!res.ok) {
+      throw BankSyncError('API_ERROR', `Autohub returned ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // Autohub proxy returns: body: { depreciation_data: [ { private_party_value: 12345 } ] }
+    const depreciationData = data?.body?.depreciation_data;
+    if (!depreciationData || !depreciationData.length) {
+      throw BankSyncError(
+        'API_ERROR',
+        'No depreciation data returned from Autohub',
+      );
+    }
+
+    // Get the current year's private party value (first item in the array)
+    const currentValue = depreciationData[0].private_party_value;
+    if (typeof currentValue !== 'number') {
+      throw BankSyncError('API_ERROR', 'Invalid value returned from Autohub');
+    }
+
+    // Convert to cents for Actual Budget
+    const currentResaleValue = Math.round(currentValue * 100);
+
+    const balanceResult = await db.first<{ balance: number }>(
+      'SELECT sum(amount) as balance FROM transactions WHERE acct = ? AND isParent = 0 AND tombstone = 0',
+      [id],
+    );
+    const currentBalance = balanceResult?.balance || 0;
+
+    const adjustment = currentResaleValue - currentBalance;
+
+    const transactions = [];
+
+    // If there is an existing balance, create an adjustment transaction
+    if (currentBalance !== 0 && adjustment !== 0) {
+      transactions.push({
+        date: monthUtils.currentDay(),
+        payeeName: 'Autohub Value Adjustment',
+        amount: adjustment,
+        cleared: true,
+      });
+    }
+
+    return {
+      transactions,
+      accountBalance: [],
+      startingBalance: currentResaleValue,
+    };
+  } catch (error) {
+    logger.error('Failed to pull from Autohub', error);
+    throw BankSyncError('Connection', 'Failed to connect to Autohub API');
+  }
+}
+
 async function resolvePayee(trans, payeeName, payeesToCreate) {
   if (trans.payee == null && payeeName) {
     // First check our registry of new payees (to avoid a db access)
@@ -1167,7 +1271,7 @@ export async function syncAccount(
   userKey: string | undefined,
   id: string,
   acctId: string,
-  bankId: string,
+  bankId?: string | null,
   customStartingDate?: string,
   customStartingBalance?: number,
 ) {
@@ -1196,6 +1300,8 @@ export async function syncAccount(
     );
   } else if (acctRow.account_sync_source === 'enableBanking') {
     download = await downloadEnableBankingTransactions(acctId, syncStartDate);
+  } else if (acctRow.account_sync_source === 'autohub') {
+    download = await downloadAutohubAssetValue(id, acctId);
   } else {
     throw new Error(
       `Unrecognized bank-sync provider: ${acctRow.account_sync_source}`,

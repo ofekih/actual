@@ -16,6 +16,7 @@ import { AccountAutocompleteModal } from './modals/AccountAutocompleteModal';
 import { AccountMenuModal } from './modals/AccountMenuModal';
 import { AICategorizeReviewModal } from './modals/AICategorizeReviewModal';
 import { AkahuInitialiseModal } from './modals/AkahuInitialiseModal';
+import { AutohubInitialiseModal } from './modals/AutohubInitialiseModal';
 import { BudgetAutomationsModal } from './modals/BudgetAutomationsModal';
 import { BudgetPageMenuModal } from './modals/BudgetPageMenuModal';
 import { CategoryAutocompleteModal } from './modals/CategoryAutocompleteModal';
@@ -32,6 +33,7 @@ import { ConvertToScheduleModal } from './modals/ConvertToScheduleModal';
 import { CopyWidgetToDashboardModal } from './modals/CopyWidgetToDashboardModal';
 import { CoverModal } from './modals/CoverModal';
 import { CreateAccountModal } from './modals/CreateAccountModal';
+import { CreateAssetAccountModal } from './modals/CreateAssetAccountModal';
 import { CreateEncryptionKeyModal } from './modals/CreateEncryptionKeyModal';
 import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
 import { CspBudgetSummaryModal } from './modals/CspBudgetSummaryModal';
@@ -136,8 +138,9 @@ export function Modals() {
           return <CreateAccountModal key={key} {...modal.options} />;
 
         case 'add-local-account':
-          return <CreateLocalAccountModal key={key} />;
-
+          return <CreateLocalAccountModal key={modal.name} />;
+        case 'add-asset-account':
+          return <CreateAssetAccountModal key={modal.name} />;
         case 'close-account':
           return <CloseAccountModal key={key} {...modal.options} />;
 
@@ -195,6 +198,9 @@ export function Modals() {
 
         case 'akahu-init':
           return <AkahuInitialiseModal key={key} {...modal.options} />;
+
+        case 'autohub-init':
+          return <AutohubInitialiseModal key={key} {...modal.options} />;
 
         case 'enablebanking-init':
           return <EnableBankingInitialiseModal key={key} {...modal.options} />;

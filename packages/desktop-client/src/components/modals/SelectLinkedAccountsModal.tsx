@@ -793,7 +793,7 @@ function TableRow({
             }}
             style={{ float: 'right' }}
           >
-            <Trans>Remove bank sync</Trans>
+            <Trans>Remove account sync</Trans>
           </Button>
         ) : (
           <Button
@@ -803,7 +803,7 @@ function TableRow({
             }}
             style={{ float: 'right' }}
           >
-            <Trans>Set up bank sync</Trans>
+            <Trans>Set up account sync</Trans>
           </Button>
         )}
       </Field>
@@ -1138,7 +1138,7 @@ function AccountCard({
             width: '100%',
           }}
         >
-          <Trans>Remove bank sync</Trans>
+          <Trans>Remove account sync</Trans>
         </Button>
       ) : (
         <Button

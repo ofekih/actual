@@ -42,7 +42,7 @@ export function ConfirmUnlinkAccountModal({
             <Paragraph>
               {isViewBankSyncSettings
                 ? t(
-                    'Transactions will no longer be synchronized with this account and must be manually entered. You will not be able to edit the bank sync settings for this account and the settings will close.',
+                    'Transactions will no longer be synchronized with this account and must be manually entered. You will not be able to edit the account sync settings for this account and the settings will close.',
                   )
                 : t(
                     'Transactions will no longer be synchronized with this account and must be manually entered.',

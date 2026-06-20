@@ -280,6 +280,7 @@ export function Account<FieldName extends SheetFields<'account'>>({
                     }
                     case 'csp-savings':
                     case 'csp-investments':
+                    case 'csp-assets':
                     case 'csp-debt':
                     case 'csp-auto': {
                       const newType = type.replace('csp-', '');
@@ -326,6 +327,12 @@ export function Account<FieldName extends SheetFields<'account'>>({
                       currentCspType === 'investments'
                         ? SvgCheckmark
                         : undefined,
+                  },
+                  {
+                    name: 'csp-assets',
+                    text: t('Assets'),
+                    icon:
+                      currentCspType === 'assets' ? SvgCheckmark : undefined,
                   },
                   {
                     name: 'csp-debt',

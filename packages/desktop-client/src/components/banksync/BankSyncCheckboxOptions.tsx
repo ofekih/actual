@@ -201,7 +201,7 @@ export function BankSyncCheckboxOptions({
         onChange={() => setReimportDeleted(!reimportDeleted)}
         disabled={!importTransactions}
         helpText={t(
-          'By default imported transactions that you delete will be re-imported with the next bank sync operation. To disable this behaviour - untick this box.',
+          'By default imported transactions that you delete will be re-imported with the next account sync operation. To disable this behaviour - untick this box.',
         )}
         helpMode={helpMode}
       >

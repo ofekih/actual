@@ -322,6 +322,7 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
 
   let savingsTotal = 0;
   let investmentsTotal = 0;
+  let assetsTotal = 0;
   let debtTotal = 0;
 
   accounts
@@ -332,10 +333,11 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
 
       if (type === 'savings') savingsTotal += bal;
       else if (type === 'investments') investmentsTotal += bal;
+      else if (type === 'assets' || type === 'auto') assetsTotal += bal;
       else if (type === 'debt') debtTotal -= bal;
     });
 
-  const netWorth = savingsTotal + investmentsTotal + debtTotal;
+  const netWorth = savingsTotal + investmentsTotal + assetsTotal + debtTotal;
 
   const ExpandOrCollapseIcon = collapsed
     ? SvgArrowButtonDown1
@@ -466,7 +468,9 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
                 minWidth: 50,
               }}
             >
-              <Block style={{ fontWeight: 600 }}>{integerToCurrency(0)}</Block>
+              <Block style={{ fontWeight: 600 }}>
+                {integerToCurrency(assetsTotal)}
+              </Block>
               <Block style={{ fontWeight: 600 }}>
                 {integerToCurrency(investmentsTotal)}
               </Block>

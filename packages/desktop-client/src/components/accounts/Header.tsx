@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { Dialog, DialogTrigger } from 'react-aria-components';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -11,6 +11,7 @@ import {
   SvgDotsHorizontalTriple,
 } from '@actual-app/components/icons/v1';
 import {
+  SvgAlertTriangle,
   SvgArrowsExpand3,
   SvgArrowsShrink3,
   SvgDownloadThickBottom,
@@ -23,9 +24,11 @@ import { Menu } from '@actual-app/components/menu';
 import { Popover } from '@actual-app/components/popover';
 import { SpaceBetween } from '@actual-app/components/space-between';
 import { styles } from '@actual-app/components/styles';
+import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
 import { View } from '@actual-app/components/view';
+import { send } from '@actual-app/core/platform/client/connection';
 import { tsToRelativeTime } from '@actual-app/core/shared/util';
 import type {
   AccountEntity,
@@ -46,6 +49,7 @@ import { SelectedTransactionsButton } from '#components/transactions/SelectedTra
 import { useDateFormat } from '#hooks/useDateFormat';
 import { useLocale } from '#hooks/useLocale';
 import { useLocalPref } from '#hooks/useLocalPref';
+import { useNotes } from '#hooks/useNotes';
 import { useSplitsExpanded } from '#hooks/useSplitsExpanded';
 import { useSyncedPref } from '#hooks/useSyncedPref';
 import { useSyncServerStatus } from '#hooks/useSyncServerStatus';
@@ -313,6 +317,9 @@ export function AccountHeader({
                 saveNameError={saveNameError}
                 onSaveName={onSaveName}
               />
+              {account?.account_sync_source === 'autohub' && (
+                <MileageWidget accountId={account.id} />
+              )}
             </View>
 
             <Balances
@@ -351,7 +358,7 @@ export function AccountHeader({
                     : accountsSyncing.length > 0
                 }
               />{' '}
-              {isServerOffline ? t('Bank Sync Offline') : t('Bank Sync')}
+              {isServerOffline ? t('Account Sync Offline') : t('Account Sync')}
             </Button>
           )}
 
@@ -828,5 +835,149 @@ function AccountMenu({
           : [{ name: 'close', text: t('Close account') } as const]),
       ]}
     />
+  );
+}
+
+function MileageWidget({ accountId }: { accountId: string }) {
+  const { t } = useTranslation();
+  const triggerRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const note = useNotes(`mileage-${accountId}`) || '';
+
+  const parseMileageNote = (note: string) => {
+    if (!note) return { mileage: null, updatedAt: null };
+    const parts = note.split('|');
+    const mileage = parseInt(parts[0], 10);
+    const updatedAt = parts[1] ? new Date(parts[1]) : null;
+    return { mileage: isNaN(mileage) ? null : mileage, updatedAt };
+  };
+
+  const { mileage, updatedAt } = parseMileageNote(note);
+  const [inputValue, setInputValue] = useState(
+    mileage !== null ? String(mileage) : '',
+  );
+
+  useEffect(() => {
+    setInputValue(mileage !== null ? String(mileage) : '');
+  }, [mileage]);
+
+  const isStale =
+    mileage !== null &&
+    (!updatedAt ||
+      Date.now() - updatedAt.getTime() > 6 * 30 * 24 * 60 * 60 * 1000);
+
+  const handleSave = () => {
+    const nextMileage = parseInt(inputValue, 10);
+    if (!isNaN(nextMileage) && nextMileage >= 0) {
+      const formatted = `${nextMileage}|${new Date().toISOString()}`;
+      void send('notes-save', { id: `mileage-${accountId}`, note: formatted });
+    }
+  };
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginLeft: 10,
+      }}
+    >
+      <Button
+        ref={triggerRef}
+        variant="bare"
+        style={{
+          padding: '4px 10px',
+          borderRadius: 16,
+          backgroundColor: isStale
+            ? theme.warningBackground
+            : theme.pillBackgroundLight,
+          border: `1px solid ${isStale ? theme.warningBorder : theme.pillBorder}`,
+          color: isStale ? theme.warningTextDark : theme.pillText,
+          fontSize: 13,
+          fontWeight: 500,
+          cursor: 'pointer',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        }}
+        onPress={() => setIsOpen(true)}
+      >
+        {isStale ? (
+          <SvgAlertTriangle
+            style={{ width: 13, height: 13, color: theme.warningTextDark }}
+          />
+        ) : (
+          <SvgPencil1
+            style={{
+              width: 10,
+              height: 10,
+              opacity: 0.7,
+              color: theme.pillText,
+            }}
+          />
+        )}
+        <span>
+          {mileage !== null ? (
+            <>
+              {t('Mileage: {{mileage}} mi', {
+                mileage: mileage.toLocaleString(),
+              })}
+              {isStale && ` (${t('stale')})`}
+            </>
+          ) : (
+            t('Set Mileage')
+          )}
+        </span>
+      </Button>
+
+      <Popover
+        triggerRef={triggerRef}
+        isOpen={isOpen}
+        onOpenChange={open => {
+          if (!open) {
+            handleSave();
+          }
+          setIsOpen(open);
+        }}
+        placement="bottom start"
+        style={{ padding: 12, width: 220 }}
+      >
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontWeight: 600, fontSize: 13 }}>
+            <Trans>Update Mileage</Trans>
+          </Text>
+          <InitialFocus>
+            <Input
+              type="text"
+              value={inputValue}
+              onChangeValue={setInputValue}
+              onEnter={() => {
+                handleSave();
+                setIsOpen(false);
+              }}
+              placeholder={t('Enter current mileage...')}
+            />
+          </InitialFocus>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 6 }}
+          >
+            <Button variant="bare" onPress={() => setIsOpen(false)}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button
+              variant="primary"
+              onPress={() => {
+                handleSave();
+                setIsOpen(false);
+              }}
+            >
+              <Trans>Save</Trans>
+            </Button>
+          </View>
+        </View>
+      </Popover>
+    </View>
   );
 }

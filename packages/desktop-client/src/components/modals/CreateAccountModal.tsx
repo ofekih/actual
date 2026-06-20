@@ -66,7 +66,7 @@ export function CreateAccountModal({
                   style={{ fontSize: 15, color: theme.pageTextSubdued }}
                 >
                   <Trans>
-                    Choose a bank sync provider to connect this account.
+                    Choose a account sync provider to connect this account.
                   </Trans>
                 </Paragraph>
                 <BuiltInProviders
@@ -122,14 +122,14 @@ export function CreateAccountModal({
                       fontWeight: 600,
                     }}
                   >
-                    <Trans>Set up bank sync</Trans>
+                    <Trans>Set up account sync</Trans>
                   </Button>
                   <Paragraph
                     style={{ fontSize: 15, color: theme.pageTextSubdued }}
                   >
                     <Trans>
-                      Configure providers and link accounts from the Bank Sync
-                      page.
+                      Configure providers and link accounts from the Account
+                      Sync page.
                     </Trans>
                   </Paragraph>
                 </View>

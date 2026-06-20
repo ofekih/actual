@@ -1933,7 +1933,13 @@ class AccountInternal extends PureComponent<
                           fontStyle: 'italic',
                         }}
                       >
-                        <Trans>No transactions</Trans>
+                        {this.props.accounts.find(
+                          a => a.id === this.props.accountId,
+                        )?.account_sync_source === 'autohub' ? (
+                          <Trans>No value history</Trans>
+                        ) : (
+                          <Trans>No transactions</Trans>
+                        )}
                       </View>
                     ) : null
                   }

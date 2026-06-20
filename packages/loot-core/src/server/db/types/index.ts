@@ -1,3 +1,5 @@
+import type { AccountSyncSource } from '#types/models/account';
+
 // These are the types that exactly match the database schema.
 // The `Entity` types e.g. `TransactionEntity`, `AccountEntity`, etc
 // are specific to the AQL query framework and does not necessarily
@@ -21,7 +23,7 @@ export type DbAccount = {
   type?: string | null;
   subtype?: string | null;
   bank?: string | null;
-  account_sync_source?: 'simpleFin' | 'goCardless' | null;
+  account_sync_source?: AccountSyncSource | null;
   last_reconciled?: string | null;
   last_sync?: string | null;
   bank_sync_status?:

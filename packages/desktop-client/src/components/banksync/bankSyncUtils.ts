@@ -12,12 +12,14 @@ export const BUILT_IN_BANK_SYNC_PROVIDERS = [
   'goCardless',
   'simpleFin',
   'pluggyai',
+  'autohub',
 ] as const satisfies BankSyncProviders[];
 
 const SYNC_PROVIDER_KEYS = [
   ...BUILT_IN_BANK_SYNC_PROVIDERS,
   'enableBanking',
   'akahu',
+  'autohub',
   'unlinked',
 ] as const satisfies readonly SyncProviders[];
 
@@ -36,6 +38,7 @@ export function getSyncSourceReadable(
     pluggyai: 'Pluggy.ai',
     enableBanking: 'Enable Banking',
     akahu: 'Akahu',
+    autohub: 'Autohub',
     unlinked: translate('Unlinked'),
   };
 }

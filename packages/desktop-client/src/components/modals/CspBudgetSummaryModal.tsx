@@ -48,6 +48,7 @@ export function CspBudgetSummaryModal(_props: CspBudgetSummaryModalProps) {
 
   let savingsTotal = 0;
   let investmentsTotal = 0;
+  let assetsTotal = 0;
   let debtTotal = 0;
 
   accounts
@@ -58,10 +59,11 @@ export function CspBudgetSummaryModal(_props: CspBudgetSummaryModalProps) {
 
       if (type === 'savings') savingsTotal += bal;
       else if (type === 'investments') investmentsTotal += bal;
+      else if (type === 'assets' || type === 'auto') assetsTotal += bal;
       else if (type === 'debt') debtTotal -= bal;
     });
 
-  const netWorth = savingsTotal + investmentsTotal + debtTotal;
+  const netWorth = savingsTotal + investmentsTotal + assetsTotal + debtTotal;
 
   return (
     <Modal name="csp-budget-summary">
@@ -103,6 +105,23 @@ export function CspBudgetSummaryModal(_props: CspBudgetSummaryModalProps) {
               </Text>
               <Text style={{ ...styles.tnum, fontWeight: 500 }}>
                 {integerToCurrency(savingsTotal)}
+              </Text>
+            </View>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                padding: '10px 0',
+                borderBottomWidth: 1,
+                borderColor: theme.tableBorder,
+              }}
+            >
+              <Text style={{ fontWeight: 500 }}>
+                <Trans>Assets</Trans>
+              </Text>
+              <Text style={{ ...styles.tnum, fontWeight: 500 }}>
+                {integerToCurrency(assetsTotal)}
               </Text>
             </View>
 

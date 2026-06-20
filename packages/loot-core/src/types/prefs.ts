@@ -60,6 +60,7 @@ export type SyncedPrefs = Partial<
     | `learn-categories`
     | 'geminiApiKey'
     | 'geminiCustomInstructions'
+    | 'autohubApiKey'
     | 'csp-account-types'
     | `show-hidden-tags`,
     string

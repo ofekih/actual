@@ -136,7 +136,7 @@ export function ElectronServerConfig({
         >
           <Trans>
             Set up your server below to enable seamless data synchronization
-            across your devices, bank sync and more...
+            across your devices, account sync and more...
           </Trans>
         </Text>
         <Text

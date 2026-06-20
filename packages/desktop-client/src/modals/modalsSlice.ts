@@ -59,6 +59,9 @@ export type Modal =
       name: 'add-local-account';
     }
   | {
+      name: 'add-asset-account';
+    }
+  | {
       name: 'close-account';
       options: {
         account: AccountEntity;
@@ -131,6 +134,12 @@ export type Modal =
     }
   | {
       name: 'simplefin-init';
+      options: {
+        onSuccess: () => void;
+      };
+    }
+  | {
+      name: 'autohub-init';
       options: {
         onSuccess: () => void;
       };

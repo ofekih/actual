@@ -14,6 +14,7 @@ import { useMultiuserEnabled } from '#components/ServerContext';
 import { authorizeBank as authorizeEnableBanking } from '#enablebanking';
 import { authorizeBank } from '#gocardless';
 import { useAkahuStatus } from '#hooks/useAkahuStatus';
+import { useAutohubStatus } from '#hooks/useAutohubStatus';
 import { useEnableBankingStatus } from '#hooks/useEnableBankingStatus';
 import { useFeatureFlag } from '#hooks/useFeatureFlag';
 import { useGoCardlessStatus } from '#hooks/useGoCardlessStatus';
@@ -112,6 +113,9 @@ export function useBuiltInBankSyncProviders({
   const [isAkahuSetupComplete, setIsAkahuSetupComplete] = useState<
     boolean | null
   >(null);
+  const [isAutohubSetupComplete, setIsAutohubSetupComplete] = useState<
+    boolean | null
+  >(null);
   const [loadingSimpleFinAccounts, setLoadingSimpleFinAccounts] =
     useState(false);
   const [loadingAkahuAccounts, setLoadingAkahuAccounts] = useState(false);
@@ -122,6 +126,7 @@ export function useBuiltInBankSyncProviders({
   const { configuredSimpleFin } = useSimpleFinStatus();
   const { configuredPluggyAi } = usePluggyAiStatus();
   const { configuredAkahu } = useAkahuStatus(akahuEnabled);
+  const { configuredAutohub } = useAutohubStatus();
   const { configuredEnableBanking, isLoading: isEnableBankingLoading } =
     useEnableBankingStatus(enableBankingEnabled);
 
@@ -144,6 +149,10 @@ export function useBuiltInBankSyncProviders({
   useEffect(() => {
     setIsAkahuSetupComplete(configuredAkahu);
   }, [configuredAkahu]);
+
+  useEffect(() => {
+    setIsAutohubSetupComplete(configuredAutohub);
+  }, [configuredAutohub]);
 
   const onGoCardlessInit = useCallback(() => {
     dispatch(
@@ -204,6 +213,19 @@ export function useBuiltInBankSyncProviders({
           name: 'akahu-init',
           options: {
             onSuccess: () => setIsAkahuSetupComplete(true),
+          },
+        },
+      }),
+    );
+  }, [dispatch]);
+
+  const onAutohubInit = useCallback(() => {
+    dispatch(
+      pushModal({
+        modal: {
+          name: 'autohub-init',
+          options: {
+            onSuccess: () => setIsAutohubSetupComplete(true),
           },
         },
       }),
@@ -343,6 +365,21 @@ export function useBuiltInBankSyncProviders({
     } catch (error) {
       console.log(error);
       notifyResetFailure('Akahu', error);
+    }
+  }, [notifyResetFailure]);
+
+  const onAutohubReset = useCallback(async () => {
+    try {
+      await ensureSuccessResponse(
+        await send('secret-set', {
+          name: 'autohub_apiKey',
+          value: null,
+        }),
+        'Failed to clear Autohub API Key',
+      );
+      setIsAutohubSetupComplete(false);
+    } catch (error) {
+      notifyResetFailure('Autohub', error);
     }
   }, [notifyResetFailure]);
 
@@ -592,12 +629,28 @@ export function useBuiltInBankSyncProviders({
     t,
   ]);
 
+  const onConnectAutohub = useCallback(() => {
+    if (!isAutohubSetupComplete) {
+      onAutohubInit();
+      return;
+    }
+
+    dispatch(
+      pushModal({
+        modal: {
+          name: 'add-asset-account',
+        },
+      }),
+    );
+  }, [dispatch, isAutohubSetupComplete, onAutohubInit]);
+
   const configuredProviders = {
     goCardless: Boolean(isGoCardlessSetupComplete),
     simpleFin: Boolean(isSimpleFinSetupComplete),
     pluggyai: Boolean(isPluggyAiSetupComplete),
     enableBanking: Boolean(isEnableBankingSetupComplete),
     akahu: Boolean(isAkahuSetupComplete),
+    autohub: Boolean(isAutohubSetupComplete),
   } satisfies Record<BankSyncProviders, boolean>;
 
   const providers = useMemo<BuiltInBankSyncProviderState[]>(() => {
@@ -631,6 +684,21 @@ export function useBuiltInBankSyncProviders({
             onConfigure: onSimpleFinInit,
             onLink: onConnectSimpleFin,
             onReset: onSimpleFinReset,
+          };
+        }
+
+        if (providerId === 'autohub') {
+          return {
+            id: providerId,
+            displayName: 'Autohub',
+            description: t(
+              'Link to Autohub to automatically track the value of your vehicles.',
+            ),
+            isConfigured: configuredProviders.autohub,
+            canConfigure: canConfigureProviders,
+            onConfigure: onAutohubInit,
+            onLink: onConnectAutohub,
+            onReset: onAutohubReset,
           };
         }
 
@@ -685,6 +753,7 @@ export function useBuiltInBankSyncProviders({
     canConfigureProviders,
     configuredProviders.enableBanking,
     configuredProviders.goCardless,
+    configuredProviders.autohub,
     configuredProviders.pluggyai,
     configuredProviders.simpleFin,
     configuredProviders.akahu,
@@ -693,12 +762,15 @@ export function useBuiltInBankSyncProviders({
     isEnableBankingLoading,
     loadingSimpleFinAccounts,
     loadingAkahuAccounts,
+    onConnectAutohub,
     onConnectAkahu,
     onConnectEnableBanking,
     onConnectGoCardless,
     onConnectPluggyAi,
     onConnectSimpleFin,
     onAkahuInit,
+    onAutohubInit,
+    onAutohubReset,
     onAkahuReset,
     onEnableBankingInit,
     onEnableBankingReset,
