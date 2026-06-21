@@ -59,6 +59,8 @@ export function mapField(field, opts?) {
       return t('category');
     case 'csp_category':
       return t('CSP category');
+    case 'csp_category_group':
+      return t('CSP category group');
     case 'category_group':
       return t('category group');
     case 'notes':

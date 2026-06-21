@@ -47,6 +47,7 @@ import type {
   CategoryMonthProps,
 } from '#components/budget';
 import { CategoriesOverrideProvider } from '#components/budget/CategoriesOverrideContext';
+import { ClickableCell } from '#components/budget/ClickableCell';
 import { AutoSizingBudgetTable } from '#components/budget/DynamicBudgetTable';
 import { EnvelopeBudgetProvider } from '#components/budget/envelope/EnvelopeBudgetContext';
 import { TrackingBudgetProvider } from '#components/budget/tracking/TrackingBudgetContext';
@@ -146,6 +147,8 @@ export const CspNetIncomeContext = createContext<number>(0);
 
 const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
   category,
+  month,
+  onShowActivity,
 }: CategoryMonthProps) {
   const actuals = useContext(CspActualsContext);
   const netIncome = useContext(CspNetIncomeContext);
@@ -166,7 +169,11 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
       }}
     >
       <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
-        <CspAmountCell amount={amount} percentage={percentage} />
+        <ClickableCell
+          onClick={() => onShowActivity(category.id, month, 'csp_category')}
+        >
+          <CspAmountCell amount={amount} percentage={percentage} />
+        </ClickableCell>
       </Field>
     </View>
   );
@@ -174,6 +181,8 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
 
 const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
   group,
+  month,
+  onShowActivity,
 }: CategoryGroupMonthProps) {
   const actuals = useContext(CspActualsContext);
   const netIncome = useContext(CspNetIncomeContext);
@@ -202,10 +211,14 @@ const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
         style={{
           textAlign: 'right',
           fontWeight: 600,
-          paddingRight: styles.monthRightPadding,
         }}
       >
-        <CspAmountCell amount={total} percentage={percentage} />
+        <ClickableCell
+          style={{ paddingRight: styles.monthRightPadding }}
+          onClick={() => onShowActivity(group.id, month, 'csp_category_group')}
+        >
+          <CspAmountCell amount={total} percentage={percentage} />
+        </ClickableCell>
       </Field>
     </View>
   );
@@ -214,6 +227,8 @@ const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
 const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
   category,
   isLast,
+  month,
+  onShowActivity,
 }: CategoryMonthProps) {
   const actuals = useContext(CspActualsContext);
   const amount = actuals[category.id] ?? 0;
@@ -229,7 +244,11 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
           backgroundColor: theme.budgetCurrentMonth,
         }}
       >
-        <CspAmountCell amount={amount} />
+        <ClickableCell
+          onClick={() => onShowActivity(category.id, month, 'csp_category')}
+        >
+          <CspAmountCell amount={amount} />
+        </ClickableCell>
       </Field>
     </View>
   );
@@ -838,9 +857,13 @@ export function Csp() {
     /* no-op */
   };
 
-  const onShowActivity = (categoryId: string, month?: string) => {
+  const onShowActivity = (
+    categoryId: string,
+    month?: string,
+    field: 'csp_category' | 'csp_category_group' = 'csp_category',
+  ) => {
     const filterConditions = [
-      { field: 'csp_category', op: 'is', value: categoryId, type: 'id' },
+      { field, op: 'is', value: categoryId, type: 'id' },
       ...(month
         ? [
             {

@@ -14,9 +14,9 @@ import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import * as monthUtils from '@actual-app/core/shared/months';
-import { css } from '@emotion/css';
 
 import { BalanceWithCarryover } from '#components/budget/BalanceWithCarryover';
+import { ClickableCell } from '#components/budget/ClickableCell';
 import { makeAmountGrey } from '#components/budget/util';
 import { NotesButton } from '#components/NotesButton';
 import { CellValue, CellValueText } from '#components/spreadsheet/CellValue';
@@ -142,6 +142,7 @@ export function IncomeHeaderMonth() {
 export const ExpenseGroupMonth = memo(function ExpenseGroupMonth({
   month,
   group,
+  onShowActivity,
 }: CategoryGroupMonthProps) {
   const { id } = group;
 
@@ -165,16 +166,23 @@ export const ExpenseGroupMonth = memo(function ExpenseGroupMonth({
           type: 'financial',
         }}
       />
-      <EnvelopeSheetCell
-        name="spent"
-        width="flex"
-        textAlign="right"
-        style={{ fontWeight: 600, ...styles.tnum }}
-        valueProps={{
-          binding: envelopeBudget.groupSumAmount(id),
-          type: 'financial',
-        }}
-      />
+      <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
+        <ClickableCell
+          onClick={() => onShowActivity(id, month, 'category_group')}
+        >
+          <EnvelopeCellValue
+            binding={envelopeBudget.groupSumAmount(id)}
+            type="financial"
+          >
+            {props => (
+              <CellValueText
+                {...props}
+                style={{ fontWeight: 600, ...styles.tnum }}
+              />
+            )}
+          </EnvelopeCellValue>
+        </ClickableCell>
+      </Field>
       <EnvelopeSheetCell
         name="balance"
         width="flex"
@@ -414,12 +422,9 @@ export const ExpenseCategoryMonth = memo(function ExpenseCategoryMonth({
         />
       </View>
       <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
-        <View
-          data-testid="category-month-spent"
+        <ClickableCell
           onClick={() => onShowActivity(category.id, month)}
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
             justifyContent: showScheduleIndicator
               ? 'space-between'
               : 'flex-end',
@@ -443,6 +448,7 @@ export const ExpenseCategoryMonth = memo(function ExpenseCategoryMonth({
                     ? navigate(`/accounts/${schedule._account}`)
                     : navigate('/accounts')
                 }
+                onClick={e => e.stopPropagation()}
               >
                 {isScheduleRecurring ? (
                   <SvgArrowsSynchronize style={{ width: 12, height: 12 }} />
@@ -457,17 +463,10 @@ export const ExpenseCategoryMonth = memo(function ExpenseCategoryMonth({
             type="financial"
           >
             {props => (
-              <CellValueText
-                {...props}
-                className={css({
-                  cursor: 'pointer',
-                  ':hover': { textDecoration: 'underline' },
-                  ...makeAmountGrey(props.value),
-                })}
-              />
+              <CellValueText {...props} style={makeAmountGrey(props.value)} />
             )}
           </EnvelopeCellValue>
-        </View>
+        </ClickableCell>
       </Field>
       <Field
         ref={balanceMenuTriggerRef}
@@ -531,32 +530,44 @@ export const ExpenseCategoryMonth = memo(function ExpenseCategoryMonth({
   );
 });
 
-type IncomeGroupMonthProps = {
-  month: string;
-};
-export function IncomeGroupMonth({ month }: IncomeGroupMonthProps) {
+export const IncomeGroupMonth = memo(function IncomeGroupMonth({
+  month,
+  group,
+  onShowActivity,
+}: CategoryGroupMonthProps) {
+  const { id } = group;
   return (
     <View style={{ flex: 1 }}>
-      <EnvelopeSheetCell
+      <Field
         name="received"
         width="flex"
-        textAlign="right"
         style={{
-          fontWeight: 600,
-          paddingRight: styles.monthRightPadding,
-          ...styles.tnum,
+          textAlign: 'right',
           backgroundColor: monthUtils.isCurrentMonth(month)
             ? theme.budgetHeaderCurrentMonth
             : theme.budgetHeaderOtherMonth,
         }}
-        valueProps={{
-          binding: envelopeBudget.groupIncomeReceived,
-          type: 'financial',
-        }}
-      />
+      >
+        <ClickableCell
+          style={{ paddingRight: styles.monthRightPadding }}
+          onClick={() => onShowActivity(id, month, 'category_group')}
+        >
+          <EnvelopeCellValue
+            binding={envelopeBudget.groupIncomeReceived}
+            type="financial"
+          >
+            {props => (
+              <CellValueText
+                {...props}
+                style={{ fontWeight: 600, ...styles.tnum }}
+              />
+            )}
+          </EnvelopeCellValue>
+        </ClickableCell>
+      </Field>
     </View>
   );
-}
+});
 
 export function IncomeCategoryMonth({
   category,

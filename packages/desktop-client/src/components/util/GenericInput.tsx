@@ -16,6 +16,7 @@ import { Autocomplete } from '#components/autocomplete/Autocomplete';
 import { CategoryAutocomplete } from '#components/autocomplete/CategoryAutocomplete';
 import { CategoryGroupAutocomplete } from '#components/autocomplete/CategoryGroupAutocomplete';
 import { CspCategoryAutocomplete } from '#components/autocomplete/CspCategoryAutocomplete';
+import { CspCategoryGroupAutocomplete } from '#components/autocomplete/CspCategoryGroupAutocomplete';
 import { FilterAutocomplete } from '#components/autocomplete/FilterAutocomplete';
 import { PayeeAutocomplete } from '#components/autocomplete/PayeeAutocomplete';
 import { ReportAutocomplete } from '#components/autocomplete/ReportAutocomplete';
@@ -39,7 +40,12 @@ type GenericInputProps = {
   | ((
       | {
           type: 'id';
-          field: 'payee' | 'category' | 'category_group' | 'csp_category';
+          field:
+            | 'payee'
+            | 'category'
+            | 'category_group'
+            | 'csp_category'
+            | 'csp_category_group';
         }
       | {
           type: 'id';
@@ -328,6 +334,27 @@ export const GenericInput = ({
                 }
               }}
               inputProps={{ placeholder: t('Select CSP category...') }}
+            />
+          );
+          break;
+        }
+
+        case 'csp_category_group': {
+          const singleVal = Array.isArray(props.value)
+            ? props.value[0] || null
+            : props.value || null;
+          content = (
+            <CspCategoryGroupAutocomplete
+              value={singleVal}
+              onSelect={val => {
+                const value = val || '';
+                if (props.multi === true) {
+                  props.onChange([value]);
+                } else {
+                  props.onChange(value);
+                }
+              }}
+              inputProps={{ placeholder: t('Select CSP category group...') }}
             />
           );
           break;

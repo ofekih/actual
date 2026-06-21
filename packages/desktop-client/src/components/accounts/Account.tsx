@@ -420,6 +420,13 @@ class AccountInternal extends PureComponent<
     if (this.props.accountId !== prevProps.accountId) {
       this.setState({ sort: null, search: '', filterConditions: [] });
     }
+
+    // Detect filterConditions prop change (e.g. from click-to-filter category/group cells)
+    if (!isEqual(this.props.filterConditions, prevProps.filterConditions)) {
+      this.setState({ filterConditions: this.props.filterConditions }, () => {
+        this.fetchTransactions(this.state.filterConditions);
+      });
+    }
   }
 
   componentWillUnmount() {

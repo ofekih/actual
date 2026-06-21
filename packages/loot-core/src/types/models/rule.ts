@@ -20,6 +20,7 @@ export type FieldValueTypes = {
   category: string;
   category_group: string;
   csp_category: string;
+  csp_category_group: string;
   date: string | RecurConfig;
   notes: string;
   payee: string;
@@ -128,6 +129,16 @@ export type RuleConditionEntity =
     >
   | BaseConditionEntity<
       'csp_category',
+      | 'is'
+      | 'isNot'
+      | 'oneOf'
+      | 'notOneOf'
+      | 'contains'
+      | 'doesNotContain'
+      | 'matches'
+    >
+  | BaseConditionEntity<
+      'csp_category_group',
       | 'is'
       | 'isNot'
       | 'oneOf'

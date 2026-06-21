@@ -50,7 +50,12 @@ export function Value<T>({
     },
   } = useCategories();
   const { data: accounts = [] } = useAccounts();
-  const { data: { list: cspCategories } = { list: [] } } = useCspCategories();
+  const {
+    data: { list: cspCategories, grouped: cspCategoryGroups } = {
+      list: [],
+      grouped: [],
+    },
+  } = useCspCategories();
   const valueStyle = {
     color: theme.pageTextPositive,
     ...style,
@@ -75,6 +80,9 @@ export function Value<T>({
 
       case 'csp_category':
         return cspCategories;
+
+      case 'csp_category_group':
+        return cspCategoryGroups;
 
       case 'account':
         return accounts;
@@ -126,6 +134,7 @@ export function Value<T>({
         case 'category':
         case 'category_group':
         case 'csp_category':
+        case 'csp_category_group':
         case 'account':
         case 'rule':
           if (valueIsRaw) {

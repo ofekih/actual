@@ -71,6 +71,8 @@ const filterFields = [
   'payee',
   'notes',
   'category',
+  'csp_category',
+  'csp_category_group',
   'amount',
   'cleared',
   'reconciled',

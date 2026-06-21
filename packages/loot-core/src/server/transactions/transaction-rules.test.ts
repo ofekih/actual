@@ -712,6 +712,16 @@ describe('Transaction rules', () => {
       },
     ]);
   });
+
+  test('csp_category_group condition converts to csp_category.group', async () => {
+    const conds = [{ field: 'csp_category_group', op: 'is', value: 'group1' }];
+    const { filters } = conditionsToAQL(conds);
+    expect(filters).toStrictEqual([
+      {
+        'csp_category.group': { $eq: 'group1' },
+      },
+    ]);
+  });
 });
 
 describe('Learning categories', () => {

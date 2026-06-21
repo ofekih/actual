@@ -15,10 +15,10 @@ import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import * as monthUtils from '@actual-app/core/shared/months';
-import { css } from '@emotion/css';
 import { t } from 'i18next';
 
 import { BalanceWithCarryover } from '#components/budget/BalanceWithCarryover';
+import { ClickableCell } from '#components/budget/ClickableCell';
 import { makeAmountGrey } from '#components/budget/util';
 import { NotesButton } from '#components/NotesButton';
 import { CellValue, CellValueText } from '#components/spreadsheet/CellValue';
@@ -138,6 +138,7 @@ export function IncomeHeaderMonth() {
 export const GroupMonth = memo(function GroupMonth({
   month,
   group,
+  onShowActivity,
 }: CategoryGroupMonthProps) {
   const { id } = group;
 
@@ -161,16 +162,23 @@ export const GroupMonth = memo(function GroupMonth({
           type: 'financial',
         }}
       />
-      <TrackingSheetCell
-        name="spent"
-        width="flex"
-        textAlign="right"
-        style={{ fontWeight: 600, ...styles.tnum }}
-        valueProps={{
-          binding: trackingBudget.groupSumAmount(id),
-          type: 'financial',
-        }}
-      />
+      <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
+        <ClickableCell
+          onClick={() => onShowActivity(id, month, 'category_group')}
+        >
+          <TrackingCellValue
+            binding={trackingBudget.groupSumAmount(id)}
+            type="financial"
+          >
+            {props => (
+              <CellValueText
+                {...props}
+                style={{ fontWeight: 600, ...styles.tnum }}
+              />
+            )}
+          </TrackingCellValue>
+        </ClickableCell>
+      </Field>
       {!group.is_income && (
         <TrackingSheetCell
           name="balance"
@@ -399,12 +407,9 @@ export const CategoryMonth = memo(function CategoryMonth({
         />
       </View>
       <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
-        <View
-          data-testid="category-month-spent"
+        <ClickableCell
           onClick={() => onShowActivity(category.id, month)}
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
             justifyContent: showScheduleIndicator
               ? 'space-between'
               : 'flex-end',
@@ -428,6 +433,7 @@ export const CategoryMonth = memo(function CategoryMonth({
                     ? navigate(`/accounts/${schedule._account}`)
                     : navigate('/accounts')
                 }
+                onClick={e => e.stopPropagation()}
               >
                 {isScheduleRecurring ? (
                   <SvgArrowsSynchronize style={{ width: 12, height: 12 }} />
@@ -442,19 +448,10 @@ export const CategoryMonth = memo(function CategoryMonth({
             type="financial"
           >
             {props => (
-              <CellValueText
-                {...props}
-                className={css({
-                  cursor: 'pointer',
-                  ':hover': {
-                    textDecoration: 'underline',
-                  },
-                  ...makeAmountGrey(props.value),
-                })}
-              />
+              <CellValueText {...props} style={makeAmountGrey(props.value)} />
             )}
           </TrackingCellValue>
-        </View>
+        </ClickableCell>
       </Field>
 
       {!category.is_income && (

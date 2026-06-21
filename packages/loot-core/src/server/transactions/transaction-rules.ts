@@ -471,6 +471,8 @@ export function conditionsToAQL(
       }
     } else if (field === 'category_group') {
       field = 'category.group';
+    } else if (field === 'csp_category_group') {
+      field = 'csp_category.group';
     }
 
     const apply = (field, aqlOp, value) => {

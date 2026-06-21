@@ -44,7 +44,15 @@ type BudgetCategoriesProps = {
   categoryGroups: CategoryGroupEntity[];
   editingCell: { id: string; cell: string } | null;
   onBudgetAction: (month: string, action: string, arg: unknown) => void;
-  onShowActivity: (id: CategoryEntity['id'], month?: string) => void;
+  onShowActivity: (
+    id: CategoryEntity['id'],
+    month?: string,
+    field?:
+      | 'category'
+      | 'category_group'
+      | 'csp_category'
+      | 'csp_category_group',
+  ) => void;
   onEditName: (id: CategoryEntity['id']) => void;
   onEditMonth: (id: CategoryEntity['id'], month: string) => void;
   onSaveCategory: (category: CategoryEntity) => void;
@@ -307,6 +315,7 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
                   onShowNewCategory={onShowNewCategory}
                   onApplyBudgetTemplatesInGroup={onApplyBudgetTemplatesInGroup}
                   onSortCategories={onSortCategories}
+                  onShowActivity={onShowActivity}
                 />
               );
               break;
@@ -351,6 +360,7 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
                   onSortCategories={onSortCategories}
                   onToggleCollapse={onToggleCollapse}
                   onShowNewCategory={onShowNewCategory!}
+                  onShowActivity={onShowActivity}
                 />
               );
               break;

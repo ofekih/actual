@@ -131,9 +131,17 @@ export function Budget() {
     });
   };
 
-  const onShowActivity = (categoryId, month) => {
+  const onShowActivity = (
+    categoryId: string,
+    month: string,
+    field:
+      | 'category'
+      | 'category_group'
+      | 'csp_category'
+      | 'csp_category_group' = 'category',
+  ) => {
     const filterConditions = [
-      { field: 'category', op: 'is', value: categoryId, type: 'id' },
+      { field, op: 'is', value: categoryId, type: 'id' },
       {
         field: 'date',
         op: 'is',
@@ -274,12 +282,25 @@ export type CategoryMonthProps = {
   isLast?: boolean;
   onEdit: (id: CategoryEntity['id'] | null, month?: string) => void;
   onBudgetAction: (month: string, action: string, arg: unknown) => void;
-  onShowActivity: (id: CategoryEntity['id'], month: string) => void;
+  onShowActivity: (
+    id: CategoryEntity['id'],
+    month: string,
+    field?:
+      | 'category'
+      | 'category_group'
+      | 'csp_category'
+      | 'csp_category_group',
+  ) => void;
 };
 
 export type CategoryGroupMonthProps = {
   month: string;
   group: CategoryGroupEntity;
+  onShowActivity: (
+    id: CategoryGroupEntity['id'],
+    month: string,
+    field: 'category_group' | 'csp_category_group',
+  ) => void;
 };
 
 export type BudgetComponents = {
