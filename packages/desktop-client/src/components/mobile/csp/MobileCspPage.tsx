@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import React, {
   createContext,
   useCallback,
@@ -14,10 +13,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@actual-app/components/button';
 import { Card } from '@actual-app/components/card';
 import { SvgCheveronRight } from '@actual-app/components/icons/v1';
-import {
-  SvgArrowButtonDown1,
-  SvgArrowButtonUp1,
-} from '@actual-app/components/icons/v2';
 import { Label } from '@actual-app/components/label';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
@@ -76,7 +71,6 @@ import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
 
 const CspNetWorthContext = createContext<number>(0);
-
 
 type CspMobileCategoryListItemProps = {
   value: CategoryEntity;

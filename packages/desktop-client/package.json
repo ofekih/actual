@@ -53,6 +53,7 @@
     "#components/budget/CategoriesOverrideContext": "./src/components/budget/CategoriesOverrideContext.ts",
     "#components/budget/util": "./src/components/budget/util.ts",
     "#components/codemirror/autocompleteTabAccept": "./src/components/codemirror/autocompleteTabAccept.ts",
+    "#components/csp/CspAuditsContext": "./src/components/csp/CspAuditsContext.ts",
     "#components/csp/CspComponentsContext": "./src/components/csp/CspComponentsContext.ts",
     "#components/mobile/budget/MobileBudgetComponentsContext": "./src/components/mobile/budget/MobileBudgetComponentsContext.ts",
     "#components/mobile/utils": "./src/components/mobile/utils.ts",
