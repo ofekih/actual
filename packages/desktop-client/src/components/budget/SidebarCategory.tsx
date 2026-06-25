@@ -19,7 +19,10 @@ import type {
 } from '@actual-app/core/types/models';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useMoveCategoryMutation } from '#budget';
+import {
+  useMoveCategoryMutation,
+  useMoveCspCategoryMutation,
+} from '#budget';
 import { useCategoriesOverride } from '#components/budget/CategoriesOverrideContext';
 import { MonthsContext } from '#components/budget/MonthsContext';
 import { CspTargetsContext } from '#components/csp/index';
@@ -76,10 +79,10 @@ export function SidebarCategory({
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const moveCategory = useMoveCategoryMutation();
+  const moveCspCategory = useMoveCspCategoryMutation();
+  const categoriesOverride = useCategoriesOverride();
+  const isCsp = categoriesOverride !== null;
   const { months } = useContext(MonthsContext);
-
-  const cspCategoryGroups = useCategoriesOverride();
-  const isCsp = cspCategoryGroups !== null;
   const targets = useContext(CspTargetsContext);
   const auditWindowMonths =
     (category as unknown as CSPCategoryEntity).moving_average_months ?? null;
@@ -189,13 +192,21 @@ export function SidebarCategory({
                       name: 'category-group-autocomplete',
                       options: {
                         title: t('Move to group'),
-                        categoryGroups: cspCategoryGroups ?? undefined,
+                        categoryGroups: categoriesOverride ?? undefined,
                         onSelect: async groupId => {
-                          await moveCategory.mutateAsync({
-                            id: category.id,
-                            groupId,
-                            targetId: null,
-                          });
+                          if (categoriesOverride) {
+                            await moveCspCategory.mutateAsync({
+                              id: category.id,
+                              groupId,
+                              targetId: null,
+                            });
+                          } else {
+                            await moveCategory.mutateAsync({
+                              id: category.id,
+                              groupId,
+                              targetId: null,
+                            });
+                          }
                         },
                       },
                     },

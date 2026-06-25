@@ -80,6 +80,7 @@ export type BudgetHandlers = {
   'csp-category-create': typeof createCspCategory;
   'csp-category-update': typeof updateCspCategory;
   'csp-category-delete': typeof deleteCspCategory;
+  'csp-category-move': typeof moveCspCategory;
   'csp-category-group-create': typeof createCspCategoryGroup;
   'csp-category-group-update': typeof updateCspCategoryGroup;
   'csp-category-group-delete': typeof deleteCspCategoryGroup;
@@ -178,6 +179,7 @@ app.method('must-category-transfer', isCategoryTransferRequired);
 app.method('csp-category-create', mutator(undoable(createCspCategory)));
 app.method('csp-category-update', mutator(undoable(updateCspCategory)));
 app.method('csp-category-delete', mutator(undoable(deleteCspCategory)));
+app.method('csp-category-move', mutator(undoable(moveCspCategory)));
 app.method(
   'csp-category-group-create',
   mutator(undoable(createCspCategoryGroup)),
@@ -582,6 +584,20 @@ async function deleteCspCategory({ id }: { id: string }): Promise<void> {
       [id],
     );
     await db.delete_('csp_categories', id);
+  });
+}
+
+async function moveCspCategory({
+  id,
+  groupId,
+  targetId,
+}: {
+  id: string;
+  groupId: string;
+  targetId: string | null;
+}): Promise<void> {
+  await batchMessages(async () => {
+    await db.moveCspCategory(id, groupId, targetId);
   });
 }
 

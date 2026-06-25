@@ -525,6 +525,28 @@ export async function moveCategory(
   await update('categories', { id, sort_order, cat_group: groupId });
 }
 
+export async function moveCspCategory(
+  id: string,
+  groupId: string,
+  targetId?: string | null,
+) {
+  if (!groupId) {
+    throw new Error('moveCspCategory: groupId is required');
+  }
+
+  const categories = await all<{ id: string; sort_order: number }>(
+    `SELECT id, sort_order FROM csp_categories WHERE cat_group = ? AND tombstone = 0 ORDER BY sort_order, id`,
+    [groupId],
+  );
+
+  const { updates, sort_order } = shoveSortOrders(categories, targetId);
+  for (const info of updates) {
+    await update('csp_categories', info);
+  }
+  await update('csp_categories', { id, sort_order, cat_group: groupId });
+}
+
+
 export async function deleteCategory(
   category: Pick<DbCategory, 'id'>,
   transferId?: DbCategory['id'] | null,
