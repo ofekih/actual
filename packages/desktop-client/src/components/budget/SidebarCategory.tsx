@@ -15,7 +15,11 @@ import type {
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
 
-import { useMoveCategoryMutation } from '#budget';
+import {
+  useMoveCategoryMutation,
+  useMoveCspCategoryMutation,
+} from '#budget';
+import { useCategoriesOverride } from './CategoriesOverrideContext';
 import { InputCell } from '#components/table';
 import { useContextMenu } from '#hooks/useContextMenu';
 import { useGlobalPref } from '#hooks/useGlobalPref';
@@ -68,6 +72,8 @@ export function SidebarCategory({
   const categoryExpandedState = categoryExpandedStatePref ?? 0;
   const dispatch = useDispatch();
   const moveCategory = useMoveCategoryMutation();
+  const moveCspCategory = useMoveCspCategoryMutation();
+  const categoriesOverride = useCategoriesOverride();
 
   const temporary = category.id === 'new';
   const { setMenuOpen, menuOpen, handleContextMenu, resetPosition, position } =
@@ -130,12 +136,21 @@ export function SidebarCategory({
                       name: 'category-group-autocomplete',
                       options: {
                         title: t('Move to group'),
+                        categoryGroups: categoriesOverride || undefined,
                         onSelect: async groupId => {
-                          await moveCategory.mutateAsync({
-                            id: category.id,
-                            groupId,
-                            targetId: null,
-                          });
+                          if (categoriesOverride) {
+                            await moveCspCategory.mutateAsync({
+                              id: category.id,
+                              groupId,
+                              targetId: null,
+                            });
+                          } else {
+                            await moveCategory.mutateAsync({
+                              id: category.id,
+                              groupId,
+                              targetId: null,
+                            });
+                          }
                         },
                       },
                     },

@@ -1053,3 +1053,70 @@ export function useDeleteCspCategoryGroupMutation() {
     },
   });
 }
+
+type MoveCspCategoryPayload = {
+  id: string;
+  groupId: string;
+  targetId: string | null;
+};
+
+export function useMoveCspCategoryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, groupId, targetId }: MoveCspCategoryPayload) => {
+      await send('csp-category-move', { id, groupId, targetId });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['csp-categories'] });
+    },
+  });
+}
+
+type ReorderCspCategoryPayload = {
+  id: string;
+  groupId: string;
+  targetId: string | null;
+};
+
+export function useReorderCspCategoryMutation() {
+  const moveCspCategory = useMoveCspCategoryMutation();
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: async ({ id, groupId, targetId }: ReorderCspCategoryPayload) => {
+      const { grouped: categoryGroups = [], list: categories = [] } =
+        (await queryClient.ensureQueryData({
+          queryKey: ['csp-categories'],
+        })) as {
+          list: CSPCategoryEntity[];
+          grouped: Array<
+            CSPCategoryGroupEntity & { categories: CSPCategoryEntity[] }
+          >;
+        };
+
+
+      const moveCandidate = categories.filter(c => c.id === id)[0];
+      const group = categoryGroups.find(g => g.id === groupId);
+      const categoriesInGroup = group?.categories ?? [];
+      const exists = categoriesInGroup.some(
+        c =>
+          c.id !== moveCandidate.id &&
+          c.name.toUpperCase() === moveCandidate.name.toUpperCase(),
+      );
+
+      if (exists) {
+        dispatchCategoryNameAlreadyExistsNotification(
+          dispatch,
+          t,
+          moveCandidate.name,
+        );
+        return;
+      }
+
+      await moveCspCategory.mutateAsync({ id, groupId, targetId });
+    },
+  });
+}
+

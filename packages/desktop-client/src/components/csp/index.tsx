@@ -39,6 +39,7 @@ import {
   useDeleteCspCategoryMutation,
   useSaveCspCategoryGroupMutation,
   useSaveCspCategoryMutation,
+  useReorderCspCategoryMutation,
 } from '#budget';
 import type {
   BudgetComponents,
@@ -848,6 +849,7 @@ export function Csp() {
   const deleteCategory = useDeleteCspCategoryMutation();
   const saveCategoryGroup = useSaveCspCategoryGroupMutation();
   const deleteCategoryGroup = useDeleteCspCategoryGroupMutation();
+  const reorderCategory = useReorderCspCategoryMutation();
 
   // No-op handlers for budget-specific actions
   const noop = () => {
@@ -952,7 +954,7 @@ export function Csp() {
                       onSaveGroup={group => saveCategoryGroup.mutate({ group })}
                       onBudgetAction={noopBudgetAction}
                       onShowActivity={onShowActivity}
-                      onReorderCategory={noop}
+                       onReorderCategory={reorderCategory.mutate}
                       onReorderGroup={noop}
                       onApplyBudgetTemplatesInGroup={noop}
                       onSortCategories={noop}
