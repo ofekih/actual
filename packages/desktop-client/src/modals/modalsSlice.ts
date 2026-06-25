@@ -5,6 +5,7 @@ import type {
   AccountEntity,
   CategoryEntity,
   CategoryGroupEntity,
+  CSPCategoryEntity,
   GoCardlessToken,
   NewRuleEntity,
   NewUserEntity,
@@ -313,6 +314,16 @@ export type Modal =
         closeOnSelect?: boolean;
         clearOnSelect?: boolean;
         onClose?: () => void;
+      };
+    }
+  | {
+      name: 'csp-category-settings';
+      options: {
+        category: CSPCategoryEntity;
+        month?: string;
+        onSave: (updatedFields: {
+          moving_average_months: number | null;
+        }) => void;
       };
     }
   | {

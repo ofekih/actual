@@ -104,7 +104,16 @@ export const schema = {
     id: f('id'),
     name: f('string'),
     group: f('id', { ref: 'csp_category_groups' }),
+    planned_amount: f('integer'),
+    moving_average_months: f('integer'),
     sort_order: f('float'),
+    tombstone: f('boolean'),
+  },
+  csp_targets: {
+    id: f('id'),
+    month: f('integer'),
+    category: f('string', { ref: 'csp_categories' }),
+    amount: f('integer'),
     tombstone: f('boolean'),
   },
   csp_category_groups: {
@@ -355,7 +364,8 @@ export const schemaConfig: SchemaConfig = {
 
       v_csp_categories: internalFields => {
         const fields = internalFields({ group: 'cat_group' });
-        return `SELECT ${fields} FROM csp_categories _`;
+        // Bump hash to recreate view
+        return `SELECT ${fields} FROM csp_categories AS _`;
       },
     },
 

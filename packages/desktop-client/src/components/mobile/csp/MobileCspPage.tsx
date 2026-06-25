@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import React, {
   createContext,
   useCallback,
@@ -13,6 +14,10 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@actual-app/components/button';
 import { Card } from '@actual-app/components/card';
 import { SvgCheveronRight } from '@actual-app/components/icons/v1';
+import {
+  SvgArrowButtonDown1,
+  SvgArrowButtonUp1,
+} from '@actual-app/components/icons/v2';
 import { Label } from '@actual-app/components/label';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
@@ -32,12 +37,21 @@ import { CategoriesOverrideProvider } from '#components/budget/CategoriesOverrid
 import { EnvelopeBudgetProvider } from '#components/budget/envelope/EnvelopeBudgetContext';
 import { TrackingBudgetProvider } from '#components/budget/tracking/TrackingBudgetContext';
 import { prewarmAllMonths, prewarmMonth } from '#components/budget/util';
+import { useCspAudits } from '#components/csp/CspAuditsContext';
 import {
   CspActualsContext,
+  CspAmountCell,
   CspNetIncomeContext,
+  CspTargetsContext,
+  getCspSpentAmount,
+  getCspTargetAmount,
   useCspActualsForMonth,
+  useCspCategoryAmounts,
   useCspCategoryGroups,
+  useCspGroupAmounts,
+  useCspTargetsForMonth,
 } from '#components/csp/index';
+import type { CspNetIncomeInfo } from '#components/csp/index';
 import { MonthSelector } from '#components/mobile/budget/BudgetPage';
 import {
   BudgetTable,
@@ -63,63 +77,31 @@ import { useDispatch } from '#redux';
 
 const CspNetWorthContext = createContext<number>(0);
 
-function CspMobileAmountCell({
-  amount,
-  percentage,
-}: {
-  amount: number;
-  percentage?: number;
-}) {
-  const formatted = integerToCurrency(amount);
-  const colorStyle =
-    amount < 0 ? { color: theme.errorText } : { color: theme.tableText };
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-      }}
-    >
-      {percentage !== undefined && (
-        <Text
-          style={{
-            fontSize: 11,
-            color: theme.pageTextSubdued,
-            marginRight: 8,
-          }}
-        >
-          {percentage.toFixed(1)}%
-        </Text>
-      )}
-      <Text style={{ ...styles.tnum, textAlign: 'right', ...colorStyle }}>
-        {formatted}
-      </Text>
-    </View>
-  );
-}
 
-type CspExpenseCategoryListItemProps = {
+type CspMobileCategoryListItemProps = {
   value: CategoryEntity;
   month: string;
   isHidden?: boolean;
-  show3Columns: boolean;
+  show3Columns?: boolean;
   onEditCategory: (id: string) => void;
 };
 
-function CspExpenseCategoryListItem({
+function CspMobileCategoryListItem({
   value: category,
   month,
   isHidden,
-  show3Columns,
+  show3Columns = false,
   onEditCategory,
   ...props
-}: CspExpenseCategoryListItemProps) {
-  const actuals = useContext(CspActualsContext);
-  const netIncome = useContext(CspNetIncomeContext);
-  const amount = actuals[category.id] ?? 0;
-  const percentage =
-    netIncome > 0 ? (Math.abs(amount) / netIncome) * 100 : undefined;
+}: CspMobileCategoryListItemProps) {
+  const audits = useCspAudits();
+  const {
+    targetAmount,
+    spentAmount,
+    targetPercentage,
+    spentPercentage,
+    isIncome,
+  } = useCspCategoryAmounts(category);
 
   const columnWidth = getColumnWidth({ show3Columns });
 
@@ -141,11 +123,20 @@ function CspExpenseCategoryListItem({
             : theme.budgetOtherMonth,
         }}
       >
-        <ExpenseCategoryName
-          category={category}
-          onEditCategory={onEditCategory}
-          show3Columns={show3Columns}
-        />
+        {isIncome ? (
+          <IncomeCategoryName
+            category={category}
+            onEdit={onEditCategory}
+            isMovingAverage={audits?.[category.id] != null}
+          />
+        ) : (
+          <ExpenseCategoryName
+            category={category}
+            onEditCategory={onEditCategory}
+            show3Columns={show3Columns}
+            isMovingAverage={audits?.[category.id] != null}
+          />
+        )}
         <View
           style={{
             flexDirection: 'row',
@@ -161,7 +152,29 @@ function CspExpenseCategoryListItem({
               paddingRight: 5,
             }}
           >
-            <CspMobileAmountCell amount={amount} percentage={percentage} />
+            <CspAmountCell
+              amount={targetAmount}
+              percentage={targetPercentage}
+              dimIfZero={targetAmount === 0}
+              isIncome={isIncome}
+            />
+          </View>
+          <View
+            style={{
+              width: columnWidth,
+              justifyContent: 'center',
+              alignItems: 'flex-end',
+              paddingRight: 5,
+            }}
+          >
+            <CspAmountCell
+              amount={spentAmount}
+              percentage={spentPercentage}
+              targetAmount={targetAmount}
+              spentAmount={spentAmount}
+              dimIfZero={spentAmount === 0}
+              isIncome={isIncome}
+            />
           </View>
         </View>
       </View>
@@ -197,8 +210,8 @@ function CspExpenseGroupListItem({
   isHidden,
   ...props
 }: CspExpenseGroupListItemProps) {
-  const actuals = useContext(CspActualsContext);
-  const netIncome = useContext(CspNetIncomeContext);
+  const { totalTarget, totalSpent, targetPercentage, spentPercentage } =
+    useCspGroupAmounts(categoryGroup);
 
   const categories = useMemo(
     () =>
@@ -210,12 +223,6 @@ function CspExpenseGroupListItem({
     [categoryGroup, isCollapsed, showHiddenCategories],
   );
 
-  const total = (categoryGroup.categories ?? []).reduce(
-    (sum: number, cat) => sum + (actuals[cat.id] ?? 0),
-    0,
-  );
-  const percentage =
-    netIncome > 0 ? (Math.abs(total) / netIncome) * 100 : undefined;
   const columnWidth = getColumnWidth({ show3Columns });
 
   const shouldHideCategory = useCallback(
@@ -261,7 +268,20 @@ function CspExpenseGroupListItem({
             }}
           >
             <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
-              <CspMobileAmountCell amount={total} percentage={percentage} />
+              <CspAmountCell
+                amount={totalTarget}
+                percentage={targetPercentage}
+                dimIfZero={totalTarget === 0}
+              />
+            </View>
+            <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
+              <CspAmountCell
+                amount={totalSpent}
+                percentage={spentPercentage}
+                targetAmount={totalTarget}
+                spentAmount={totalSpent}
+                dimIfZero={totalSpent === 0}
+              />
             </View>
           </View>
         </View>
@@ -277,64 +297,6 @@ function CspExpenseGroupListItem({
           showBudgetedColumn={showBudgetedColumn}
         />
       </Card>
-    </GridListItem>
-  );
-}
-
-type CspIncomeCategoryListItemProps = {
-  value: CategoryEntity;
-  month: string;
-  onEdit: (id: string) => void;
-};
-
-function CspIncomeCategoryListItem({
-  value: category,
-  month,
-  onEdit,
-  ...props
-}: CspIncomeCategoryListItemProps) {
-  const actuals = useContext(CspActualsContext);
-  const amount = actuals[category.id] ?? 0;
-  const columnWidth = getColumnWidth();
-
-  return (
-    <GridListItem textValue={category.name} {...props}>
-      <View
-        style={{
-          height: ROW_HEIGHT,
-          borderColor: theme.tableBorder,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingLeft: 5,
-          paddingRight: 5,
-          borderBottomWidth: 1,
-          opacity: category.hidden ? 0.5 : undefined,
-          backgroundColor: monthUtils.isCurrentMonth(month)
-            ? theme.budgetCurrentMonth
-            : theme.budgetOtherMonth,
-        }}
-      >
-        <IncomeCategoryName category={category} onEdit={onEdit} />
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              width: columnWidth,
-              justifyContent: 'center',
-              alignItems: 'flex-end',
-              paddingRight: 5,
-            }}
-          >
-            <CspMobileAmountCell amount={amount} />
-          </View>
-        </View>
-      </View>
     </GridListItem>
   );
 }
@@ -362,7 +324,8 @@ function CspIncomeGroup({
 }: CspIncomeGroupProps) {
   const { t } = useTranslation();
   const columnWidth = getColumnWidth();
-  const actuals = useContext(CspActualsContext);
+  const { totalTarget, totalSpent, targetPercentage, spentPercentage } =
+    useCspGroupAmounts(categoryGroup);
 
   const categories = useMemo(
     () =>
@@ -379,11 +342,6 @@ function CspIncomeGroup({
     ],
   );
 
-  const total = (categoryGroup.categories ?? []).reduce(
-    (sum: number, cat) => sum + (actuals[cat.id] ?? 0),
-    0,
-  );
-
   return (
     <View>
       <View
@@ -396,6 +354,7 @@ function CspIncomeGroup({
           marginRight: 15,
         }}
       >
+        <Label title={t('Expected')} style={{ width: columnWidth }} />
         <Label title={t('Received')} style={{ width: columnWidth }} />
       </View>
 
@@ -432,7 +391,22 @@ function CspIncomeGroup({
             }}
           >
             <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
-              <CspMobileAmountCell amount={total} />
+              <CspAmountCell
+                amount={totalTarget}
+                percentage={targetPercentage}
+                dimIfZero={totalTarget === 0}
+                isIncome
+              />
+            </View>
+            <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
+              <CspAmountCell
+                amount={totalSpent}
+                percentage={spentPercentage}
+                targetAmount={totalTarget}
+                spentAmount={totalSpent}
+                dimIfZero={totalSpent === 0}
+                isIncome
+              />
             </View>
           </View>
         </View>
@@ -533,6 +507,12 @@ function CspBudgetTableHeader({
           alignItems: 'center',
         }}
       >
+        <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
+          <Label
+            title={t('Target')}
+            style={{ color: theme.formInputText, paddingRight: 4 }}
+          />
+        </View>
         <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
           <Label
             title={t('Spent')}
@@ -663,15 +643,29 @@ export function MobileCspPage() {
   };
 
   // Calculate Net Income dynamically for percentages
+  const audits = useCspAudits();
   const incomeGroup = categoryGroups.find(g =>
     g.name.toLowerCase().includes('income'),
   );
-  const netIncome = incomeGroup
+  const { data: targets = {} } = useCspTargetsForMonth(startMonth);
+
+  const netIncomeTarget = incomeGroup
     ? (incomeGroup.categories ?? []).reduce(
-        (sum, cat) => sum + (actuals[cat.id] || 0),
+        (sum, cat) => sum + getCspTargetAmount(cat, categoryGroups, targets),
         0,
       )
     : 0;
+  const netIncomeSpent = incomeGroup
+    ? (incomeGroup.categories ?? []).reduce(
+        (sum, cat) =>
+          sum + getCspSpentAmount(cat, actuals, audits, categoryGroups),
+        0,
+      )
+    : 0;
+  const netIncome: CspNetIncomeInfo = {
+    target: netIncomeTarget,
+    spent: netIncomeSpent,
+  };
 
   // Calculate Net Worth totals for the header/modal
   const [accountTypesRaw] = useSyncedPref('csp-account-types');
@@ -722,9 +716,9 @@ export function MobileCspPage() {
 
   const cspOverrides = useMemo(
     () => ({
-      ExpenseCategoryListItem: CspExpenseCategoryListItem,
+      ExpenseCategoryListItem: CspMobileCategoryListItem,
       ExpenseGroupListItem: CspExpenseGroupListItem,
-      IncomeCategoryListItem: CspIncomeCategoryListItem,
+      IncomeCategoryListItem: CspMobileCategoryListItem,
       IncomeGroup: CspIncomeGroup,
       BudgetTableHeader: CspBudgetTableHeader,
     }),
@@ -741,60 +735,62 @@ export function MobileCspPage() {
   return (
     <MobileBudgetComponentsProvider value={cspOverrides}>
       <CategoriesOverrideProvider value={categoryGroups}>
-        <CspActualsContext.Provider value={actuals}>
-          <CspNetIncomeContext.Provider value={netIncome}>
-            <CspNetWorthContext.Provider value={netWorth}>
-              <SheetNameProvider name={monthUtils.sheetForMonth(startMonth)}>
-                <BudgetProvider
-                  summaryCollapsed={false}
-                  onBudgetAction={() => {
-                    /* noop */
-                  }}
-                  onToggleSummaryCollapse={() => {
-                    /* noop */
-                  }}
-                >
-                  <Page
-                    padding={0}
-                    header={
-                      <MobilePageHeader
-                        title={
-                          <MonthSelector
-                            month={startMonth}
-                            monthBounds={bounds}
-                            onOpenMonthMenu={onOpenBudgetMonthMenu}
-                            onPrevMonth={onPrevMonth}
-                            onNextMonth={onNextMonth}
-                          />
-                        }
-                      />
-                    }
+        <CspTargetsContext.Provider value={targets}>
+          <CspActualsContext.Provider value={actuals}>
+            <CspNetIncomeContext.Provider value={netIncome}>
+              <CspNetWorthContext.Provider value={netWorth}>
+                <SheetNameProvider name={monthUtils.sheetForMonth(startMonth)}>
+                  <BudgetProvider
+                    summaryCollapsed={false}
+                    onBudgetAction={() => {
+                      /* noop */
+                    }}
+                    onToggleSummaryCollapse={() => {
+                      /* noop */
+                    }}
                   >
-                    <SyncRefresh onSync={onRefresh}>
-                      {({ onRefresh: onRefreshSync }) => (
-                        <BudgetTable
-                          categoryGroups={categoryGroups}
-                          month={startMonth}
-                          onShowBudgetSummary={onShowBudgetSummary}
-                          onBudgetAction={() => {
-                            /* noop */
-                          }}
-                          onRefresh={onRefreshSync}
-                          onEditCategoryGroup={() => {
-                            /* noop */
-                          }}
-                          onEditCategory={() => {
-                            /* noop */
-                          }}
+                    <Page
+                      padding={0}
+                      header={
+                        <MobilePageHeader
+                          title={
+                            <MonthSelector
+                              month={startMonth}
+                              monthBounds={bounds}
+                              onOpenMonthMenu={onOpenBudgetMonthMenu}
+                              onPrevMonth={onPrevMonth}
+                              onNextMonth={onNextMonth}
+                            />
+                          }
                         />
-                      )}
-                    </SyncRefresh>
-                  </Page>
-                </BudgetProvider>
-              </SheetNameProvider>
-            </CspNetWorthContext.Provider>
-          </CspNetIncomeContext.Provider>
-        </CspActualsContext.Provider>
+                      }
+                    >
+                      <SyncRefresh onSync={onRefresh}>
+                        {({ onRefresh: onRefreshSync }) => (
+                          <BudgetTable
+                            categoryGroups={categoryGroups}
+                            month={startMonth}
+                            onShowBudgetSummary={onShowBudgetSummary}
+                            onBudgetAction={() => {
+                              /* noop */
+                            }}
+                            onRefresh={onRefreshSync}
+                            onEditCategoryGroup={() => {
+                              /* noop */
+                            }}
+                            onEditCategory={() => {
+                              /* noop */
+                            }}
+                          />
+                        )}
+                      </SyncRefresh>
+                    </Page>
+                  </BudgetProvider>
+                </SheetNameProvider>
+              </CspNetWorthContext.Provider>
+            </CspNetIncomeContext.Provider>
+          </CspActualsContext.Provider>
+        </CspTargetsContext.Provider>
       </CategoriesOverrideProvider>
     </MobileBudgetComponentsProvider>
   );

@@ -11,4 +11,6 @@ export type CategoryEntity = {
   sort_order?: number;
   tombstone?: boolean;
   hidden?: boolean;
+  planned_amount?: number | null;
+  moving_average_months?: number | null;
 };

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { SvgCheveronRight } from '@actual-app/components/icons/v1';
+import { SvgTrendingUp } from '@actual-app/components/icons/v2';
 import { styles } from '@actual-app/components/styles';
 import type { CSSProperties } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
@@ -33,12 +34,14 @@ type ExpenseCategoryNameProps = {
   category: CategoryEntity;
   onEditCategory: (id: CategoryEntity['id']) => void;
   show3Columns: boolean;
+  isMovingAverage?: boolean;
 };
 
 export function ExpenseCategoryName({
   category,
   onEditCategory,
   show3Columns,
+  isMovingAverage,
 }: ExpenseCategoryNameProps) {
   const sidebarColumnWidth = getColumnWidth({
     show3Columns,
@@ -89,6 +92,13 @@ export function ExpenseCategoryName({
           >
             {category.name}
           </Text>
+          {isMovingAverage && (
+            <View style={{ marginLeft: 5, justifyContent: 'center' }}>
+              <SvgTrendingUp
+                style={{ width: 12, height: 12, color: theme.pageTextSubdued }}
+              />
+            </View>
+          )}
           <SvgCheveronRight
             style={{ flexShrink: 0, color: theme.tableTextSubdued }}
             width={14}

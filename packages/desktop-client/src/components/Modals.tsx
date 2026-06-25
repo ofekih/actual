@@ -38,6 +38,7 @@ import { CreateEncryptionKeyModal } from './modals/CreateEncryptionKeyModal';
 import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
 import { CspBudgetSummaryModal } from './modals/CspBudgetSummaryModal';
 import { CspCategoryAutocompleteModal } from './modals/CspCategoryAutocompleteModal';
+import { CspCategorySettingsModal } from './modals/CspCategorySettingsModal';
 import { EditUserAccess } from './modals/EditAccess';
 import { EditFieldModal } from './modals/EditFieldModal';
 import { EditRuleModal } from './modals/EditRuleModal';
@@ -234,6 +235,9 @@ export function Modals() {
 
         case 'csp-category-autocomplete':
           return <CspCategoryAutocompleteModal key={key} {...modal.options} />;
+
+        case 'csp-category-settings':
+          return <CspCategorySettingsModal key={key} {...modal.options} />;
 
         case 'category-group-autocomplete':
           return (

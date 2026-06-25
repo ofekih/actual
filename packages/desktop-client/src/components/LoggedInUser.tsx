@@ -11,7 +11,11 @@ import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import { listen } from '@actual-app/core/platform/client/connection';
-import type { RemoteFile, SyncedLocalFile } from '@actual-app/core/types/file';
+import type {
+  File,
+  RemoteFile,
+  SyncedLocalFile,
+} from '@actual-app/core/types/file';
 import type { TransObjectLiteral } from '@actual-app/core/types/util';
 
 import { useAuth } from '#auth/AuthProvider';
@@ -44,7 +48,10 @@ export function LoggedInUser({ hideIfNoServer, style }: LoggedInUserProps) {
   const location = useLocation();
   const { hasPermission } = useAuth();
   const multiuserEnabled = useMultiuserEnabled();
-  const allFiles = useSelector(state => state.budgetfiles.allFiles || []);
+  const EMPTY_ARRAY: File[] = [];
+
+  const allFilesRaw = useSelector(state => state.budgetfiles.allFiles);
+  const allFiles = allFilesRaw || EMPTY_ARRAY;
   const remoteFiles = allFiles.filter(
     f => f.state === 'remote' || f.state === 'synced' || f.state === 'detached',
   ) as (SyncedLocalFile | RemoteFile)[];

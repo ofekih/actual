@@ -189,10 +189,15 @@ export const cspCategoryModel = {
     category: CSPCategoryEntity,
     { update }: { update?: boolean } = {},
   ): DbCspCategory {
+    const {
+      is_income: _is_income,
+      hidden: _hidden,
+      ...dbCategory
+    } = category as unknown as Record<string, unknown>;
     return (
       update
-        ? convertForUpdate(schema, schemaConfig, 'csp_categories', category)
-        : convertForInsert(schema, schemaConfig, 'csp_categories', category)
+        ? convertForUpdate(schema, schemaConfig, 'csp_categories', dbCategory)
+        : convertForInsert(schema, schemaConfig, 'csp_categories', dbCategory)
     ) as DbCspCategory;
   },
   fromDb(category: DbCspCategory): CSPCategoryEntity {

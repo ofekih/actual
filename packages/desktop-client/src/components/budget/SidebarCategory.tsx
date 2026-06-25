@@ -1,21 +1,28 @@
 // @ts-strict-ignore
-import React, { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import type { CSSProperties, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { SvgCheveronDown } from '@actual-app/components/icons/v1';
+import { SvgTrendingUp } from '@actual-app/components/icons/v2';
 import { Menu } from '@actual-app/components/menu';
 import { Popover } from '@actual-app/components/popover';
 import { TextOneLine } from '@actual-app/components/text-one-line';
 import { theme } from '@actual-app/components/theme';
+import { Tooltip } from '@actual-app/components/tooltip';
 import { View } from '@actual-app/components/view';
 import type {
   CategoryEntity,
   CategoryGroupEntity,
+  CSPCategoryEntity,
 } from '@actual-app/core/types/models';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useMoveCategoryMutation } from '#budget';
+import { useCategoriesOverride } from '#components/budget/CategoriesOverrideContext';
+import { MonthsContext } from '#components/budget/MonthsContext';
+import { CspTargetsContext } from '#components/csp/index';
 import { InputCell } from '#components/table';
 import { useContextMenu } from '#hooks/useContextMenu';
 import { useGlobalPref } from '#hooks/useGlobalPref';
@@ -67,7 +74,17 @@ export function SidebarCategory({
   const [categoryExpandedStatePref] = useGlobalPref('categoryExpandedState');
   const categoryExpandedState = categoryExpandedStatePref ?? 0;
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const moveCategory = useMoveCategoryMutation();
+  const { months } = useContext(MonthsContext);
+
+  const cspCategoryGroups = useCategoriesOverride();
+  const isCsp = cspCategoryGroups !== null;
+  const targets = useContext(CspTargetsContext);
+  const auditWindowMonths =
+    (category as unknown as CSPCategoryEntity).moving_average_months ?? null;
+  const isMovingAverage =
+    isCsp && auditWindowMonths != null && auditWindowMonths > 0;
 
   const temporary = category.id === 'new';
   const { setMenuOpen, menuOpen, handleContextMenu, resetPosition, position } =
@@ -89,6 +106,19 @@ export function SidebarCategory({
       onContextMenu={handleContextMenu}
     >
       <TextOneLine data-testid="category-name">{category.name}</TextOneLine>
+      {isMovingAverage && (
+        <Tooltip
+          content={t('Spent amount is a {{months}}-month moving average', {
+            months: auditWindowMonths,
+          })}
+        >
+          <View style={{ marginLeft: 5, justifyContent: 'center' }}>
+            <SvgTrendingUp
+              style={{ width: 12, height: 12, color: theme.pageTextSubdued }}
+            />
+          </View>
+        </Tooltip>
+      )}
       <View style={{ flexShrink: 0, marginLeft: 5 }}>
         <Button
           variant="bare"
@@ -121,6 +151,35 @@ export function SidebarCategory({
                 onEditName(category.id);
               } else if (type === 'delete') {
                 onDelete(category.id);
+              } else if (type === 'csp-settings') {
+                dispatch(
+                  pushModal({
+                    modal: {
+                      name: 'csp-category-settings',
+                      options: {
+                        category: {
+                          ...category,
+                          planned_amount: targets?.[category.id] ?? null,
+                          moving_average_months: auditWindowMonths,
+                        } as unknown as CSPCategoryEntity,
+                        month: months[0],
+                        onSave: async updatedFields => {
+                          onSave({
+                            ...category,
+                            moving_average_months:
+                              updatedFields.moving_average_months,
+                          });
+                          void queryClient.invalidateQueries({
+                            queryKey: ['csp-targets'],
+                          });
+                          void queryClient.invalidateQueries({
+                            queryKey: ['categories'],
+                          });
+                        },
+                      },
+                    },
+                  }),
+                );
               } else if (type === 'toggle-visibility') {
                 onSave({ ...category, hidden: !category.hidden });
               } else if (type === 'move-group') {
@@ -130,6 +189,7 @@ export function SidebarCategory({
                       name: 'category-group-autocomplete',
                       options: {
                         title: t('Move to group'),
+                        categoryGroups: cspCategoryGroups ?? undefined,
                         onSelect: async groupId => {
                           await moveCategory.mutateAsync({
                             id: category.id,
@@ -146,13 +206,17 @@ export function SidebarCategory({
             }}
             items={[
               { name: 'rename', text: t('Rename') },
+              isCsp && {
+                name: 'csp-settings',
+                text: t('Amortize & Audit...'),
+              },
               !categoryGroup?.hidden && {
                 name: 'toggle-visibility',
                 text: category.hidden ? t('Show') : t('Hide'),
               },
               { name: 'move-group', text: t('Move to group...') },
               { name: 'delete', text: t('Delete') },
-            ]}
+            ].filter(Boolean)}
           />
         </Popover>
       </View>

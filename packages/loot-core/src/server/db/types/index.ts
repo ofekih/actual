@@ -72,6 +72,8 @@ export type DbCspCategory = {
   id: string;
   name: string;
   cat_group: DbCspCategoryGroup['id'];
+  planned_amount?: number | null;
+  moving_average_months?: number | null;
   sort_order: number;
   tombstone: 1 | 0;
 };

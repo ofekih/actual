@@ -45,6 +45,7 @@ export { SvgSearchAlternate } from './SearchAlternate';
 export { SvgSettingsSliderAlternate } from './SettingsSliderAlternate';
 export { SvgSubtract } from './Subtract';
 export { SvgSun } from './Sun';
+export { SvgTrendingUp } from './TrendingUp';
 export { SvgUncheckAll } from './UncheckAll';
 export { SvgUploadThickBottom } from './UploadThickBottom';
 export { SvgValidationCheck } from './ValidationCheck';

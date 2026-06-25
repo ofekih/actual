@@ -83,6 +83,8 @@ export type BudgetHandlers = {
   'csp-category-group-create': typeof createCspCategoryGroup;
   'csp-category-group-update': typeof updateCspCategoryGroup;
   'csp-category-group-delete': typeof deleteCspCategoryGroup;
+  'csp/get-targets': typeof getCspTargets;
+  'csp/set-target': typeof setCspTarget;
 };
 
 export const app = createApp<BudgetHandlers>();
@@ -188,6 +190,8 @@ app.method(
   'csp-category-group-delete',
   mutator(undoable(deleteCspCategoryGroup)),
 );
+app.method('csp/get-targets', getCspTargets);
+app.method('csp/set-target', mutator(undoable(setCspTarget)));
 
 app.method(
   'budget/get-category-automations',
@@ -622,4 +626,60 @@ async function deleteCspCategoryGroup({ id }: { id: string }): Promise<void> {
     }
     await db.delete_('csp_category_groups', id);
   });
+}
+
+async function getCspTargets({ month }: { month: string }) {
+  // Return targets for all categories for the given month, which is the most recent target <= month
+  const monthInt = parseInt(month.replace('-', ''));
+  const rows = await db.all<{ category: string; amount: number }>(
+    `
+    SELECT category, amount FROM (
+      SELECT category, amount, month,
+      ROW_NUMBER() OVER(PARTITION BY category ORDER BY month DESC) as rn
+      FROM csp_targets
+      WHERE month <= ? AND tombstone = 0
+    ) WHERE rn = 1
+    `,
+    [monthInt],
+  );
+  const targets: Record<string, number> = {};
+  for (const row of rows) {
+    targets[row.category] = row.amount;
+  }
+  return targets;
+}
+
+async function setCspTarget({
+  category,
+  month,
+  amount,
+}: {
+  category: string;
+  month: string;
+  amount: number | null;
+}) {
+  const monthInt = parseInt(month.replace('-', ''));
+
+  if (amount === null) {
+    // We should delete or tombstone the target for this month
+    await db.run('DELETE FROM csp_targets WHERE category = ? AND month = ?', [
+      category,
+      monthInt,
+    ]);
+  } else {
+    // Insert or update
+    const existing = await db.first<{ id: string }>(
+      'SELECT id FROM csp_targets WHERE category = ? AND month = ?',
+      [category, monthInt],
+    );
+    if (existing) {
+      await db.update('csp_targets', { id: existing.id, amount, tombstone: 0 });
+    } else {
+      await db.insertWithUUID('csp_targets', {
+        category,
+        month: monthInt,
+        amount,
+      });
+    }
+  }
 }
