@@ -365,7 +365,7 @@ export const schemaConfig: SchemaConfig = {
       v_csp_categories: internalFields => {
         const fields = internalFields({ group: 'cat_group' });
         // Bump hash to recreate view
-        return `SELECT ${fields} FROM csp_categories AS _`;
+        return `SELECT ${fields} FROM csp_categories AS _ /* bump 1 */`;
       },
     },
 
