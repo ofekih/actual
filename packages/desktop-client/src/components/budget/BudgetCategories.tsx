@@ -10,11 +10,11 @@ import type {
   CategoryGroupEntity,
 } from '@actual-app/core/types/models';
 
+import { useCspBudgetComponents } from '#components/csp/CspComponentsContext';
 import { DropHighlightPosContext } from '#components/sort';
 import type { DragState, OnDropCallback } from '#components/sort';
 import { Row } from '#components/table';
 import { useLocalPref } from '#hooks/useLocalPref';
-import { useCspBudgetComponents } from '#components/csp/CspComponentsContext';
 
 import { ExpenseCategory } from './ExpenseCategory';
 import { ExpenseGroup } from './ExpenseGroup';

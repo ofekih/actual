@@ -65,7 +65,7 @@ import {
   prewarmAllMonths,
   prewarmMonth,
 } from '#components/budget/util';
-import { Field, InputCell, Row } from '#components/table';
+import { Field, InputCell } from '#components/table';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCspCategories } from '#hooks/useCspCategories';
 import { useGlobalPref } from '#hooks/useGlobalPref';
@@ -178,10 +178,11 @@ export function useCspCategoryAudits(
 
       const sumsByCatAndMonth: Record<string, Record<string, number>> = {};
       for (const row of data) {
-        let amount = row.amount;
+        const amount = row.amount;
 
-        if (!sumsByCatAndMonth[row.csp_category])
-          {sumsByCatAndMonth[row.csp_category] = {};}
+        if (!sumsByCatAndMonth[row.csp_category]) {
+          sumsByCatAndMonth[row.csp_category] = {};
+        }
         sumsByCatAndMonth[row.csp_category][row.month] =
           (sumsByCatAndMonth[row.csp_category][row.month] || 0) + amount;
       }
@@ -243,7 +244,7 @@ export function useCspActualsForMonth(month: string) {
       const res: CspActuals = {};
 
       for (const row of data) {
-        let amount = row.amount;
+        const amount = row.amount;
         res[row.csp_category] = (res[row.csp_category] || 0) + amount;
       }
 
