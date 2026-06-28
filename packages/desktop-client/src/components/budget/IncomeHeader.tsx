@@ -5,6 +5,7 @@ import { Button } from '@actual-app/components/button';
 import { View } from '@actual-app/components/view';
 
 import { useGlobalPref } from '#hooks/useGlobalPref';
+import { useCspBudgetComponents } from '#components/csp/CspComponentsContext';
 
 import { RenderMonths } from './RenderMonths';
 
@@ -18,6 +19,8 @@ export function IncomeHeader({ onShowNewGroup }: IncomeHeaderProps) {
   const [categoryExpandedStatePref] = useGlobalPref('categoryExpandedState');
   const categoryExpandedState = categoryExpandedStatePref ?? 0;
   const { IncomeHeaderComponent: MonthComponent } = useBudgetComponents();
+  const cspOverride = useCspBudgetComponents();
+
   return (
     <View style={{ flexDirection: 'row', flex: 1 }}>
       <View
@@ -27,9 +30,11 @@ export function IncomeHeader({ onShowNewGroup }: IncomeHeaderProps) {
           justifyContent: 'flex-start',
         }}
       >
-        <Button onPress={onShowNewGroup} style={{ fontSize: 12, margin: 10 }}>
-          <Trans>Add group</Trans>
-        </Button>
+        {!cspOverride && (
+          <Button onPress={onShowNewGroup} style={{ fontSize: 12, margin: 10 }}>
+            <Trans>Add group</Trans>
+          </Button>
+        )}
       </View>
       <RenderMonths style={{ border: 0, justifyContent: 'flex-end' }}>
         <MonthComponent />

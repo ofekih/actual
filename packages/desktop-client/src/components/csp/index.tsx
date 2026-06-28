@@ -42,9 +42,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   useDeleteCspCategoryGroupMutation,
   useDeleteCspCategoryMutation,
+  useReorderCspCategoryMutation,
   useSaveCspCategoryGroupMutation,
   useSaveCspCategoryMutation,
-  useReorderCspCategoryMutation,
 } from '#budget';
 import type {
   BudgetComponents,
@@ -167,24 +167,31 @@ export function useCspCategoryAudits(
               $lte: month,
             },
           })
-          .groupBy(['csp_category', { $month: '$date' }])
           .select([
             'csp_category',
             { month: { $month: '$date' } },
-            { sum: { $sum: '$amount' } },
+            'amount',
+            'transfer_id',
           ])
           .serialize(),
       );
 
-      const sumsByCat: Record<string, { month: string; sum: number }[]> = {};
+      const sumsByCatAndMonth: Record<string, Record<string, number>> = {};
       for (const row of data) {
-        if (!sumsByCat[row.csp_category]) {
-          sumsByCat[row.csp_category] = [];
-        }
-        sumsByCat[row.csp_category].push({
-          month: row.month,
-          sum: row.sum,
-        });
+        let amount = row.amount;
+
+        if (!sumsByCatAndMonth[row.csp_category])
+          {sumsByCatAndMonth[row.csp_category] = {};}
+        sumsByCatAndMonth[row.csp_category][row.month] =
+          (sumsByCatAndMonth[row.csp_category][row.month] || 0) + amount;
+      }
+
+      const sumsByCat: Record<string, { month: string; sum: number }[]> = {};
+      for (const catId in sumsByCatAndMonth) {
+        sumsByCat[catId] = Object.keys(sumsByCatAndMonth[catId]).map(m => ({
+          month: m,
+          sum: sumsByCatAndMonth[catId][m],
+        }));
       }
 
       const audits: Record<string, CspAudit> = {};
@@ -230,14 +237,16 @@ export function useCspActualsForMonth(month: string) {
             tombstone: false,
             csp_category: { $ne: null },
           })
-          .groupBy('csp_category')
-          .select(['csp_category', { sum: { $sum: '$amount' } }])
+          .select(['csp_category', 'amount', 'transfer_id'])
           .serialize(),
       );
       const res: CspActuals = {};
+
       for (const row of data) {
-        res[row.csp_category] = row.sum;
+        let amount = row.amount;
+        res[row.csp_category] = (res[row.csp_category] || 0) + amount;
       }
+
       return res;
     },
     placeholderData: {},
@@ -383,11 +392,11 @@ export function useCspCategoryAmounts(category: CategoryEntity) {
   const isIncome = isIncomeCategory(category, categoryGroups);
 
   const targetPercentage =
-    netIncome.target > 0 && !isIncome
+    netIncome.target > 0
       ? (Math.abs(targetAmount) / netIncome.target) * 100
       : undefined;
   const spentPercentage =
-    netIncome.spent > 0 && !isIncome
+    netIncome.spent > 0
       ? (Math.abs(spentAmount) / netIncome.spent) * 100
       : undefined;
 
@@ -594,7 +603,8 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
   onShowActivity,
 }: CategoryMonthProps) {
   const queryClient = useQueryClient();
-  const { targetAmount, spentAmount } = useCspCategoryAmounts(category);
+  const { targetAmount, spentAmount, targetPercentage, spentPercentage } =
+    useCspCategoryAmounts(category);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row' }}>
@@ -621,7 +631,13 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
           },
         }}
         value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
-        formatter={() => <CspAmountCell amount={targetAmount} dimIfZero />}
+        formatter={() => (
+          <CspAmountCell
+            amount={targetAmount}
+            percentage={targetPercentage}
+            dimIfZero
+          />
+        )}
         onUpdate={async value => {
           const newAmount = value
             ? amountToInteger(currencyToAmount(value) || 0)
@@ -648,60 +664,95 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
         <ClickableCell
           onClick={() => onShowActivity(category.id, month, 'csp_category')}
         >
-          <CspAmountCell
-            amount={spentAmount}
-            targetAmount={targetAmount}
-            spentAmount={spentAmount}
-            dimIfZero
-            isIncome
-          />
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 6,
+            }}
+          >
+            <CspAmountCell
+              amount={spentAmount}
+              percentage={spentPercentage}
+              dimIfZero
+              isIncome
+            />
+          </View>
         </ClickableCell>
       </Field>
     </View>
   );
 });
 
-function CspIncomeGroupMonth() {
+const CspIncomeGroupMonth = memo(function CspIncomeGroupMonth({
+  group,
+}: CategoryGroupMonthProps) {
+  const { totalTarget, totalSpent } = useCspGroupAmounts(group);
+
   return (
-    <View style={{ flex: 1, flexDirection: 'row' }}>
-      <Row
+    <View
+      style={{
+        flex: 1,
+        flexDirection: 'row',
+        backgroundColor: theme.budgetHeaderCurrentMonth,
+      }}
+    >
+      <Field
+        name="target"
+        width="flex"
         style={{
-          color: theme.tableHeaderText,
-          alignItems: 'center',
-          paddingRight: 10,
-          backgroundColor: theme.budgetCurrentMonth,
-          flex: 1,
+          textAlign: 'right',
+          fontWeight: 600,
+          paddingRight: styles.monthRightPadding,
         }}
       >
-        <View style={{ flex: 1, textAlign: 'right' }}>
-          <Trans>Expected</Trans>
+        <CspAmountCell amount={totalTarget} dimIfZero />
+      </Field>
+      <Field
+        name="spent"
+        width="flex"
+        style={{
+          textAlign: 'right',
+          fontWeight: 600,
+          paddingRight: styles.monthRightPadding,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 6,
+          }}
+        >
+          <CspAmountCell amount={totalSpent} dimIfZero />
         </View>
-        <View style={{ flex: 1, textAlign: 'right' }}>
-          <Trans>Received</Trans>
-        </View>
-      </Row>
+      </Field>
     </View>
   );
-}
+});
 
 function CspIncomeHeaderMonth() {
   return (
-    <Row
+    <View
       style={{
-        color: theme.tableHeaderText,
-        alignItems: 'center',
-        paddingRight: 10,
-        backgroundColor: theme.budgetCurrentMonth,
-        flex: 1,
+        flexDirection: 'row',
+        marginRight: styles.monthRightPadding,
+        paddingBottom: 8,
       }}
     >
-      <View style={{ flex: 1, textAlign: 'right' }}>
-        <Trans>Expected</Trans>
+      <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
+        <Text style={{ color: theme.tableHeaderText }}>
+          <Trans>Planned</Trans>
+        </Text>
       </View>
-      <View style={{ flex: 1, textAlign: 'right' }}>
-        <Trans>Received</Trans>
+      <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
+        <Text style={{ color: theme.tableHeaderText }}>
+          <Trans>Actual</Trans>
+        </Text>
       </View>
-    </Row>
+    </View>
   );
 }
 
@@ -719,12 +770,12 @@ const CspBudgetTotalsMonth = memo(function CspBudgetTotalsMonth() {
     >
       <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
         <Text style={{ color: theme.tableHeaderText }}>
-          <Trans>Planned</Trans>
+          <Trans>Expected</Trans>
         </Text>
       </View>
       <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
         <Text style={{ color: theme.tableHeaderText }}>
-          <Trans>Actual</Trans>
+          <Trans>Received</Trans>
         </Text>
       </View>
     </View>
@@ -1333,6 +1384,7 @@ export function Csp() {
   const incomeGroup = categoryGroups.find(g =>
     g.name.toLowerCase().includes('income'),
   );
+
   const netIncomeTarget = incomeGroup
     ? (incomeGroup.categories ?? []).reduce(
         (sum, cat) => sum + getCspTargetAmount(cat, categoryGroups, targets),
@@ -1346,6 +1398,7 @@ export function Csp() {
         0,
       )
     : 0;
+
   const netIncome: CspNetIncomeInfo = {
     target: netIncomeTarget,
     spent: netIncomeSpent,

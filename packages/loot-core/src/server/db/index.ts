@@ -546,7 +546,6 @@ export async function moveCspCategory(
   await update('csp_categories', { id, sort_order, cat_group: groupId });
 }
 
-
 export async function deleteCategory(
   category: Pick<DbCategory, 'id'>,
   transferId?: DbCategory['id'] | null,

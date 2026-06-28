@@ -1,5 +1,7 @@
 import React, { memo, useMemo, useState } from 'react';
+import { Trans } from 'react-i18next';
 
+import { Button } from '@actual-app/components/button';
 import { styles } from '@actual-app/components/styles';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
@@ -12,6 +14,7 @@ import { DropHighlightPosContext } from '#components/sort';
 import type { DragState, OnDropCallback } from '#components/sort';
 import { Row } from '#components/table';
 import { useLocalPref } from '#hooks/useLocalPref';
+import { useCspBudgetComponents } from '#components/csp/CspComponentsContext';
 
 import { ExpenseCategory } from './ExpenseCategory';
 import { ExpenseGroup } from './ExpenseGroup';
@@ -33,7 +36,8 @@ type BudgetItem =
     }
   | { type: 'income-separator' }
   | { type: 'income-group'; value: CategoryGroupEntity }
-  | { type: 'income-category'; value: CategoryEntity };
+  | { type: 'income-category'; value: CategoryEntity }
+  | { type: 'add-group-button' };
 
 type LocalDragState =
   | DragState<CategoryEntity>
@@ -96,6 +100,8 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
     const [newCategoryForGroup, setNewCategoryForGroup] = useState<
       string | null
     >(null);
+    const cspOverride = useCspBudgetComponents();
+
     const items: BudgetItem[] = useMemo(() => {
       const [expenseGroups, incomeGroup] = separateGroups(categoryGroups);
 
@@ -140,7 +146,6 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
 
       if (incomeGroup) {
         const incomeCategoryItems: BudgetItem[] = [
-          { type: 'income-separator' },
           { type: 'income-group', value: incomeGroup },
         ];
 
@@ -162,7 +167,13 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
           ),
         );
 
-        items = items.concat(incomeCategoryItems);
+        incomeCategoryItems.push({ type: 'income-separator' });
+
+        items = incomeCategoryItems.concat(items);
+      }
+
+      if (cspOverride) {
+        items.push({ type: 'add-group-button' });
       }
 
       return items;
@@ -172,6 +183,7 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
       newCategoryForGroup,
       isAddingGroup,
       showHiddenCategories,
+      cspOverride,
     ]);
 
     const [dragState, setDragState] = useState<LocalDragState>(null);
@@ -341,7 +353,7 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
               content = (
                 <View
                   style={{
-                    height: styles.incomeHeaderHeight,
+                    height: cspOverride ? 40 : styles.incomeHeaderHeight,
                     backgroundColor: theme.budgetCurrentMonth,
                   }}
                 >
@@ -379,6 +391,15 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
                   onBudgetAction={onBudgetAction}
                   onShowActivity={onShowActivity}
                 />
+              );
+              break;
+            case 'add-group-button':
+              content = (
+                <View style={{ padding: 10, alignItems: 'flex-start' }}>
+                  <Button onPress={onShowNewGroup} style={{ fontSize: 12 }}>
+                    <Trans>Add group</Trans>
+                  </Button>
+                </View>
               );
               break;
             default:

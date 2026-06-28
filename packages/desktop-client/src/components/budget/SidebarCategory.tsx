@@ -19,10 +19,7 @@ import type {
 } from '@actual-app/core/types/models';
 import { useQueryClient } from '@tanstack/react-query';
 
-import {
-  useMoveCategoryMutation,
-  useMoveCspCategoryMutation,
-} from '#budget';
+import { useMoveCategoryMutation, useMoveCspCategoryMutation } from '#budget';
 import { useCategoriesOverride } from '#components/budget/CategoriesOverrideContext';
 import { MonthsContext } from '#components/budget/MonthsContext';
 import { CspTargetsContext } from '#components/csp/index';

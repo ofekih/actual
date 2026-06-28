@@ -1085,7 +1085,11 @@ export function useReorderCspCategoryMutation() {
   const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: async ({ id, groupId, targetId }: ReorderCspCategoryPayload) => {
+    mutationFn: async ({
+      id,
+      groupId,
+      targetId,
+    }: ReorderCspCategoryPayload) => {
       const { grouped: categoryGroups = [], list: categories = [] } =
         (await queryClient.ensureQueryData({
           queryKey: ['csp-categories'],
@@ -1095,7 +1099,6 @@ export function useReorderCspCategoryMutation() {
             CSPCategoryGroupEntity & { categories: CSPCategoryEntity[] }
           >;
         };
-
 
       const moveCandidate = categories.filter(c => c.id === id)[0];
       const group = categoryGroups.find(g => g.id === groupId);
@@ -1119,4 +1122,3 @@ export function useReorderCspCategoryMutation() {
     },
   });
 }
-
