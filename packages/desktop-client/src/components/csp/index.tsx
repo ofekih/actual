@@ -102,9 +102,48 @@ export const getCspTargetAmount = (
   categoryGroups: CategoryGroupEntity[],
   targets: Record<string, number>,
 ) => {
-  const plannedAmount = targets[cat.id];
+  const isIncome = isIncomeCategory(cat, categoryGroups);
+  const group = categoryGroups.find(g => g.id === cat.group);
+  const isGuiltFree = group && group.name.toLowerCase().includes('guilt-free');
+
+  let plannedAmount = targets[cat.id];
+
+  // The first Guilt-Free category is always automatic
+  let automaticCategoryId: string | null = null;
+  const guiltFreeGroup = categoryGroups.find(g =>
+    g.name.toLowerCase().includes('guilt-free'),
+  );
+  if (
+    guiltFreeGroup &&
+    guiltFreeGroup.categories &&
+    guiltFreeGroup.categories.length > 0
+  ) {
+    automaticCategoryId = guiltFreeGroup.categories[0].id;
+  }
+
+  if (isGuiltFree && cat.id === automaticCategoryId) {
+    let totalIncome = 0;
+    let totalOtherAllocated = 0;
+
+    for (const g of categoryGroups) {
+      const gIsIncome = g.name.toLowerCase().includes('income');
+
+      for (const c of g.categories ?? []) {
+        const cTarget = targets[c.id] ?? 0;
+
+        if (gIsIncome) {
+          totalIncome += cTarget;
+        } else if (c.id !== automaticCategoryId) {
+          totalOtherAllocated += cTarget;
+        }
+      }
+    }
+
+    const remainder = totalIncome - totalOtherAllocated;
+    plannedAmount = Math.max(0, remainder);
+  }
+
   if (plannedAmount != null) {
-    const isIncome = isIncomeCategory(cat, categoryGroups);
     return isIncome ? plannedAmount : -plannedAmount;
   }
   return 0;
@@ -392,6 +431,14 @@ export function useCspCategoryAmounts(category: CategoryEntity) {
   );
   const isIncome = isIncomeCategory(category, categoryGroups);
 
+  const guiltFreeGroup = categoryGroups.find(g =>
+    g.name.toLowerCase().includes('guilt-free'),
+  );
+  const isAutomatic =
+    !!guiltFreeGroup &&
+    !!guiltFreeGroup.categories?.length &&
+    guiltFreeGroup.categories[0].id === category.id;
+
   const targetPercentage =
     netIncome.target > 0
       ? (Math.abs(targetAmount) / netIncome.target) * 100
@@ -407,6 +454,7 @@ export function useCspCategoryAmounts(category: CategoryEntity) {
     targetPercentage,
     spentPercentage,
     isIncome,
+    isAutomatic,
   };
 }
 
@@ -460,6 +508,7 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
     targetPercentage,
     spentPercentage,
     isIncome,
+    isAutomatic,
   } = useCspCategoryAmounts(category);
 
   return (
@@ -474,19 +523,23 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
         name="target"
         width="flex"
         style={{ textAlign: 'right' }}
-        exposed={editing}
-        focused={editing}
-        onExpose={() => onEdit(category.id, month)}
-        onBlur={() => onEdit(null)}
+        exposed={editing && !isAutomatic}
+        focused={editing && !isAutomatic}
+        onExpose={() => !isAutomatic && onEdit(category.id, month)}
+        onBlur={() => !isAutomatic && onEdit(null)}
         valueStyle={{
-          cursor: 'default',
+          cursor: isAutomatic ? 'default' : 'text',
           margin: 1,
           padding: '0 4px',
           borderRadius: 4,
-          ':hover': {
-            boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
-            backgroundColor: theme.budgetCurrentMonth,
-          },
+          ...(isAutomatic
+            ? {}
+            : {
+                ':hover': {
+                  boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
+                  backgroundColor: theme.budgetCurrentMonth,
+                },
+              }),
         }}
         value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
         formatter={() => (
@@ -497,6 +550,7 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
           />
         )}
         onUpdate={async value => {
+          if (isAutomatic) return;
           const newAmount = value
             ? amountToInteger(currencyToAmount(value) || 0)
             : null;
