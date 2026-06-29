@@ -93,6 +93,7 @@ export type AccountHandlers = {
 async function updateAccount({
   id,
   name,
+  offbudget,
   last_reconciled,
   account_id,
   account_sync_source,
@@ -100,12 +101,13 @@ async function updateAccount({
   Partial<
     Pick<
       AccountEntity,
-      'last_reconciled' | 'account_id' | 'account_sync_source'
+      'offbudget' | 'last_reconciled' | 'account_id' | 'account_sync_source'
     >
   >) {
   await db.update('accounts', {
     id,
     name,
+    ...(offbudget !== undefined && { offbudget }),
     ...(last_reconciled && { last_reconciled }),
     ...(account_id && { account_id }),
     ...(account_sync_source && { account_sync_source }),

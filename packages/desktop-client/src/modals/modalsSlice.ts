@@ -405,6 +405,7 @@ export type Modal =
         onClose?: () => void;
         onToggleRunningBalance?: () => void;
         onToggleReconciled?: () => void;
+        onToggleOffBudget?: () => void;
       };
     }
   | {

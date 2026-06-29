@@ -32,6 +32,7 @@ type SelectedTransactionsButtonProps = {
       | 'payee'
       | 'notes'
       | 'category'
+      | 'csp_category'
       | 'cleared',
     selectedIds: string[],
   ) => void;
@@ -405,6 +406,7 @@ export function SelectedTransactionsButton({
               { name: 'payee', text: t('Payee'), key: 'P' } as const,
               { name: 'notes', text: t('Notes'), key: 'N' } as const,
               { name: 'category', text: t('Category'), key: 'C' } as const,
+              { name: 'csp_category', text: t('CSP Category') } as const,
               { name: 'amount', text: t('Amount'), key: 'M' } as const,
               { name: 'cleared', text: t('Cleared'), key: 'L' } as const,
             ]),

@@ -164,6 +164,17 @@ function AccountHeader({ account }: { readonly account: AccountEntity }) {
     );
   }, [hideReconciled, setHideReconciled, dispatch]);
 
+  const onToggleOffBudget = useCallback(() => {
+    updateAccount({
+      account: { ...account, offbudget: account.offbudget === 1 ? 0 : 1 },
+    });
+    dispatch(
+      collapseModals({
+        rootModalName: 'account-menu',
+      }),
+    );
+  }, [account, updateAccount, dispatch]);
+
   const onClick = useCallback(() => {
     dispatch(
       pushModal({
@@ -177,6 +188,7 @@ function AccountHeader({ account }: { readonly account: AccountEntity }) {
             onReopenAccount,
             onToggleRunningBalance,
             onToggleReconciled,
+            onToggleOffBudget,
           },
         },
       }),
@@ -190,6 +202,7 @@ function AccountHeader({ account }: { readonly account: AccountEntity }) {
     onSave,
     onToggleRunningBalance,
     onToggleReconciled,
+    onToggleOffBudget,
   ]);
 
   return (

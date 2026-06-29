@@ -815,7 +815,8 @@ class AccountInternal extends PureComponent<
       | 'remove-sorting'
       | 'toggle-cleared'
       | 'toggle-reconciled'
-      | 'toggle-net-worth-chart',
+      | 'toggle-net-worth-chart'
+      | 'toggle-off-budget',
   ) => {
     const accountId = this.props.accountId!;
     const account = this.props.accounts.find(
@@ -916,6 +917,12 @@ class AccountInternal extends PureComponent<
             this.fetchTransactions(this.state.filterConditions),
           );
         }
+        break;
+      case 'toggle-off-budget':
+        this.props.onUpdateAccount({
+          ...account,
+          offbudget: account.offbudget === 1 ? 0 : 1,
+        });
         break;
       case 'toggle-net-worth-chart':
         if (this.props.showNetWorthChart) {

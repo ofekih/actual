@@ -42,6 +42,7 @@ import type {
 import { FloatingActionBar } from '#components/mobile/FloatingActionBar';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategoriesById } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
 import { useLocale } from '#hooks/useLocale';
 import { useNavigate } from '#hooks/useNavigate';
 import { usePayees } from '#hooks/usePayees';
@@ -346,6 +347,12 @@ function SelectedTransactionsFloatingActionBar({
     },
   } = useCategoriesById();
 
+  const { data: cspCategoriesData } = useCspCategories();
+  const cspCategoriesById = useMemo(
+    () => groupById(cspCategoriesData?.list),
+    [cspCategoriesData?.list],
+  );
+
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(
@@ -496,6 +503,10 @@ function SelectedTransactionsFloatingActionBar({
                         displayValue =
                           categoriesById[String(value)]?.name ?? value;
                         break;
+                      case 'csp_category':
+                        displayValue =
+                          cspCategoriesById[String(value)]?.name ?? value;
+                        break;
                       case 'payee':
                         displayValue = payeesById[String(value)]?.name ?? value;
                         break;
@@ -522,6 +533,9 @@ function SelectedTransactionsFloatingActionBar({
                               break;
                             case 'category':
                               void navigate(`/categories/${String(value)}`);
+                              break;
+                            case 'csp_category':
+                              void navigate(`/csp`);
                               break;
                             case 'payee':
                               void navigate(`/payees`);
@@ -559,6 +573,10 @@ function SelectedTransactionsFloatingActionBar({
                 {
                   name: 'category',
                   text: t('Category'),
+                },
+                {
+                  name: 'csp_category',
+                  text: t('CSP Category'),
                 },
                 // Add support later on until we have more user friendly amount input modal.
                 // {

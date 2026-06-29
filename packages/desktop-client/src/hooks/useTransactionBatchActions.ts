@@ -251,6 +251,20 @@ export function useTransactionBatchActions() {
       );
     };
 
+    const pushCspCategoryAutocompleteModal = () => {
+      dispatch(
+        pushModal({
+          modal: {
+            name: 'csp-category-autocomplete',
+            options: {
+              showNoneOption: true,
+              onSelect: categoryId => onChange(name, categoryId),
+            },
+          },
+        }),
+      );
+    };
+
     const openFieldEditor = () => {
       if (name === 'cleared') {
         // Cleared just toggles it on/off and it depends on the data
@@ -258,6 +272,8 @@ export function useTransactionBatchActions() {
         void onChange('cleared', null);
       } else if (name === 'category') {
         pushCategoryAutocompleteModal();
+      } else if (name === 'csp_category') {
+        pushCspCategoryAutocompleteModal();
       } else if (name === 'payee') {
         pushPayeeAutocompleteModal();
       } else if (name === 'account') {

@@ -44,6 +44,7 @@ export function AccountMenuModal({
   onClose,
   onToggleRunningBalance,
   onToggleReconciled,
+  onToggleOffBudget,
 }: AccountMenuModalProps) {
   const { t } = useTranslation();
   const account = useAccount(accountId);
@@ -123,6 +124,7 @@ export function AccountMenuModal({
                 onReopen={onReopenAccount}
                 onToggleRunningBalance={onToggleRunningBalance}
                 onToggleReconciled={onToggleReconciled}
+                onToggleOffBudget={onToggleOffBudget}
               />
             }
             title={
@@ -202,6 +204,7 @@ type AdditionalAccountMenuProps = {
   onReopen?: (accountId: string) => void;
   onToggleRunningBalance?: () => void;
   onToggleReconciled?: () => void;
+  onToggleOffBudget?: () => void;
 };
 
 function AdditionalAccountMenu({
@@ -210,6 +213,7 @@ function AdditionalAccountMenu({
   onReopen,
   onToggleRunningBalance,
   onToggleReconciled,
+  onToggleOffBudget,
 }: AdditionalAccountMenuProps) {
   const { t } = useTranslation();
   const triggerRef = useRef(null);
@@ -277,6 +281,12 @@ function AdditionalAccountMenu({
                     icon: SvgClose,
                     iconSize: 15,
                   },
+              {
+                name: 'toggle-off-budget',
+                text: account.offbudget
+                  ? t('Make on budget')
+                  : t('Make off budget'),
+              },
             ]}
             onMenuSelect={name => {
               setMenuOpen(false);
@@ -292,6 +302,9 @@ function AdditionalAccountMenu({
                   break;
                 case 'toggle-reconciled':
                   onToggleReconciled?.();
+                  break;
+                case 'toggle-off-budget':
+                  onToggleOffBudget?.();
                   break;
                 default:
                   throw new Error(`Unrecognized menu option: ${String(name)}`);

@@ -750,7 +750,8 @@ type AccountMenuProps = {
       | 'remove-sorting'
       | 'toggle-cleared'
       | 'toggle-reconciled'
-      | 'toggle-net-worth-chart',
+      | 'toggle-net-worth-chart'
+      | 'toggle-off-budget',
   ) => void;
 };
 
@@ -833,6 +834,10 @@ function AccountMenu({
         ...(account.closed
           ? [{ name: 'reopen', text: t('Reopen account') } as const]
           : [{ name: 'close', text: t('Close account') } as const]),
+        {
+          name: 'toggle-off-budget',
+          text: account.offbudget ? t('Make on budget') : t('Make off budget'),
+        },
       ]}
     />
   );
