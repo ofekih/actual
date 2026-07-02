@@ -19,6 +19,7 @@ The following are implementations of bank syncing using the Actual API. For inst
 - **MoneyMan an israel banks importer** - https://github.com/daniel-hauser/moneyman
 - **Plaid bank sync** - https://github.com/youngcw/actualplaid
 - **ANZ Plus bank PDF to OFX converter** - [PDFtoOFX](https://github.com/spydisec/PDFtoOFX/)
+- **German DKB and Comdirect banks importer** - https://github.com/FridoE/actual-bank-importer
 
 ## Other Importers
 
@@ -55,6 +56,8 @@ Actual currently has official support for migrating budgets from YNAB4 and nYNAB
   - _A background service that automatically syncs your Actual Budget accounts on a scheduled basis._
 - **Actual Userscripts** - https://github.com/pogman-code/actual-userscripts
   - _A collection of JavaScript/CSS Userscripts for Actual Budget._
+- **Actuali** - https://github.com/MattFaz/actuali
+  - _An iOS app for Actual Budget. Connects directly to your self-hosted Actual server and supports syncing (offline supported), transactions, reports, budgets, iOS Shortcuts, and more. Available on the [App Store](https://apps.apple.com/app/actuali/id6764063765)._
 - **Actual Budget iOS Widget** - https://github.com/TaylorJns/Actual-Budget-iOS-Widget
   - _An iOS widget to display your Actual Budget category balances for the current month. Requires your Actual server to be accessible via HTTPS, and the **Local REST API** community project to be installed._
 - **Actual Bench** - https://github.com/x-rous/actual-bench

@@ -184,7 +184,7 @@ export type SetSplitAmountRuleActionEntity = {
 
 export type LinkScheduleRuleActionEntity = {
   op: 'link-schedule';
-  value: ScheduleEntity;
+  value: ScheduleEntity['id'];
 };
 
 export type PrependNoteRuleActionEntity = {
