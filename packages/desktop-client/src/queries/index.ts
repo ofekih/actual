@@ -45,12 +45,18 @@ export function accountFilter(
     } else if (accountId === 'uncategorized') {
       return {
         [`${field}.offbudget`]: false,
-        category: null,
         is_parent: false,
-        $or: [
+        $and: [
           {
-            'payee.transfer_acct.offbudget': true,
-            'payee.transfer_acct': null,
+            $or: [{ category: null }, { csp_category: null }],
+          },
+          {
+            $or: [
+              {
+                'payee.transfer_acct.offbudget': true,
+                'payee.transfer_acct': null,
+              },
+            ],
           },
         ],
       };
@@ -125,11 +131,17 @@ export function transactionsSearch(
 export function uncategorizedTransactions() {
   return q('transactions').filter({
     'account.offbudget': false,
-    category: null,
-    $or: [
+    $and: [
       {
-        'payee.transfer_acct.offbudget': true,
-        'payee.transfer_acct': null,
+        $or: [{ category: null }, { csp_category: null }],
+      },
+      {
+        $or: [
+          {
+            'payee.transfer_acct.offbudget': true,
+            'payee.transfer_acct': null,
+          },
+        ],
       },
     ],
   });

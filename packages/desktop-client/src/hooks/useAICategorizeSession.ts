@@ -26,9 +26,18 @@ export type UncategorizedTransaction = TransactionEntity & {
 const uncategorizedQuery = q('transactions')
   .filter({
     'account.offbudget': false,
-    category: null,
-    $or: [
-      { 'payee.transfer_acct.offbudget': true, 'payee.transfer_acct': null },
+    $and: [
+      {
+        $or: [{ category: null }, { csp_category: null }],
+      },
+      {
+        $or: [
+          {
+            'payee.transfer_acct.offbudget': true,
+            'payee.transfer_acct': null,
+          },
+        ],
+      },
     ],
   })
   .select(['*', 'payee.name', 'account.name', 'account.offbudget'])
