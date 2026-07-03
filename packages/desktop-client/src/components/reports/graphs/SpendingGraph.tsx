@@ -152,6 +152,7 @@ type SpendingGraphProps = {
   mode: 'single-month' | 'budget' | 'average';
   compare: string;
   compareTo: string;
+  onDayClick?: (day: string) => void;
 };
 
 export function SpendingGraph({
@@ -161,6 +162,7 @@ export function SpendingGraph({
   mode,
   compare,
   compareTo,
+  onDayClick,
 }: SpendingGraphProps) {
   const privacyMode = usePrivacyMode();
   const animationProps = useRechartsAnimation({ animationDuration: 1000 });
@@ -221,6 +223,8 @@ export function SpendingGraph({
     return Number(obj.day) >= 28 ? '28+' : obj.day;
   };
 
+  const activeDayRef = React.useRef<string | null>(null);
+
   return (
     <Container
       style={{
@@ -230,13 +234,34 @@ export function SpendingGraph({
     >
       {(width, height) =>
         data.intervalData && (
-          <div>
+          <div
+            style={{ width: '100%', height: '100%', cursor: onDayClick ? 'pointer' : undefined }}
+            onClick={() => {
+              if (onDayClick && activeDayRef.current) {
+                onDayClick(activeDayRef.current);
+              }
+            }}
+          >
             {!compact && <div style={{ marginTop: '5px' }} />}
             <AreaChart
               responsive
               width={width}
               height={height}
               data={data.intervalData}
+              style={{ cursor: onDayClick ? 'pointer' : undefined }}
+              onMouseMove={_state => {
+                const state = _state as unknown as {
+                  activePayload?: Array<{ payload?: { day?: string } }>;
+                };
+                if (state?.activePayload?.[0]?.payload?.day) {
+                  activeDayRef.current = state.activePayload[0].payload.day;
+                } else {
+                  activeDayRef.current = null;
+                }
+              }}
+              onMouseLeave={() => {
+                activeDayRef.current = null;
+              }}
               margin={{
                 top: 0,
                 right: 0,
@@ -317,6 +342,11 @@ export function SpendingGraph({
                   fill: theme.reportsChartFill,
                   fillOpacity: 1,
                   r: 10,
+                  onClick: (e: any, payload: any) => {
+                    if (onDayClick && payload?.payload?.day) {
+                      onDayClick(payload.payload.day);
+                    }
+                  }
                 }}
                 {...animationProps}
                 dataKey={val => getVal(val, compare)}
@@ -324,6 +354,11 @@ export function SpendingGraph({
                 strokeWidth={3}
                 fill={`url(#fill${balanceTypeOp})`}
                 fillOpacity={1}
+                onClick={(e: any, payload: any) => {
+                  if (onDayClick && payload?.payload?.day) {
+                    onDayClick(payload.payload.day);
+                  }
+                }}
               />
               <Area
                 type="linear"

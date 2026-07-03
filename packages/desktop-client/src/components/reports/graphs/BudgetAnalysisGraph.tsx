@@ -58,6 +58,7 @@ type BudgetAnalysisGraphProps = {
   showBalance?: boolean;
   balanceOnly?: boolean;
   isConcise?: boolean;
+  onSpentClick?: (date: string) => void;
 };
 
 type CustomTooltipProps = {
@@ -207,6 +208,7 @@ export function BudgetAnalysisGraph({
   showBalance = true,
   balanceOnly = false,
   isConcise = true,
+  onSpentClick,
 }: BudgetAnalysisGraphProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -304,6 +306,10 @@ export function BudgetAnalysisGraph({
               fill={theme.reportsNumberNegative}
               name={spentLabel}
               animationDuration={1000}
+              style={{ cursor: onSpentClick ? 'pointer' : undefined }}
+              onClick={item =>
+                onSpentClick?.(item.payload?.date as string)
+              }
             />
             <Bar
               dataKey="overspendingAdjustment"
@@ -324,7 +330,18 @@ export function BudgetAnalysisGraph({
             )}
           </ComposedChart>
         ) : (
-          <LineChart {...chartProps}>
+          <LineChart
+            {...chartProps}
+            style={{ cursor: onSpentClick ? 'pointer' : undefined }}
+            onClick={state => {
+              const s = state as unknown as {
+                activePayload?: Array<{ payload?: { date?: string } }>;
+              };
+              if (s?.activePayload?.[0]?.payload?.date) {
+                onSpentClick?.(s.activePayload[0].payload.date);
+              }
+            }}
+          >
             {sharedAxes}
             {!balanceOnly && (
               <Line

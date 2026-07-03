@@ -134,12 +134,14 @@ type CashFlowGraphProps = {
   isConcise: boolean;
   showBalance?: boolean;
   style?: CSSProperties;
+  onBarClick?: (date: Date, type: 'income' | 'expenses') => void;
 };
 export function CashFlowGraph({
   graphData,
   isConcise,
   showBalance = true,
   style,
+  onBarClick,
 }: CashFlowGraphProps) {
   const locale = useLocale();
   const privacyMode = usePrivacyMode();
@@ -206,6 +208,10 @@ export function CashFlowGraph({
             fill={theme.reportsNumberPositive}
             maxBarSize={MAX_BAR_SIZE}
             {...animationProps}
+            style={{ cursor: onBarClick ? 'pointer' : undefined }}
+            onClick={item =>
+              onBarClick?.(item.payload.date as Date, 'income')
+            }
           />
           <Bar
             dataKey="expenses"
@@ -213,6 +219,10 @@ export function CashFlowGraph({
             fill={theme.reportsNumberNegative}
             maxBarSize={MAX_BAR_SIZE}
             {...animationProps}
+            style={{ cursor: onBarClick ? 'pointer' : undefined }}
+            onClick={item =>
+              onBarClick?.(item.payload.date as Date, 'expenses')
+            }
           />
           <Line
             type="monotone"

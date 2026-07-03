@@ -26,6 +26,7 @@ import { MobilePageHeader, Page, PageHeader } from '#components/Page';
 import { PrivacyFilter } from '#components/PrivacyFilter';
 import { Change } from '#components/reports/Change';
 import { CashFlowGraph } from '#components/reports/graphs/CashFlowGraph';
+import { showActivity } from '#components/reports/graphs/showActivity';
 import { Header } from '#components/reports/Header';
 import { LoadingIndicator } from '#components/reports/LoadingIndicator';
 import { calculateTimeRange } from '#components/reports/reportRanges';
@@ -37,6 +38,8 @@ import { useLocale } from '#hooks/useLocale';
 import { useNavigate } from '#hooks/useNavigate';
 import { useRuleConditionFilters } from '#hooks/useRuleConditionFilters';
 import { useSyncedPref } from '#hooks/useSyncedPref';
+import { useAccounts } from '#hooks/useAccounts';
+import { useCategories } from '#hooks/useCategories';
 import { addNotification } from '#notifications/notificationsSlice';
 import { useDispatch } from '#redux';
 import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
@@ -183,6 +186,35 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
   const navigate = useNavigate();
   const { isNarrowWidth } = useResponsive();
   const updateDashboardWidgetMutation = useUpdateDashboardWidgetMutation();
+  const { data: categories = { grouped: [], list: [] } } = useCategories();
+  const { data: accounts = [] } = useAccounts();
+
+  function onBarClick(date: Date, type: 'income' | 'expenses') {
+    let startDate: string;
+    let endDate: string;
+    if (isConcise) {
+      const month = d.format(date, 'yyyy-MM');
+      startDate = month + '-01';
+      endDate = monthUtils.lastDayOfMonth(month);
+    } else {
+      const day = d.format(date, 'yyyy-MM-dd');
+      startDate = day;
+      endDate = day;
+    }
+
+    showActivity({
+      navigate,
+      categories,
+      accounts,
+      balanceTypeOp: type === 'income' ? 'totalDebts' : 'totalAssets', // debts = positive amount
+      filters: conditions,
+      showHiddenCategories: false,
+      showOffBudget: false,
+      type: 'report',
+      startDate,
+      endDate,
+    });
+  }
 
   async function onSaveWidget() {
     if (!widget) {
@@ -379,6 +411,7 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
           graphData={graphData}
           isConcise={isConcise}
           showBalance={showBalance}
+          onBarClick={onBarClick}
         />
 
         <View

@@ -34,6 +34,7 @@ import { PrivacyFilter } from '#components/PrivacyFilter';
 import { Header } from '#components/reports/Header';
 import { LoadingIndicator } from '#components/reports/LoadingIndicator';
 import { calculateTimeRange } from '#components/reports/reportRanges';
+import { showActivity } from '#components/reports/graphs/showActivity';
 import { summarySpreadsheet } from '#components/reports/spreadsheets/summary-spreadsheet';
 import { useReport } from '#components/reports/useReport';
 import { fromDateRepr } from '#components/reports/util';
@@ -47,6 +48,8 @@ import { useSyncedPref } from '#hooks/useSyncedPref';
 import { addNotification } from '#notifications/notificationsSlice';
 import { useDispatch } from '#redux';
 import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
+import { useAccounts } from '#hooks/useAccounts';
+import { useCategories } from '#hooks/useCategories';
 
 export function Summary() {
   const params = useParams();
@@ -231,6 +234,23 @@ function SummaryInner({ widget }: SummaryInnerProps) {
   const title = widget?.meta?.name || t('Summary');
 
   const updateDashboardWidgetMutation = useUpdateDashboardWidgetMutation();
+  const { data: categories = { grouped: [], list: [] } } = useCategories();
+  const { data: accounts = [] } = useAccounts();
+
+  function onTotalClick() {
+    showActivity({
+      navigate,
+      categories,
+      accounts,
+      balanceTypeOp: 'totalTotals',
+      filters: dividendFilters.conditions,
+      showHiddenCategories: false,
+      showOffBudget: true,
+      type: 'report',
+      startDate: start,
+      endDate: end,
+    });
+  }
 
   const onSaveWidgetName = async (newName: string) => {
     if (!widget) {
@@ -514,7 +534,9 @@ function SummaryInner({ widget }: SummaryInnerProps) {
                   : (data?.total ?? 0) < 0
                     ? theme.reportsNumberNegative
                     : theme.reportsNumberPositive,
+              cursor: 'pointer',
             }}
+            onClick={onTotalClick}
           >
             <PrivacyFilter>
               {content.type === 'percentage'

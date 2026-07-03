@@ -27,6 +27,7 @@ import { MobilePageHeader, Page, PageHeader } from '#components/Page';
 import { PrivacyFilter } from '#components/PrivacyFilter';
 import { Change } from '#components/reports/Change';
 import { BudgetAnalysisGraph } from '#components/reports/graphs/BudgetAnalysisGraph';
+import { showActivity } from '#components/reports/graphs/showActivity';
 import { Header } from '#components/reports/Header';
 import { LoadingIndicator } from '#components/reports/LoadingIndicator';
 import { calculateTimeRange } from '#components/reports/reportRanges';
@@ -42,6 +43,8 @@ import { useSyncedPref } from '#hooks/useSyncedPref';
 import { addNotification } from '#notifications/notificationsSlice';
 import { useDispatch } from '#redux';
 import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
+import { useAccounts } from '#hooks/useAccounts';
+import { useCategories } from '#hooks/useCategories';
 
 type OptionsButtonProps = {
   graphType: 'Line' | 'Bar';
@@ -271,6 +274,26 @@ function BudgetAnalysisInternal({ widget }: BudgetAnalysisInternalProps) {
   const data = useReport('default', getGraphData);
   const navigate = useNavigate();
   const { isNarrowWidth } = useResponsive();
+  const { data: categories = { grouped: [], list: [] } } = useCategories();
+  const { data: accounts = [] } = useAccounts();
+
+  function onSpentClick(date: string) {
+    // date is in 'YYYY-MM' format (monthly intervals)
+    const clickStart = monthUtils.firstDayOfMonth(date + '-01');
+    const clickEnd = monthUtils.lastDayOfMonth(date + '-01');
+    showActivity({
+      navigate,
+      categories,
+      accounts,
+      balanceTypeOp: 'totalDebts',
+      filters: conditions,
+      showHiddenCategories,
+      showOffBudget: false,
+      type: 'report',
+      startDate: clickStart,
+      endDate: clickEnd,
+    });
+  }
 
   const onChangeDates = (
     newStart: string,
@@ -541,6 +564,7 @@ function BudgetAnalysisInternal({ widget }: BudgetAnalysisInternalProps) {
                 showBalance={showBalance}
                 balanceOnly={!showCategories}
                 isConcise={isConcise}
+                onSpentClick={onSpentClick}
               />
               <View style={{ marginTop: 30 }}>
                 <Trans>

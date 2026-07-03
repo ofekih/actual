@@ -29,6 +29,7 @@ import { MobileBackButton } from '#components/mobile/MobileBackButton';
 import { MobilePageHeader, Page, PageHeader } from '#components/Page';
 import { PrivacyFilter } from '#components/PrivacyFilter';
 import { SpendingGraph } from '#components/reports/graphs/SpendingGraph';
+import { showActivity } from '#components/reports/graphs/showActivity';
 import { LegendItem } from '#components/reports/LegendItem';
 import { LoadingIndicator } from '#components/reports/LoadingIndicator';
 import { ModeButton } from '#components/reports/ModeButton';
@@ -53,6 +54,8 @@ import { useSyncedPref } from '#hooks/useSyncedPref';
 import { addNotification } from '#notifications/notificationsSlice';
 import { useDispatch } from '#redux';
 import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
+import { useAccounts } from '#hooks/useAccounts';
+import { useCategories } from '#hooks/useCategories';
 
 export function Spending() {
   const params = useParams();
@@ -164,6 +167,30 @@ function SpendingInternal({ widget }: SpendingInternalProps) {
   const data = useReport('default', getGraphData);
   const navigate = useNavigate();
   const { isNarrowWidth } = useResponsive();
+  const { data: categories = { grouped: [], list: [] } } = useCategories();
+  const { data: accounts = [] } = useAccounts();
+
+  function onDayClick(day: string) {
+    const dayNum = Number(day);
+    // Build start = first day of compare month, end = clicked day (or last day for 28+)
+    const startDate = monthUtils.firstDayOfMonth(compare + '-01');
+    const endDate =
+      dayNum >= 28
+        ? monthUtils.lastDayOfMonth(compare + '-01')
+        : compare + '-' + String(dayNum).padStart(2, '0');
+    showActivity({
+      navigate,
+      categories,
+      accounts,
+      balanceTypeOp: 'totalDebts',
+      filters: conditions,
+      showHiddenCategories: false,
+      showOffBudget: false,
+      type: 'report',
+      startDate,
+      endDate,
+    });
+  }
 
   const updateDashboardWidgetMutation = useUpdateDashboardWidgetMutation();
 
@@ -658,6 +685,7 @@ function SpendingInternal({ widget }: SpendingInternalProps) {
                   mode={reportMode}
                   compare={compare}
                   compareTo={compareTo}
+                  onDayClick={onDayClick}
                 />
               ) : (
                 <LoadingIndicator message={t('Loading report...')} />
