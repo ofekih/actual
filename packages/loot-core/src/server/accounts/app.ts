@@ -978,7 +978,7 @@ async function simpleFinAccounts() {
   }
 
   try {
-    return await post(
+    const res = await post(
       serverConfig.SIMPLEFIN_SERVER + '/accounts',
       {},
       {
@@ -986,6 +986,8 @@ async function simpleFinAccounts() {
       },
       60000,
     );
+    logger.log('SimpleFin Available Accounts Response:', JSON.stringify(res, null, 2));
+    return res;
   } catch {
     return { error_code: 'TIMED_OUT' };
   }

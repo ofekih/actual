@@ -216,6 +216,8 @@ async function downloadSimpleFinTransactions(
     throw BankSyncError('TIMED_OUT', 'TIMED_OUT');
   }
 
+  logger.log('SimpleFin Response:', JSON.stringify(res, null, 2));
+
   if (Object.keys(res).length === 0) {
     throw BankSyncError('NO_DATA', 'NO_DATA');
   }
