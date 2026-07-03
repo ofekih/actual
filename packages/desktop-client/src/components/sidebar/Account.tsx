@@ -13,7 +13,6 @@ import {
 import { InitialFocus } from '@actual-app/components/initial-focus';
 import { Input } from '@actual-app/components/input';
 import { Menu } from '@actual-app/components/menu';
-import { Popover } from '@actual-app/components/popover';
 import { SpaceBetween } from '@actual-app/components/space-between';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
@@ -36,7 +35,7 @@ import { useIsTestEnv } from '#hooks/useIsTestEnv';
 import { useNotes } from '#hooks/useNotes';
 import { useSyncedPref } from '#hooks/useSyncedPref';
 import { openAccountCloseModal } from '#modals/modalsSlice';
-import { useDispatch } from '#redux';
+import { useDispatch, useSelector } from '#redux';
 import type { Binding, SheetFields } from '#spreadsheet';
 
 export const accountNameStyle: CSSProperties = {
@@ -98,8 +97,6 @@ export function Account<FieldName extends SheetFields<'account'>>({
     : 'title';
 
   const triggerRef = useRef(null);
-  const { setMenuOpen, menuOpen, handleContextMenu, position } =
-    useContextMenu();
 
   const { dragRef } = useDraggable({
     type,
@@ -137,12 +134,94 @@ export function Account<FieldName extends SheetFields<'account'>>({
 
   const balanceCell = <CellValue binding={query} type="financial" />;
 
+  const isContextMenuOpen = useSelector(state =>
+    state.contextMenu.items.some(
+      i =>
+        typeof i === 'object' && 'name' in i && i.name.startsWith('account-'),
+    ),
+  );
+  useContextMenu({
+    triggerRef,
+    enabled: account && needsTooltip,
+    items: [
+      {
+        name: 'account-rename',
+        text: t('Rename'),
+        onClick: () => setIsEditing(true),
+      },
+      account?.closed
+        ? {
+            name: 'account-reopen',
+            text: t('Reopen'),
+            onClick: () => reopenAccount.mutate({ id: account.id }),
+          }
+        : {
+            name: 'account-close',
+            text: t('Close'),
+            onClick: () =>
+              dispatch(openAccountCloseModal({ accountId: account.id })),
+          },
+      Menu.line,
+      {
+        name: t('CSP Category') as unknown as string,
+        text: '',
+        type: Menu.label as unknown as 'label',
+      },
+      {
+        name: 'csp-auto',
+        text: t('Uncategorized'),
+        icon: currentCspType === 'auto' ? SvgCheckmark : undefined,
+        onClick: () => {
+          const newTypes = { ...accountTypes };
+          delete newTypes[account.id];
+          setAccountTypes(JSON.stringify(newTypes));
+        },
+      },
+      {
+        name: 'csp-savings',
+        text: t('Savings'),
+        icon: currentCspType === 'savings' ? SvgCheckmark : undefined,
+        onClick: () => {
+          const newTypes = { ...accountTypes };
+          newTypes[account.id] = 'savings';
+          setAccountTypes(JSON.stringify(newTypes));
+        },
+      },
+      {
+        name: 'csp-investments',
+        text: t('Investments'),
+        icon: currentCspType === 'investments' ? SvgCheckmark : undefined,
+        onClick: () => {
+          const newTypes = { ...accountTypes };
+          newTypes[account.id] = 'investments';
+          setAccountTypes(JSON.stringify(newTypes));
+        },
+      },
+      {
+        name: 'csp-assets',
+        text: t('Assets'),
+        icon: currentCspType === 'assets' ? SvgCheckmark : undefined,
+        onClick: () => {
+          const newTypes = { ...accountTypes };
+          newTypes[account.id] = 'assets';
+          setAccountTypes(JSON.stringify(newTypes));
+        },
+      },
+      {
+        name: 'csp-debt',
+        text: t('Debt'),
+        icon: currentCspType === 'debt' ? SvgCheckmark : undefined,
+        onClick: () => {
+          const newTypes = { ...accountTypes };
+          newTypes[account.id] = 'debt';
+          setAccountTypes(JSON.stringify(newTypes));
+        },
+      },
+    ],
+  });
+
   const accountRow = (
-    <View
-      innerRef={dropRef}
-      style={{ flexShrink: 0, ...outerStyle }}
-      onContextMenu={needsTooltip ? handleContextMenu : undefined}
-    >
+    <View innerRef={dropRef} style={{ flexShrink: 0, ...outerStyle }}>
       <View innerRef={triggerRef}>
         <DropHighlight pos={dropPos} />
         <View innerRef={handleDragRef}>
@@ -251,98 +330,6 @@ export function Account<FieldName extends SheetFields<'account'>>({
               }
             />
           </Link>
-          {account && (
-            <Popover
-              triggerRef={triggerRef}
-              placement="bottom start"
-              isOpen={menuOpen}
-              onOpenChange={() => setMenuOpen(false)}
-              style={{ width: 200, margin: 1 }}
-              isNonModal
-              {...position}
-            >
-              <Menu
-                onMenuSelect={type => {
-                  switch (type) {
-                    case 'close': {
-                      void dispatch(
-                        openAccountCloseModal({ accountId: account.id }),
-                      );
-                      break;
-                    }
-                    case 'reopen': {
-                      reopenAccount.mutate({ id: account.id });
-                      break;
-                    }
-                    case 'rename': {
-                      setIsEditing(true);
-                      break;
-                    }
-                    case 'csp-savings':
-                    case 'csp-investments':
-                    case 'csp-assets':
-                    case 'csp-debt':
-                    case 'csp-auto': {
-                      const newType = type.replace('csp-', '');
-                      const newTypes = { ...accountTypes };
-                      if (newType === 'auto') delete newTypes[account.id];
-                      else newTypes[account.id] = newType;
-                      setAccountTypes(JSON.stringify(newTypes));
-                      break;
-                    }
-                    default: {
-                      throw new Error(
-                        `Unrecognized menu option: ${String(type)}`,
-                      );
-                    }
-                  }
-                  setMenuOpen(false);
-                }}
-                items={[
-                  { name: 'rename', text: t('Rename') },
-                  account.closed
-                    ? { name: 'reopen', text: t('Reopen') }
-                    : { name: 'close', text: t('Close') },
-                  Menu.line,
-                  {
-                    name: t('CSP Category') as unknown as string,
-                    text: '',
-                    type: Menu.label as unknown as 'label',
-                  },
-                  {
-                    name: 'csp-auto',
-                    text: t('Uncategorized'),
-                    icon: currentCspType === 'auto' ? SvgCheckmark : undefined,
-                  },
-                  {
-                    name: 'csp-savings',
-                    text: t('Savings'),
-                    icon:
-                      currentCspType === 'savings' ? SvgCheckmark : undefined,
-                  },
-                  {
-                    name: 'csp-investments',
-                    text: t('Investments'),
-                    icon:
-                      currentCspType === 'investments'
-                        ? SvgCheckmark
-                        : undefined,
-                  },
-                  {
-                    name: 'csp-assets',
-                    text: t('Assets'),
-                    icon:
-                      currentCspType === 'assets' ? SvgCheckmark : undefined,
-                  },
-                  {
-                    name: 'csp-debt',
-                    text: t('Debt'),
-                    icon: currentCspType === 'debt' ? SvgCheckmark : undefined,
-                  },
-                ]}
-              />
-            </Popover>
-          )}
         </View>
       </View>
     </View>
@@ -423,7 +410,7 @@ export function Account<FieldName extends SheetFields<'account'>>({
       triggerProps={{
         delay: 1000,
         closeDelay: 250,
-        isDisabled: menuOpen,
+        isDisabled: isContextMenuOpen,
       }}
     >
       {accountRow}

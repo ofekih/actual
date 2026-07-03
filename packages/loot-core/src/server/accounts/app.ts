@@ -986,7 +986,10 @@ async function simpleFinAccounts() {
       },
       60000,
     );
-    logger.log('SimpleFin Available Accounts Response:', JSON.stringify(res, null, 2));
+    logger.log(
+      'SimpleFin Available Accounts Response:',
+      JSON.stringify(res, null, 2),
+    );
     return res;
   } catch {
     return { error_code: 'TIMED_OUT' };

@@ -209,9 +209,7 @@ export function CashFlowGraph({
             maxBarSize={MAX_BAR_SIZE}
             {...animationProps}
             style={{ cursor: onBarClick ? 'pointer' : undefined }}
-            onClick={item =>
-              onBarClick?.(item.payload.date as Date, 'income')
-            }
+            onClick={item => onBarClick?.(item.payload.date as Date, 'income')}
           />
           <Bar
             dataKey="expenses"

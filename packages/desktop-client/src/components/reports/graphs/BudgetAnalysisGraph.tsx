@@ -307,9 +307,7 @@ export function BudgetAnalysisGraph({
               name={spentLabel}
               animationDuration={1000}
               style={{ cursor: onSpentClick ? 'pointer' : undefined }}
-              onClick={item =>
-                onSpentClick?.(item.payload?.date as string)
-              }
+              onClick={item => onSpentClick?.(item.payload?.date as string)}
             />
             <Bar
               dataKey="overspendingAdjustment"

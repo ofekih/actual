@@ -235,7 +235,11 @@ export function SpendingGraph({
       {(width, height) =>
         data.intervalData && (
           <div
-            style={{ width: '100%', height: '100%', cursor: onDayClick ? 'pointer' : undefined }}
+            style={{
+              width: '100%',
+              height: '100%',
+              cursor: onDayClick ? 'pointer' : undefined,
+            }}
             onClick={() => {
               if (onDayClick && activeDayRef.current) {
                 onDayClick(activeDayRef.current);
@@ -346,7 +350,7 @@ export function SpendingGraph({
                     if (onDayClick && payload?.payload?.day) {
                       onDayClick(payload.payload.day);
                     }
-                  }
+                  },
                 }}
                 {...animationProps}
                 dataKey={val => getVal(val, compare)}

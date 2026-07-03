@@ -6,8 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@actual-app/components/button';
 import { SvgCheveronDown } from '@actual-app/components/icons/v1';
 import { SvgTrendingUp } from '@actual-app/components/icons/v2';
-import { Menu } from '@actual-app/components/menu';
-import { Popover } from '@actual-app/components/popover';
 import { TextOneLine } from '@actual-app/components/text-one-line';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
@@ -87,9 +85,93 @@ export function SidebarCategory({
     isCsp && auditWindowMonths != null && auditWindowMonths > 0;
 
   const temporary = category.id === 'new';
-  const { setMenuOpen, menuOpen, handleContextMenu, resetPosition, position } =
-    useContextMenu();
   const triggerRef = useRef(null);
+  const { handleContextMenu } = useContextMenu({
+    triggerRef,
+    items: [
+      {
+        name: 'rename',
+        text: t('Rename'),
+        onClick: () => onEditName(category.id),
+      },
+      isCsp && {
+        name: 'csp-settings',
+        text: t('Amortize & Audit...'),
+        onClick: () => {
+          dispatch(
+            pushModal({
+              modal: {
+                name: 'csp-category-settings',
+                options: {
+                  category: {
+                    ...category,
+                    planned_amount: targets?.[category.id] ?? null,
+                    moving_average_months: auditWindowMonths,
+                  } as unknown as CSPCategoryEntity,
+                  month: months[0],
+                  onSave: async updatedFields => {
+                    onSave({
+                      ...category,
+                      moving_average_months:
+                        updatedFields.moving_average_months,
+                    });
+                    void queryClient.invalidateQueries({
+                      queryKey: ['csp-targets'],
+                    });
+                    void queryClient.invalidateQueries({
+                      queryKey: ['categories'],
+                    });
+                  },
+                },
+              },
+            }),
+          );
+        },
+      },
+      !categoryGroup?.hidden && {
+        name: 'toggle-visibility',
+        text: category.hidden ? t('Show') : t('Hide'),
+        onClick: () => onSave({ ...category, hidden: !category.hidden }),
+      },
+      {
+        name: 'move-group',
+        text: t('Move to group...'),
+        onClick: () => {
+          dispatch(
+            pushModal({
+              modal: {
+                name: 'category-group-autocomplete',
+                options: {
+                  title: t('Move to group'),
+                  categoryGroups: categoriesOverride ?? undefined,
+                  onSelect: async groupId => {
+                    if (categoriesOverride) {
+                      await moveCspCategory.mutateAsync({
+                        id: category.id,
+                        groupId,
+                        targetId: null,
+                      });
+                    } else {
+                      await moveCategory.mutateAsync({
+                        id: category.id,
+                        groupId,
+                        targetId: null,
+                      });
+                    }
+                  },
+                },
+              },
+            }),
+          );
+        },
+      },
+      {
+        name: 'delete',
+        text: t('Delete'),
+        onClick: () => onDelete(category.id),
+      },
+    ],
+  });
 
   const displayed = (
     <View
@@ -103,7 +185,6 @@ export function SidebarCategory({
         height: 20,
       }}
       ref={triggerRef}
-      onContextMenu={handleContextMenu}
     >
       <TextOneLine data-testid="category-name">{category.name}</TextOneLine>
       {isMovingAverage && (
@@ -124,10 +205,7 @@ export function SidebarCategory({
           variant="bare"
           className="hover-visible"
           style={{ color: 'currentColor', padding: 3 }}
-          onPress={() => {
-            resetPosition();
-            setMenuOpen(true);
-          }}
+          onPress={handleContextMenu}
         >
           <SvgCheveronDown
             width={14}
@@ -135,98 +213,6 @@ export function SidebarCategory({
             style={{ color: 'currentColor' }}
           />
         </Button>
-
-        <Popover
-          triggerRef={triggerRef}
-          placement="bottom start"
-          isOpen={menuOpen}
-          onOpenChange={() => setMenuOpen(false)}
-          style={{ width: 200, margin: 1 }}
-          isNonModal
-          {...position}
-        >
-          <Menu
-            onMenuSelect={type => {
-              if (type === 'rename') {
-                onEditName(category.id);
-              } else if (type === 'delete') {
-                onDelete(category.id);
-              } else if (type === 'csp-settings') {
-                dispatch(
-                  pushModal({
-                    modal: {
-                      name: 'csp-category-settings',
-                      options: {
-                        category: {
-                          ...category,
-                          planned_amount: targets?.[category.id] ?? null,
-                          moving_average_months: auditWindowMonths,
-                        } as unknown as CSPCategoryEntity,
-                        month: months[0],
-                        onSave: async updatedFields => {
-                          onSave({
-                            ...category,
-                            moving_average_months:
-                              updatedFields.moving_average_months,
-                          });
-                          void queryClient.invalidateQueries({
-                            queryKey: ['csp-targets'],
-                          });
-                          void queryClient.invalidateQueries({
-                            queryKey: ['categories'],
-                          });
-                        },
-                      },
-                    },
-                  }),
-                );
-              } else if (type === 'toggle-visibility') {
-                onSave({ ...category, hidden: !category.hidden });
-              } else if (type === 'move-group') {
-                dispatch(
-                  pushModal({
-                    modal: {
-                      name: 'category-group-autocomplete',
-                      options: {
-                        title: t('Move to group'),
-                        categoryGroups: categoriesOverride ?? undefined,
-                        onSelect: async groupId => {
-                          if (categoriesOverride) {
-                            await moveCspCategory.mutateAsync({
-                              id: category.id,
-                              groupId,
-                              targetId: null,
-                            });
-                          } else {
-                            await moveCategory.mutateAsync({
-                              id: category.id,
-                              groupId,
-                              targetId: null,
-                            });
-                          }
-                        },
-                      },
-                    },
-                  }),
-                );
-              }
-              setMenuOpen(false);
-            }}
-            items={[
-              { name: 'rename', text: t('Rename') },
-              isCsp && {
-                name: 'csp-settings',
-                text: t('Amortize & Audit...'),
-              },
-              !categoryGroup?.hidden && {
-                name: 'toggle-visibility',
-                text: category.hidden ? t('Show') : t('Hide'),
-              },
-              { name: 'move-group', text: t('Move to group...') },
-              { name: 'delete', text: t('Delete') },
-            ].filter(Boolean)}
-          />
-        </Popover>
       </View>
       <SidebarCategoryButtons
         category={category}

@@ -1,6 +1,6 @@
 {
   "name": "@actual-app/web",
-  "version": "26.6.0",
+  "version": "26.7.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -54,6 +54,7 @@
     "#components/codemirror/autocompleteTabAccept": "./src/components/codemirror/autocompleteTabAccept.ts",
     "#components/csp/CspAuditsContext": "./src/components/csp/CspAuditsContext.ts",
     "#components/csp/CspComponentsContext": "./src/components/csp/CspComponentsContext.ts",
+    "#components/formula/queryTimeFrame": "./src/components/formula/queryTimeFrame.ts",
     "#components/mobile/budget/MobileBudgetComponentsContext": "./src/components/mobile/budget/MobileBudgetComponentsContext.ts",
     "#components/mobile/utils": "./src/components/mobile/utils.ts",
     "#components/modals/BudgetAutomationsModal/migrateTemplatesToAutomations": "./src/components/modals/BudgetAutomationsModal/migrateTemplatesToAutomations.ts",
@@ -98,6 +99,7 @@
     "#auth/AuthProvider": "./src/auth/AuthProvider.tsx",
     "#auth/ProtectedRoute": "./src/auth/ProtectedRoute.tsx",
     "#auth/*": "./src/auth/*.ts",
+    "#contextmenu/*": "./src/contextmenu/*.ts",
     "#style/theme": "./src/style/theme.tsx",
     "#style/*": "./src/style/*.ts",
     "#notes/*": "./src/notes/*.tsx",

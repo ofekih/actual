@@ -56,7 +56,7 @@ async function patchBadMigrations(db: Database) {
   const badPerformanceIndexesMigration = 1780606215001;
   const newPerformanceIndexesMigration = 1782064469082;
   const appliedIds = await getAppliedMigrations(db);
-  
+
   if (appliedIds.includes(badFiltersMigration)) {
     sqlite.runQuery(db, 'DELETE FROM __migrations__ WHERE id = ?', [
       badFiltersMigration,
@@ -65,7 +65,7 @@ async function patchBadMigrations(db: Database) {
       newFiltersMigration,
     ]);
   }
-  
+
   if (appliedIds.includes(badPerformanceIndexesMigration)) {
     sqlite.runQuery(db, 'DELETE FROM __migrations__ WHERE id = ?', [
       badPerformanceIndexesMigration,
