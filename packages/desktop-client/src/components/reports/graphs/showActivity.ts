@@ -88,7 +88,7 @@ export function showActivity({
     !(
       ['netAssets', 'netDebts'].includes(balanceTypeOp) ||
       (['totalTotals', 'totalBudgeted'].includes(balanceTypeOp) &&
-        (type === 'totals' || type === 'time'))
+        (type === 'totals' || type === 'time' || type === 'report'))
     ) && {
       field: 'amount',
       op: 'gte',
