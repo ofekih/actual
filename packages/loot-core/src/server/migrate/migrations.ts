@@ -53,13 +53,25 @@ export function getUpMigration(id, names) {
 async function patchBadMigrations(db: Database) {
   const badFiltersMigration = 1685375406832;
   const newFiltersMigration = 1688749527273;
+  const badPerformanceIndexesMigration = 1780606215001;
+  const newPerformanceIndexesMigration = 1782064469082;
   const appliedIds = await getAppliedMigrations(db);
+  
   if (appliedIds.includes(badFiltersMigration)) {
     sqlite.runQuery(db, 'DELETE FROM __migrations__ WHERE id = ?', [
       badFiltersMigration,
     ]);
     sqlite.runQuery(db, 'INSERT INTO __migrations__ (id) VALUES (?)', [
       newFiltersMigration,
+    ]);
+  }
+  
+  if (appliedIds.includes(badPerformanceIndexesMigration)) {
+    sqlite.runQuery(db, 'DELETE FROM __migrations__ WHERE id = ?', [
+      badPerformanceIndexesMigration,
+    ]);
+    sqlite.runQuery(db, 'INSERT INTO __migrations__ (id) VALUES (?)', [
+      newPerformanceIndexesMigration,
     ]);
   }
 }
