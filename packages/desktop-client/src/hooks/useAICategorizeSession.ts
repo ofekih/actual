@@ -17,6 +17,14 @@ import { useCspCategories } from '#hooks/useCspCategories';
 import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return String(err);
+}
+
 export type UncategorizedTransaction = TransactionEntity & {
   'payee.name'?: string;
   'account.name'?: string;
@@ -153,7 +161,7 @@ export function useAICategorizeSession({
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(getErrorMessage(err));
       } finally {
         setIsLocalLoading(false);
       }
@@ -351,7 +359,7 @@ export function useAICategorizeSession({
       }
     } catch (err) {
       if (txId === currentTxIdRef.current) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(getErrorMessage(err));
       }
     } finally {
       setFetchingIds(prev => {
@@ -479,7 +487,7 @@ export function useAICategorizeSession({
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     } finally {
       setIsSaving(false);
       setSavingProgress(null);
@@ -661,7 +669,7 @@ export function useAICategorizeSession({
       }
     } catch (err) {
       if (txId === currentTxIdRef.current) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(getErrorMessage(err));
       }
     } finally {
       setFetchingIds(prev => {
