@@ -265,7 +265,14 @@ export function FinancesApp() {
 
                   <Route
                     path="/budget"
-                    element={<NarrowAlternate name="Budget" />}
+                    element={
+                      <ErrorBoundary
+                        FallbackComponent={FeatureErrorFallback}
+                        resetKeys={[location.pathname]}
+                      >
+                        <NarrowAlternate name="Budget" />
+                      </ErrorBoundary>
+                    }
                   />
                   <Route path="/csp" element={<NarrowAlternate name="Csp" />} />
 
@@ -352,15 +359,27 @@ export function FinancesApp() {
 
                   <Route
                     path="/accounts/:id"
-                    element={<NarrowAlternate name="Account" />}
+                    element={
+                      <ErrorBoundary
+                        FallbackComponent={FeatureErrorFallback}
+                        resetKeys={[location.pathname]}
+                      >
+                        <NarrowAlternate name="Account" />
+                      </ErrorBoundary>
+                    }
                   />
 
                   <Route
                     path="/transactions/:transactionId"
                     element={
-                      <WideNotSupported>
-                        <TransactionEdit />
-                      </WideNotSupported>
+                      <ErrorBoundary
+                        FallbackComponent={FeatureErrorFallback}
+                        resetKeys={[location.pathname]}
+                      >
+                        <WideNotSupported>
+                          <TransactionEdit />
+                        </WideNotSupported>
+                      </ErrorBoundary>
                     }
                   />
 
