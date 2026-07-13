@@ -95,7 +95,15 @@ const totalGraphOptions: graphOptions[] = [
   {
     description: 'AreaGraph',
     // CategoryGroup is only valid for DonutGraph
-    disabledSplit: ['Category', 'Group', 'CategoryGroup', 'Payee', 'Account'],
+    disabledSplit: [
+      'Category',
+      'Group',
+      'CategoryGroup',
+      'Payee',
+      'Account',
+      'CspCategory',
+      'CspGroup',
+    ],
     defaultSplit: 'Interval',
     disabledType: [],
     defaultType: 'Payment',

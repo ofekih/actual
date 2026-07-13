@@ -1016,12 +1016,15 @@ function CspBudgetSummary({ month }: BudgetSummaryProps) {
 
   const { data: accounts = [] } = useAccounts();
   const { data: balances = {} } = useQuery({
-    queryKey: ['csp-balances'],
+    queryKey: ['csp-balances', month],
     queryFn: async () => {
       const { data } = await send(
         'query',
         q('transactions')
-          .filter({ tombstone: false })
+          .filter({
+            tombstone: false,
+            date: { $lte: monthUtils.getMonthEnd(month) },
+          })
           .groupBy('account')
           .select(['account', { sum: { $sum: '$amount' } }])
           .serialize(),

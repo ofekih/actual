@@ -4,6 +4,7 @@ import type { GroupedEntity } from '@actual-app/core/types/models';
 
 import {
   categoryLists,
+  cspCategoryLists,
   ReportOptions,
 } from '#components/reports/ReportOptions';
 import type { QueryDataEntity } from '#components/reports/ReportOptions';
@@ -35,14 +36,25 @@ export function createGroupedSpreadsheet({
   balanceTypeOp,
   sortByOp,
   firstDayOfWeekIdx,
+  groupBy = '',
+  cspCategories = { list: [], grouped: [] },
 }: createCustomSpreadsheetProps) {
-  const [categoryList, categoryGroup] = categoryLists(categories);
+  const [, categoryGroup] = categoryLists(categories);
+  const [, cspCategoryGroup] = cspCategoryLists(cspCategories);
+
+  const groupList = groupBy === 'CspGroup' ? cspCategoryGroup : categoryGroup;
+  const childGroupByLabel =
+    groupBy === 'CspGroup' ? ('cspCategory' as const) : ('category' as const);
+  const groupGroupByLabel =
+    groupBy === 'CspGroup'
+      ? ('cspCategoryGroup' as const)
+      : ('categoryGroup' as const);
 
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
     setData: (data: GroupedEntity[]) => void,
   ) => {
-    if (categoryList.length === 0) {
+    if (groupList.length === 0) {
       setData([]);
       return;
     }
@@ -91,14 +103,14 @@ export function createGroupedSpreadsheet({
             ReportOptions.intervalRange.get(interval) || 'rangeInclusive'
           ](startDate, endDate);
 
-    const groupedData: GroupedEntity[] = categoryGroup.map(
+    const groupedData: GroupedEntity[] = groupList.map(
       group => {
         const grouped = recalculate({
           item: group,
           intervals,
           assets,
           debts,
-          groupByLabel: 'categoryGroup',
+          groupByLabel: groupGroupByLabel,
           showOffBudget,
           showHiddenCategories,
           showUncategorized,
@@ -114,7 +126,7 @@ export function createGroupedSpreadsheet({
               intervals,
               assets,
               debts,
-              groupByLabel: 'category',
+              groupByLabel: childGroupByLabel,
               showOffBudget,
               showHiddenCategories,
               showUncategorized,

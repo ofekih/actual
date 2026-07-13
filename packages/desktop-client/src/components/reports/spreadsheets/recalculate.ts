@@ -4,6 +4,7 @@ import type {
   IntervalEntity,
 } from '@actual-app/core/types/models';
 
+import { isCategoryGroup } from '#components/reports/ReportOptions';
 import type {
   QueryDataEntity,
   UncategorizedEntity,
@@ -11,12 +12,18 @@ import type {
 
 import { filterHiddenItems } from './filterHiddenItems';
 
-type recalculateProps = {
+type RecalculateProps = {
   item: UncategorizedEntity;
   intervals: Array<string>;
   assets: QueryDataEntity[];
   debts: QueryDataEntity[];
-  groupByLabel: 'category' | 'categoryGroup' | 'payee' | 'account';
+  groupByLabel:
+    | 'category'
+    | 'categoryGroup'
+    | 'payee'
+    | 'account'
+    | 'cspCategory'
+    | 'cspCategoryGroup';
   showOffBudget?: boolean;
   showHiddenCategories?: boolean;
   showUncategorized?: boolean;
@@ -35,22 +42,21 @@ export function recalculate({
   showUncategorized,
   startDate,
   endDate,
-}: recalculateProps): GroupedEntity {
+}: RecalculateProps): GroupedEntity {
   let totalAssets = 0;
   let totalDebts = 0;
   const intervalData = intervals.reduce(
     (arr: IntervalEntity[], intervalItem, index) => {
       const last = arr.length === 0 ? null : arr[arr.length - 1];
 
-      const groupsByCategory =
-        groupByLabel === 'category' || groupByLabel === 'categoryGroup';
+      const groupsByCategory = isCategoryGroup(groupByLabel);
       const intervalAssets = filterHiddenItems(
         item,
         assets,
         showOffBudget,
         showHiddenCategories,
         showUncategorized,
-        groupsByCategory,
+        groupByLabel,
       )
         .filter(
           asset =>
@@ -67,7 +73,7 @@ export function recalculate({
         showOffBudget,
         showHiddenCategories,
         showUncategorized,
-        groupsByCategory,
+        groupByLabel,
       )
         .filter(
           debt =>

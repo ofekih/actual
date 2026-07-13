@@ -1,0 +1,451 @@
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `button` over `role` attribute `button`.
+    ,-[packages/desktop-client/src/components/modals/BudgetAutomationsModal/CleanupListRow.tsx:31:7]
+ 30 |     <View
+ 31 |       role="button"
+    :       ^^^^^^^^^^^^^
+ 32 |       tabIndex={0}
+    `----
+  help: Replace HTML elements with `role` attribute `button` to corresponding semantic HTML tag `button`.
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `button` over `role` attribute `button`.
+    ,-[packages/desktop-client/src/components/modals/BudgetAutomationsModal/TypePicker.tsx:45:13]
+ 44 |             key={id}
+ 45 |             role="button"
+    :             ^^^^^^^^^^^^^
+ 46 |             tabIndex={isDisabled ? -1 : 0}
+    `----
+  help: Replace HTML elements with `role` attribute `button` to corresponding semantic HTML tag `button`.
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `button` over `role` attribute `button`.
+    ,-[packages/desktop-client/src/components/modals/BudgetAutomationsModal/EmptyState.tsx:80:15]
+ 79 |               key={example.displayType}
+ 80 |               role="button"
+    :               ^^^^^^^^^^^^^
+ 81 |               tabIndex={0}
+    `----
+  help: Replace HTML elements with `role` attribute `button` to corresponding semantic HTML tag `button`.
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `main` over `role` attribute `main`.
+     ,-[packages/desktop-client/src/components/Page.tsx:181:7]
+ 180 |     <View
+ 181 |       role="main"
+     :       ^^^^^^^^^^^
+ 182 |       style={{
+     `----
+  help: Replace HTML elements with `role` attribute `main` to corresponding semantic HTML tag `main`.
+
+  ! jsx-a11y(no-static-element-interactions): Static HTML elements with event handlers require a role.
+     ,-[packages/desktop-client/src/components/budget/goals/editor/BySaveAutomation.tsx:242:16]
+ 241 |                   from also toggling the checkbox */}
+ 242 |               <span
+     :                ^^^^
+ 243 |                 onClick={e => {
+     `----
+  help: Add a role attribute to this element, or use a semantic HTML element instead.
+
+  ! jsx-a11y(click-events-have-key-events): Enforce a clickable non-interactive element has at least one keyboard event listener.
+     ,-[packages/desktop-client/src/components/budget/goals/editor/BySaveAutomation.tsx:242:15]
+ 241 |                       from also toggling the checkbox */}
+ 242 | ,->               <span
+ 243 | |                   onClick={e => {
+ 244 | |                     e.preventDefault();
+ 245 | |                     e.stopPropagation();
+ 246 | |                   }}
+ 247 | |                   onMouseDown={e => e.stopPropagation()}
+ 248 | |                   style={{ display: 'inline-flex' }}
+ 249 | `->               >
+ 250 |                     <Tooltip
+     `----
+  help: Visible, non-interactive elements with click handlers must have one of `keyup`, `keydown`, or `keypress` listener.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+    ,-[packages/desktop-client/src/components/Notes.tsx:56:5]
+ 55 |       return editable ? (
+ 56 | ,->     <textarea
+ 57 | |         ref={textAreaRef}
+ 58 | |         className={css({
+ 59 | |           border: '1px solid ' + theme.buttonNormalBorder,
+ 60 | |           padding: 7,
+ 61 | |           ...(!isNarrowWidth && { minWidth: 350, minHeight: 120 }),
+ 62 | |           outline: 'none',
+ 63 | |           backgroundColor: theme.tableBackground,
+ 64 | |           color: theme.tableText,
+ 65 | |           ...getStyle?.(editable),
+ 66 | |         })}
+ 67 | |         value={notes || ''}
+ 68 | |         onChange={e => onChange?.(e.target.value)}
+ 69 | |         onBlur={e => onBlur?.(e.target.value)}
+ 70 | |         placeholder={t('Notes (markdown supported)')}
+ 71 | `->     />
+ 72 |       ) : (
+    `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/mobile/transactions/FocusableAmountInput.tsx:128:5]
+ 127 |       const input = (
+ 128 | ,->     <input
+ 129 | |         type="text"
+ 130 | |         ref={mergedInputRef}
+ 131 | |         value={text}
+ 132 | |         inputMode="decimal"
+ 133 | |         autoCapitalize="none"
+ 134 | |         onChange={e => onChangeText(e.target.value)}
+ 135 | |         onFocus={onFocus}
+ 136 | |         onBlur={onBlur}
+ 137 | |         onKeyUp={onKeyUp}
+ 138 | |         data-testid="amount-input"
+ 139 | |         style={{ flex: 1, textAlign: 'center', position: 'absolute' }}
+ 140 | `->     />
+ 141 |       );
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `input, select` over `role` attribute `combobox`.
+     ,-[packages/desktop-client/src/components/autocomplete/TagAutocomplete.tsx:160:9]
+ 159 |         aria-controls={id('popover')}
+ 160 |         role="combobox"
+     :         ^^^^^^^^^^^^^^^
+ 161 |         style={inputStyle}
+     `----
+  help: Replace HTML elements with `role` attribute `combobox` to corresponding semantic HTML tag `input, select`.
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `img` over `role` attribute `img`.
+     ,-[packages/desktop-client/src/components/rules/RuleEditor.tsx:685:15]
+ 684 |               aria-label={t('Formula mode indicator')}
+ 685 |               role="img"
+     :               ^^^^^^^^^^
+ 686 |             >
+     `----
+  help: Replace HTML elements with `role` attribute `img` to corresponding semantic HTML tag `img`.
+
+  ! import(default): No default export found in imported module "./browser-worker?worker&inline"
+   ,-[packages/api/index.browser.ts:5:8]
+ 4 | 
+ 5 | import InlineWorker from './browser-worker?worker&inline';
+   :        ^^^^^^^^^^^^
+ 6 | 
+   `----
+  help: Does "./browser-worker?worker&inline" have the default export?
+
+  ! jsx-a11y(prefer-tag-over-role): Prefer `nav` over `role` attribute `navigation`.
+     ,-[packages/desktop-client/src/components/mobile/MobileNavTabs.tsx:222:7]
+ 221 |     <animated.div
+ 222 |       role="navigation"
+     :       ^^^^^^^^^^^^^^^^^
+ 223 |       {...bind()}
+     `----
+  help: Replace HTML elements with `role` attribute `navigation` to corresponding semantic HTML tag `nav`.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/modals/EnableBankingInitialiseModal.tsx:180:15]
+ 179 |                   />
+ 180 | ,->               <input
+ 181 | |                   id="secret-key-field"
+ 182 | |                   type="file"
+ 183 | |                   accept=".pem,.key"
+ 184 | |                   onChange={onFileChange}
+ 185 | `->               />
+ 186 |                 </FormField>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+    ,-[packages/desktop-client/src/components/manager/subscribe/ConfirmPasswordForm.tsx:82:11]
+ 81 |         <label style={{ userSelect: 'none' }}>
+ 82 |           <input type="checkbox" onChange={onShowPassword} />{' '}
+    :           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 83 |           <Trans>Show password</Trans>
+    `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/manager/subscribe/ConfirmPasswordForm.tsx:159:11]
+ 158 |         <label style={{ userSelect: 'none' }}>
+ 159 |           <input type="checkbox" onChange={onShowPassword} />{' '}
+     :           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 160 |           <Trans>Show password</Trans>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(no-static-element-interactions): Static HTML elements with event handlers require a role.
+     ,-[packages/desktop-client/src/components/reports/graphs/SpendingGraph.tsx:237:12]
+ 236 |         data.intervalData && (
+ 237 |           <div
+     :            ^^^
+ 238 |             style={{
+     `----
+  help: Add a role attribute to this element, or use a semantic HTML element instead.
+
+  ! jsx-a11y(click-events-have-key-events): Enforce a clickable non-interactive element has at least one keyboard event listener.
+     ,-[packages/desktop-client/src/components/reports/graphs/SpendingGraph.tsx:237:11]
+ 236 |             data.intervalData && (
+ 237 | ,->           <div
+ 238 | |               style={{
+ 239 | |                 width: '100%',
+ 240 | |                 height: '100%',
+ 241 | |                 cursor: onDayClick ? 'pointer' : undefined,
+ 242 | |               }}
+ 243 | |               onClick={() => {
+ 244 | |                 if (onDayClick && activeDayRef.current) {
+ 245 | |                   onDayClick(activeDayRef.current);
+ 246 | |                 }
+ 247 | |               }}
+ 248 | `->           >
+ 249 |                 {!compact && <div style={{ marginTop: '5px' }} />}
+     `----
+  help: Visible, non-interactive elements with click handlers must have one of `keyup`, `keydown`, or `keypress` listener.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/reports/graphs/NetWorthGraph.tsx:186:19]
+ 185 |                   </td>
+ 186 |                   <td style={{ textAlign: 'right' }}>
+     :                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 187 |                     <span style={{ color: theme.pageText }}>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/reports/graphs/NetWorthGraph.tsx:194:21]
+ 193 |                   {showPercentage && (
+ 194 |                     <td style={{ textAlign: 'right' }}>
+     :                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 195 |                       <span style={{ color: theme.pageText }}>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/modals/CreateEncryptionKeyModal.tsx:209:19]
+ 208 |                     <label style={{ userSelect: 'none' }}>
+ 209 | ,->                   <input
+ 210 | |                       type="checkbox"
+ 211 | |                       onClick={() => setShowPassword(!showPassword)}
+ 212 | `->                   />{' '}
+ 213 |                       <Trans>Show password</Trans>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/modals/FixEncryptionKeyModal.tsx:150:19]
+ 149 |                     <label style={{ userSelect: 'none' }}>
+ 150 | ,->                   <input
+ 151 | |                       type="checkbox"
+ 152 | |                       onClick={() => setShowPassword(!showPassword)}
+ 153 | `->                   />{' '}
+ 154 |                       <Trans>Show password</Trans>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/modals/MergeUnusedPayeesModal.tsx:182:17]
+ 181 |                   >
+ 182 | ,->                 <input
+ 183 | |                     type="checkbox"
+ 184 | |                     checked={shouldCreateRule}
+ 185 | |                     onChange={e => setShouldCreateRule(e.target.checked)}
+ 186 | `->                 />
+ 187 |                     <Text style={{ marginLeft: 3 }}>
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/formula/QueryManager.tsx:595:21]
+ 594 |                         </Text>
+ 595 | ,->                     <textarea
+ 596 | |                         value={importJsonText}
+ 597 | |                         onChange={e => setImportJsonText(e.target.value)}
+ 598 | |                         placeholder={JSON.stringify(
+ 599 | |                           {
+ 600 | |                             conditions: [],
+ 601 | |                             conditionsOp: 'and',
+ 602 | |                             timeFrame: {
+ 603 | |                               start: '',
+ 604 | |                               end: '',
+ 605 | |                               mode: 'sliding-window',
+ 606 | |                             },
+ 607 | |                           },
+ 608 | |                           null,
+ 609 | |                           2,
+ 610 | |                         )}
+ 611 | |                         style={{
+ 612 | |                           width: '100%',
+ 613 | |                           height: 200,
+ 614 | |                           padding: 8,
+ 615 | |                           border: `1px solid ${theme.formInputBorder}`,
+ 616 | |                           borderRadius: 4,
+ 617 | |                           backgroundColor: theme.tableBackground,
+ 618 | |                           color: theme.formInputText,
+ 619 | |                           fontFamily: 'monospace',
+ 620 | |                           fontSize: 12,
+ 621 | |                           resize: 'vertical',
+ 622 | |                           outline: 'none',
+ 623 | |                         }}
+ 624 | `->                     />
+ 625 |                         <View
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! jsx-a11y(no-static-element-interactions): Static HTML elements with event handlers require a role.
+     ,-[packages/desktop-client/src/components/formula/FormulaEditor.tsx:441:10]
+ 440 |       {timeframePicker && (
+ 441 |         <div
+     :          ^^^
+ 442 |           ref={badgePickerPopoverRef}
+     `----
+  help: Add a role attribute to this element, or use a semantic HTML element instead.
+
+  ! jsx-a11y(no-static-element-interactions): Static HTML elements with event handlers require a role.
+     ,-[packages/desktop-client/src/components/formula/FormulaEditor.tsx:496:6]
+ 495 |   return (
+ 496 |     <div
+     :      ^^^
+ 497 |       ref={popoverRef}
+     `----
+  help: Add a role attribute to this element, or use a semantic HTML element instead.
+
+  ! jsx-a11y(click-events-have-key-events): Enforce a clickable non-interactive element has at least one keyboard event listener.
+     ,-[packages/desktop-client/src/components/formula/FormulaEditor.tsx:441:9]
+ 440 |           {timeframePicker && (
+ 441 | ,->         <div
+ 442 | |             ref={badgePickerPopoverRef}
+ 443 | |             style={{
+ 444 | |               ...styles.popover,
+ 445 | |               position: 'fixed',
+ 446 | |               zIndex: 10000,
+ 447 | |               top: timeframePicker.anchorRect.bottom + 4,
+ 448 | |               left: Math.min(
+ 449 | |                 timeframePicker.anchorRect.left,
+ 450 | |                 window.innerWidth - 260,
+ 451 | |               ),
+ 452 | |               minWidth: 225,
+ 453 | |             }}
+ 454 | |             onMouseDown={event => {
+ 455 | |               event.stopPropagation();
+ 456 | |             }}
+ 457 | |             onClick={event => event.stopPropagation()}
+ 458 | `->         >
+ 459 |               <DateSelect
+     `----
+  help: Visible, non-interactive elements with click handlers must have one of `keyup`, `keydown`, or `keypress` listener.
+
+  ! jsx-a11y(click-events-have-key-events): Enforce a clickable non-interactive element has at least one keyboard event listener.
+     ,-[packages/desktop-client/src/components/formula/FormulaEditor.tsx:496:5]
+ 495 |       return (
+ 496 | ,->     <div
+ 497 | |         ref={popoverRef}
+ 498 | |         style={{
+ 499 | |           ...styles.popover,
+ 500 | |           position: 'fixed',
+ 501 | |           zIndex: 10000,
+ 502 | |           top: anchorRect.bottom + 4,
+ 503 | |           left: Math.min(anchorRect.left, window.innerWidth - minWidth - 20),
+ 504 | |           minWidth,
+ 505 | |           maxWidth: 320,
+ 506 | |           maxHeight: 260,
+ 507 | |           overflowY: scrollable ? 'auto' : 'hidden',
+ 508 | |           padding: scrollable ? 4 : 0,
+ 509 | |         }}
+ 510 | |         onMouseDown={event => {
+ 511 | |           event.stopPropagation();
+ 512 | |         }}
+ 513 | |         onClick={event => event.stopPropagation()}
+ 514 | `->     >
+ 515 |           {children}
+     `----
+  help: Visible, non-interactive elements with click handlers must have one of `keyup`, `keydown`, or `keypress` listener.
+
+  ! react(no-did-update-set-state): Do not use `setState` in `componentDidUpdate`.
+     ,-[packages/desktop-client/src/components/accounts/Account.tsx:403:7]
+ 402 |     if (this.state.isAdding && this.props.accountId !== prevProps.accountId) {
+ 403 |       this.setState({ isAdding: false });
+     :       ^^^^^^^^^^^^^
+ 404 |     }
+     `----
+  help: Updating state after a component update triggers a second render() call and can lead to property/layout thrashing.
+
+  ! react(no-did-update-set-state): Do not use `setState` in `componentDidUpdate`.
+     ,-[packages/desktop-client/src/components/accounts/Account.tsx:420:7]
+ 419 |     if (this.props.accountId !== prevProps.accountId) {
+ 420 |       this.setState({ sort: null, search: '', filterConditions: [] });
+     :       ^^^^^^^^^^^^^
+ 421 |     }
+     `----
+  help: Updating state after a component update triggers a second render() call and can lead to property/layout thrashing.
+
+  ! react(no-did-update-set-state): Do not use `setState` in `componentDidUpdate`.
+     ,-[packages/desktop-client/src/components/accounts/Account.tsx:425:7]
+ 424 |     if (!isEqual(this.props.filterConditions, prevProps.filterConditions)) {
+ 425 |       this.setState({ filterConditions: this.props.filterConditions }, () => {
+     :       ^^^^^^^^^^^^^
+ 426 |         this.fetchTransactions(this.state.filterConditions);
+     `----
+  help: Updating state after a component update triggers a second render() call and can lead to property/layout thrashing.
+
+  ! jsx-a11y(control-has-associated-label): A control must be associated with a text label.
+     ,-[packages/desktop-client/src/components/settings/AI.tsx:168:11]
+ 167 |             primaryAction={
+ 168 | ,->           <textarea
+ 169 | |               value={customInstructions || ''}
+ 170 | |               placeholder={t(
+ 171 | |                 'Enter custom instructions (e.g. "Ignore transfers between Checking and Savings")',
+ 172 | |               )}
+ 173 | |               onChange={e => setCustomInstructions(e.currentTarget.value)}
+ 174 | |               className={css([
+ 175 | |                 baseInputStyle,
+ 176 | |                 {
+ 177 | |                   width: '100%',
+ 178 | |                   maxWidth: 500,
+ 179 | |                   height: 80,
+ 180 | |                   fontFamily: 'inherit',
+ 181 | |                   fontSize: 13,
+ 182 | |                   resize: 'vertical',
+ 183 | |                   '&:focus': {
+ 184 | |                     border: '1px solid ' + theme.formInputBorderSelected,
+ 185 | |                     boxShadow: '0 1px 1px ' + theme.formInputShadowSelected,
+ 186 | |                   },
+ 187 | |                 },
+ 188 | |               ])}
+ 189 | `->           />
+ 190 |             }
+     `----
+  help: Add a text label to the control element. This can be done by adding text content, an `aria-label` attribute, or an `aria-labelledby` attribute.
+
+  ! eslint(no-extra-boolean-cast): Redundant double negation
+    ,-[packages/sync-server/src/app-pluggyai/app-pluggyai.js:29:9]
+ 28 |     const fileId = req.get('X-Actual-File-Id');
+ 29 |     if (!!fileId) {
+    :         ^^^^^^^^
+ 30 |       if (!isValidFileId(fileId)) {
+    `----
+  help: Remove the double negation as it will already be coerced to a boolean
+
+  ! eslint(no-extra-boolean-cast): Redundant double negation
+    ,-[packages/sync-server/src/app-pluggyai/app-pluggyai.js:65:9]
+ 64 |     const fileId = req.get('X-Actual-File-Id');
+ 65 |     if (!!fileId) {
+    :         ^^^^^^^^
+ 66 |       if (!isValidFileId(fileId)) {
+    `----
+  help: Remove the double negation as it will already be coerced to a boolean
+
+  ! eslint(no-extra-boolean-cast): Redundant double negation
+     ,-[packages/sync-server/src/app-pluggyai/app-pluggyai.js:133:9]
+ 132 |     const fileId = req.get('X-Actual-File-Id');
+ 133 |     if (!!fileId) {
+     :         ^^^^^^^^
+ 134 |       if (!isValidFileId(fileId)) {
+     `----
+  help: Remove the double negation as it will already be coerced to a boolean
+
+  ! import(default): No default export found in imported module "./shared-browser-server.ts?sharedworker"
+   ,-[packages/desktop-client/src/browser-preload.js:8:8]
+ 7 | 
+ 8 | import SharedBrowserServerWorker from './shared-browser-server.ts?sharedworker';
+   :        ^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 | 
+   `----
+  help: Does "./shared-browser-server.ts?sharedworker" have the default export?
+
+Found 35 warnings and 0 errors.
+Finished in 5.8s on 1930 files using 12 threads.

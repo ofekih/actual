@@ -5,6 +5,7 @@ import type {
   balanceTypeOpType,
   CategoryEntity,
   CategoryGroupEntity,
+  CSPCategoryEntity,
   DataEntity,
   GroupedEntity,
   IntervalEntity,
@@ -17,13 +18,16 @@ import * as d from 'date-fns';
 
 import {
   categoryLists,
+  cspCategoryLists,
   groupBySelections,
+  isCategoryGroup,
   ReportOptions,
 } from '#components/reports/ReportOptions';
 import type {
   QueryDataEntity,
   UncategorizedEntity,
 } from '#components/reports/ReportOptions';
+import type { CspCategoryGroupWithCategories } from '#hooks/useCspCategories';
 import type { useSpreadsheet } from '#hooks/useSpreadsheet';
 
 import { calculateLegend } from './calculateLegend';
@@ -43,6 +47,10 @@ export type createCustomSpreadsheetProps = {
   endDate: string;
   interval: string;
   categories: { list: CategoryEntity[]; grouped: CategoryGroupEntity[] };
+  cspCategories?: {
+    list: CSPCategoryEntity[];
+    grouped: CspCategoryGroupWithCategories[];
+  };
   budgetType?: SyncedPrefs['budgetType'];
   conditions: RuleConditionEntity[];
   conditionsOp: string;
@@ -65,6 +73,7 @@ export function createCustomSpreadsheet({
   endDate,
   interval,
   categories,
+  cspCategories = { list: [], grouped: [] },
   budgetType = 'envelope',
   conditions = [],
   conditionsOp,
@@ -82,11 +91,26 @@ export function createCustomSpreadsheet({
   firstDayOfWeekIdx,
 }: createCustomSpreadsheetProps) {
   const [categoryList, categoryGroup] = categoryLists(categories);
+  const [cspCategoryList, cspCategoryGroup] = cspCategoryLists(cspCategories);
 
   const [groupByList, groupByLabel]: [
     groupByList: UncategorizedEntity[],
-    groupByLabel: 'category' | 'categoryGroup' | 'payee' | 'account',
-  ] = groupBySelections(groupBy, categoryList, categoryGroup, payees, accounts);
+    groupByLabel:
+      | 'category'
+      | 'categoryGroup'
+      | 'payee'
+      | 'account'
+      | 'cspCategory'
+      | 'cspCategoryGroup',
+  ] = groupBySelections(
+    groupBy,
+    categoryList,
+    categoryGroup,
+    payees,
+    accounts,
+    cspCategoryList,
+    cspCategoryGroup,
+  );
 
   return async (
     spreadsheet: ReturnType<typeof useSpreadsheet>,
@@ -158,8 +182,7 @@ export function createCustomSpreadsheet({
     let netAssets = 0;
     let netDebts = 0;
 
-    const groupsByCategory =
-      groupByLabel === 'category' || groupByLabel === 'categoryGroup';
+    const groupsByCategory = isCategoryGroup(groupByLabel);
 
     const intervalData = intervals.reduce(
       (arr: IntervalEntity[], intervalItem, index) => {
@@ -179,7 +202,7 @@ export function createCustomSpreadsheet({
             showOffBudget,
             showHiddenCategories,
             showUncategorized,
-            groupsByCategory,
+            groupByLabel,
           )
             .filter(
               asset =>
@@ -196,7 +219,7 @@ export function createCustomSpreadsheet({
             showOffBudget,
             showHiddenCategories,
             showUncategorized,
-            groupsByCategory,
+            groupByLabel,
           )
             .filter(
               debt =>

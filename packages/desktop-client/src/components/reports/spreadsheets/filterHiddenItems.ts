@@ -1,3 +1,4 @@
+import { isCategoryGroup } from '#components/reports/ReportOptions';
 import type {
   QueryDataEntity,
   UncategorizedEntity,
@@ -9,7 +10,7 @@ export function filterHiddenItems(
   showOffBudget?: boolean,
   showHiddenCategories?: boolean,
   showUncategorized?: boolean,
-  groupByCategory?: boolean,
+  groupByLabel?: string,
 ) {
   const showHide = data
     .filter(
@@ -23,10 +24,14 @@ export function filterHiddenItems(
         showUncategorized || e.category !== null || e.accountOffBudget === true,
     );
 
-  return showHide.filter(query => {
-    if (!groupByCategory) return true;
+  const groupsByCategory = isCategoryGroup(groupByLabel);
 
-    const hasCategory = !!query.category;
+  return showHide.filter(query => {
+    if (!groupsByCategory) return true;
+
+    const isCsp =
+      groupByLabel === 'cspCategory' || groupByLabel === 'cspCategoryGroup';
+    const hasCategory = isCsp ? !!query.cspCategory : !!query.category;
     const isOffBudget = query.accountOffBudget;
     const isTransfer = !!query.transferAccount;
 

@@ -37,6 +37,7 @@ import { createSpreadsheet as netWorthSpreadsheet } from '#components/reports/sp
 import { useReport } from '#components/reports/useReport';
 import { fromDateRepr } from '#components/reports/util';
 import { useAccounts } from '#hooks/useAccounts';
+import { useCspNetWorthData } from '#hooks/useCspNetWorthData';
 import { useDashboardWidget } from '#hooks/useDashboardWidget';
 import { useFormat } from '#hooks/useFormat';
 import { useLocale } from '#hooks/useLocale';
@@ -150,6 +151,18 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
     ],
   );
   const data = useReport('net_worth', reportParams);
+
+  const [cspMode, setCspMode] = useState(widget?.meta?.cspMode || false);
+  const [liquidOnly, setLiquidOnly] = useState(
+    widget?.meta?.liquidOnly || false,
+  );
+
+  const transformedData = useCspNetWorthData(
+    data,
+    accounts,
+    cspMode,
+    liquidOnly,
+  );
   useEffect(() => {
     async function run() {
       const earliestTransaction = await send('get-earliest-transaction');
@@ -243,6 +256,8 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
               end,
               mode,
             },
+            cspMode,
+            liquidOnly,
           },
         },
       },
@@ -284,7 +299,7 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
 
   const [earliestTransaction, setEarliestTransaction] = useState('');
 
-  if (!allMonths || !data) {
+  if (!allMonths || !transformedData) {
     return null;
   }
 
@@ -333,7 +348,13 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
         inlineContent={
           <>
             <IntervalSelector interval={interval} onChange={setInterval} />
-            <ModeSelector mode={graphMode} onChange={setGraphMode} />
+            {!cspMode && (
+              <ModeSelector mode={graphMode} onChange={setGraphMode} />
+            )}
+            <CspModeToggle cspMode={cspMode} onChange={setCspMode} />
+            {cspMode && (
+              <LiquidToggle liquidOnly={liquidOnly} onChange={setLiquidOnly} />
+            )}
           </>
         }
       >
@@ -364,21 +385,21 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
           >
             <PrivacyFilter>
               <FinancialText>
-                {format(data.netWorth, 'financial')}
+                {format(transformedData.netWorth, 'financial')}
               </FinancialText>
             </PrivacyFilter>
           </View>
           <PrivacyFilter>
-            <Change amount={data.totalChange} />
+            <Change amount={transformedData.totalChange} />
           </PrivacyFilter>
         </View>
 
         <NetWorthGraph
-          graphData={data.graphData}
-          accounts={data.accounts}
+          graphData={transformedData.graphData}
+          accounts={transformedData.accounts}
           showTooltip={!isNarrowWidth}
           interval={interval}
-          mode={graphMode}
+          mode={cspMode ? 'stacked' : graphMode}
         />
 
         <View style={{ marginTop: 30, userSelect: 'none' }}>
@@ -502,5 +523,53 @@ function ModeSelector({
         />
       </Popover>
     </>
+  );
+}
+
+function CspModeToggle({
+  cspMode,
+  onChange,
+}: {
+  cspMode: boolean;
+  onChange: (val: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Button
+      variant="bare"
+      style={
+        cspMode ? { backgroundColor: theme.buttonNormalBackground } : undefined
+      }
+      onPress={() => onChange(!cspMode)}
+      aria-label={t('Toggle CSP Mode')}
+    >
+      <span style={{ fontWeight: cspMode ? 600 : 400 }}>{t('CSP Mode')}</span>
+    </Button>
+  );
+}
+
+function LiquidToggle({
+  liquidOnly,
+  onChange,
+}: {
+  liquidOnly: boolean;
+  onChange: (val: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Button
+      variant="bare"
+      style={
+        liquidOnly
+          ? { backgroundColor: theme.buttonNormalBackground }
+          : undefined
+      }
+      onPress={() => onChange(!liquidOnly)}
+      aria-label={t('Toggle Liquid Only')}
+    >
+      <span style={{ fontWeight: liquidOnly ? 600 : 400 }}>
+        {t('Liquid Only')}
+      </span>
+    </Button>
   );
 }

@@ -45,6 +45,7 @@ export function makeQuery(
       { $id: '$payee' },
       { $id: '$category' },
       { $id: '$payee.transfer_acct.id' },
+      { $id: '$csp_category' },
     ])
     .select([
       { date: intervalGroup },
@@ -57,6 +58,8 @@ export function makeQuery(
       { accountOffBudget: { $id: '$account.offbudget' } },
       { payee: { $id: '$payee.id' } },
       { transferAccount: { $id: '$payee.transfer_acct.id' } },
+      { cspCategory: { $id: '$csp_category.id' } },
+      { cspCategoryGroup: { $id: '$csp_category.group.id' } },
       { amount: { $sum: '$amount' } },
     ]);
 }

@@ -2,10 +2,13 @@ import * as monthUtils from '@actual-app/core/shared/months';
 import type {
   CategoryEntity,
   CategoryGroupEntity,
+  CSPCategoryEntity,
   CustomReportEntity,
   sortByOpType,
 } from '@actual-app/core/types/models';
 import { t } from 'i18next';
+
+import type { CspCategoryGroupWithCategories } from '#hooks/useCspCategories';
 
 const startDate = monthUtils.subMonths(monthUtils.currentMonth(), 5) + '-01';
 const endDate = monthUtils.currentDay();
@@ -62,6 +65,8 @@ const groupByOptions = [
   { description: t('Payee'), key: 'Payee' },
   { description: t('Account'), key: 'Account' },
   { description: t('Interval'), key: 'Interval' },
+  { description: t('CSP Category'), key: 'CspCategory' },
+  { description: t('CSP Group'), key: 'CspGroup' },
 ];
 
 const sortByOptions: {
@@ -289,6 +294,8 @@ export type QueryDataEntity = {
   payee: string;
   transferAccount: string;
   amount: number;
+  cspCategory?: string;
+  cspCategoryGroup?: string;
 };
 
 type UncategorizedId = 'off_budget' | 'transfer' | 'other' | 'all';
@@ -362,18 +369,72 @@ export const categoryLists = (categories: {
   return [categoryList, categoryGroup.filter(group => group !== null)] as const;
 };
 
+export const cspCategoryLists = (cspCategories: {
+  list: CSPCategoryEntity[];
+  grouped: CspCategoryGroupWithCategories[];
+}) => {
+  const categoriesToSort = [...cspCategories.list];
+  const categoryList: UncategorizedEntity[] = [
+    ...categoriesToSort.sort((a, b) => {
+      const catGroupA = cspCategories.grouped.find(f => f.id === a.group);
+      const catGroupB = cspCategories.grouped.find(f => f.id === b.group);
+      return a.sort_order && b.sort_order && catGroupA && catGroupB
+        ? (catGroupA.sort_order ?? 0) - (catGroupB.sort_order ?? 0) ||
+            a.sort_order - b.sort_order
+        : 0;
+    }),
+    uncategorizedCategory,
+  ];
+
+  const categoryGroup: UncategorizedGroupEntity[] = [
+    ...cspCategories.grouped.map(g => ({
+      id: g.id,
+      name: g.name,
+      hidden: g.tombstone || false,
+    })),
+    {
+      name: t('Uncategorized'),
+      id: 'uncategorized',
+      hidden: false,
+      categories: [uncategorizedCategory],
+    },
+  ];
+  return [categoryList, categoryGroup] as const;
+};
+
+export const isCategoryGroup = (label?: string) =>
+  label === 'category' ||
+  label === 'categoryGroup' ||
+  label === 'cspCategory' ||
+  label === 'cspCategoryGroup';
+
 export const groupBySelections = (
   groupBy: string,
   categoryList: UncategorizedEntity[],
   categoryGroup: UncategorizedEntity[],
   payees: UncategorizedEntity[],
   accounts: UncategorizedEntity[],
+  cspCategoryList: UncategorizedEntity[] = [],
+  cspCategoryGroup: UncategorizedEntity[] = [],
 ): [
   UncategorizedEntity[],
-  'category' | 'categoryGroup' | 'payee' | 'account',
+  (
+    | 'category'
+    | 'categoryGroup'
+    | 'payee'
+    | 'account'
+    | 'cspCategory'
+    | 'cspCategoryGroup'
+  ),
 ] => {
   let groupByList: UncategorizedEntity[];
-  let groupByLabel: 'category' | 'categoryGroup' | 'payee' | 'account';
+  let groupByLabel:
+    | 'category'
+    | 'categoryGroup'
+    | 'payee'
+    | 'account'
+    | 'cspCategory'
+    | 'cspCategoryGroup';
   switch (groupBy) {
     case 'Category':
       groupByList = categoryList;
@@ -419,6 +480,21 @@ export const groupBySelections = (
     case 'Interval':
       groupByList = categoryList;
       groupByLabel = 'category';
+      break;
+    case 'CspCategory':
+      groupByList = cspCategoryList;
+      groupByLabel = 'cspCategory';
+      break;
+    case 'CspGroup':
+      groupByList = cspCategoryGroup.map(group => {
+        return {
+          ...group,
+          id: group.id,
+          name: group.name,
+          hidden: group.hidden,
+        };
+      });
+      groupByLabel = 'cspCategoryGroup';
       break;
     default:
       throw new Error('Error loading data into the spreadsheet.');

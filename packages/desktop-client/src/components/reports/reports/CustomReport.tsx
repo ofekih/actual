@@ -57,6 +57,7 @@ import { useReport } from '#components/reports/useReport';
 import { calculateHasWarning, fromDateRepr } from '#components/reports/util';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
 import { useFormat } from '#hooks/useFormat';
 import { useLocale } from '#hooks/useLocale';
 import { useLocalPref } from '#hooks/useLocalPref';
@@ -148,6 +149,8 @@ function CustomReportInner({
   const format = useFormat();
 
   const { data: categories = { grouped: [], list: [] } } = useCategories();
+  const { data: cspCategories = { list: [], grouped: [] } } =
+    useCspCategories();
   const { isNarrowWidth } = useResponsive();
   const [_firstDayOfWeekIdx] = useSyncedPref('firstDayOfWeekIdx');
   const firstDayOfWeekIdx = _firstDayOfWeekIdx || '0';
@@ -539,6 +542,8 @@ function CustomReportInner({
       balanceTypeOp,
       sortByOp,
       firstDayOfWeekIdx,
+      groupBy,
+      cspCategories,
     });
   }, [
     startDate,
@@ -556,6 +561,8 @@ function CustomReportInner({
     trimIntervals,
     sortByOp,
     firstDayOfWeekIdx,
+    groupBy,
+    cspCategories,
   ]);
 
   const getGraphData = useMemo(() => {
@@ -579,6 +586,7 @@ function CustomReportInner({
       accounts,
       graphType,
       firstDayOfWeekIdx,
+      cspCategories,
     });
   }, [
     startDate,
@@ -600,6 +608,7 @@ function CustomReportInner({
     sortByOp,
     graphType,
     firstDayOfWeekIdx,
+    cspCategories,
   ]);
   const graphData = useReport('default', getGraphData);
   const groupedData = useReport('grouped', getGroupData);

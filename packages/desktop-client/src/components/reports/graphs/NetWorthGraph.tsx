@@ -25,6 +25,7 @@ import {
 } from '#components/reports/chart-theme';
 import { Container } from '#components/reports/Container';
 import { numberFormatterTooltip } from '#components/reports/numberFormatter';
+import { CSP_ACCOUNT_IDS } from '#components/reports/util';
 import { useFormat } from '#hooks/useFormat';
 import type { UseFormatResult } from '#hooks/useFormat';
 import { usePrivacyMode } from '#hooks/usePrivacyMode';
@@ -310,10 +311,22 @@ export function NetWorthGraph({
   // Assign colors to accounts
   const colors = useMemo(() => {
     if (mode !== 'stacked') return {};
+
+    const cspColors = {
+      [CSP_ACCOUNT_IDS.debt]: theme.reportsRed,
+      [CSP_ACCOUNT_IDS.savings]: theme.reportsGreen,
+      [CSP_ACCOUNT_IDS.assets]: theme.reportsBlue,
+      [CSP_ACCOUNT_IDS.investments]: theme.reportsGray,
+    };
+
     const scale = getColorScale('qualitative');
     return sortedAccounts.reduce(
       (acc, account, index) => {
-        acc[account.id] = scale[index % scale.length];
+        if (cspColors[account.id]) {
+          acc[account.id] = cspColors[account.id];
+        } else {
+          acc[account.id] = scale[index % scale.length];
+        }
         return acc;
       },
       {} as Record<string, string>,

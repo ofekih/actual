@@ -23,6 +23,7 @@ import { ReportCardName } from '#components/reports/ReportCardName';
 import { calculateTimeRange } from '#components/reports/reportRanges';
 import { createSpreadsheet as netWorthSpreadsheet } from '#components/reports/spreadsheets/net-worth-spreadsheet';
 import { useReport } from '#components/reports/useReport';
+import { useCspNetWorthData } from '#hooks/useCspNetWorthData';
 import { useFormat } from '#hooks/useFormat';
 import { useLocale } from '#hooks/useLocale';
 import { useSyncedPref } from '#hooks/useSyncedPref';
@@ -98,6 +99,13 @@ export function NetWorthCard({
   );
   const data = useReport('net_worth', params);
 
+  const transformedData = useCspNetWorthData(
+    data,
+    accounts,
+    meta?.cspMode || false,
+    meta?.liquidOnly,
+  );
+
   return (
     <ReportCard
       widgetId={widgetId}
@@ -127,7 +135,7 @@ export function NetWorthCard({
             />
             <DateRange start={start} end={end} />
           </View>
-          {data && (
+          {transformedData && (
             <View style={{ textAlign: 'right' }}>
               <Block
                 style={{
@@ -138,25 +146,25 @@ export function NetWorthCard({
               >
                 <PrivacyFilter activationFilters={[!isCardHovered]}>
                   <FinancialText>
-                    {format(data.netWorth, 'financial')}
+                    {format(transformedData.netWorth, 'financial')}
                   </FinancialText>
                 </PrivacyFilter>
               </Block>
               <PrivacyFilter activationFilters={[!isCardHovered]}>
-                <Change amount={data.totalChange} />
+                <Change amount={transformedData.totalChange} />
               </PrivacyFilter>
             </View>
           )}
         </View>
 
-        {data ? (
+        {transformedData ? (
           <NetWorthGraph
-            graphData={data.graphData}
-            accounts={data.accounts}
+            graphData={transformedData.graphData}
+            accounts={transformedData.accounts}
             compact
             showTooltip={!isEditing && !isNarrowWidth}
             interval={meta?.interval || 'Monthly'}
-            mode={meta?.mode || 'trend'}
+            mode={meta?.cspMode ? 'stacked' : meta?.mode || 'trend'}
             style={{ height: 'auto', flex: 1 }}
           />
         ) : (

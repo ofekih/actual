@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import React from 'react';
+import { useRef } from 'react';
 import type { ComponentProps, CSSProperties } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -223,7 +223,7 @@ export function SpendingGraph({
     return Number(obj.day) >= 28 ? '28+' : obj.day;
   };
 
-  const activeDayRef = React.useRef<string | null>(null);
+  const activeDayRef = useRef<string | null>(null);
 
   return (
     <Container
@@ -346,9 +346,11 @@ export function SpendingGraph({
                   fill: theme.reportsChartFill,
                   fillOpacity: 1,
                   r: 10,
-                  onClick: (e: any, payload: any) => {
-                    if (onDayClick && payload?.payload?.day) {
-                      onDayClick(payload.payload.day);
+                  onClick: (data: unknown) => {
+                    const day = (data as { payload?: { day?: string } })
+                      ?.payload?.day;
+                    if (onDayClick && day) {
+                      onDayClick(day);
                     }
                   },
                 }}
@@ -358,9 +360,11 @@ export function SpendingGraph({
                 strokeWidth={3}
                 fill={`url(#fill${balanceTypeOp})`}
                 fillOpacity={1}
-                onClick={(e: any, payload: any) => {
-                  if (onDayClick && payload?.payload?.day) {
-                    onDayClick(payload.payload.day);
+                onClick={(data: unknown) => {
+                  const day = (data as { payload?: { day?: string } })?.payload
+                    ?.day;
+                  if (onDayClick && day) {
+                    onDayClick(day);
                   }
                 }}
               />
