@@ -167,7 +167,7 @@ export const getCspSpentAmount = (
 export function useCspCategoryAudits(
   month: string,
   categories: CSPCategoryEntity[],
-  budgetStartMonth: string,
+  budgetStartMonth?: string,
 ) {
   const categoryHash = categories
     .map(c => `${c.id}:${c.moving_average_months}`)
@@ -186,10 +186,9 @@ export function useCspCategoryAudits(
         }
       });
 
-      const diff = monthUtils.differenceInCalendarMonths(
-        month,
-        budgetStartMonth,
-      );
+      const diff = budgetStartMonth
+        ? monthUtils.differenceInCalendarMonths(month, budgetStartMonth)
+        : maxWindow;
       const availableMonths = Math.max(1, diff + 1);
       const globalDivisor = Math.min(maxWindow, availableMonths);
       const earliestStartMonth = monthUtils.subMonths(month, globalDivisor - 1);
@@ -261,7 +260,7 @@ export function useCspCategoryAudits(
       return audits;
     },
     placeholderData: {},
-    enabled: !!month && !!budgetStartMonth && categories.length > 0,
+    enabled: !!month && categories.length > 0,
   });
 }
 
@@ -290,6 +289,7 @@ export function useCspActualsForMonth(month: string) {
       return res;
     },
     placeholderData: {},
+    enabled: !!month,
   });
 }
 export function useCspTargetsForMonth(month: string) {
@@ -300,6 +300,7 @@ export function useCspTargetsForMonth(month: string) {
       return targets as Record<string, number>;
     },
     placeholderData: {},
+    enabled: !!month,
   });
 }
 
@@ -415,12 +416,68 @@ export const CspNetIncomeContext = createContext<CspNetIncomeInfo>({
   spent: 0,
 });
 
-export function useCspCategoryAmounts(category: CategoryEntity) {
-  const actuals = useContext(CspActualsContext);
-  const audits = useContext(CspAuditsContext);
-  const netIncome = useContext(CspNetIncomeContext);
+export function useCspMonthData(month?: string) {
+  const contextActuals = useContext(CspActualsContext);
+  const contextTargets = useContext(CspTargetsContext);
+  const contextAudits = useContext(CspAuditsContext);
+  const contextNetIncome = useContext(CspNetIncomeContext);
+
+  const { data: monthActuals = {} } = useCspActualsForMonth(month ?? '');
+  const { data: monthTargets = {} } = useCspTargetsForMonth(month ?? '');
+  const { data: categoriesData } = useCspCategories();
   const categoryGroups = useCategoriesOverride() || [];
-  const targets = useContext(CspTargetsContext);
+  const { data: monthAudits = {} } = useCspCategoryAudits(
+    month ?? '',
+    categoriesData?.list ?? [],
+  );
+
+  if (!month) {
+    return {
+      actuals: contextActuals,
+      targets: contextTargets,
+      audits: contextAudits,
+      netIncome: contextNetIncome,
+      categoryGroups,
+    };
+  }
+
+  const actuals = monthActuals;
+  const targets = monthTargets;
+  const audits = monthAudits;
+
+  const incomeGroup = categoryGroups.find(g =>
+    g.name.toLowerCase().includes('income'),
+  );
+
+  const netIncomeTarget = incomeGroup
+    ? (incomeGroup.categories ?? []).reduce(
+        (sum, cat) => sum + getCspTargetAmount(cat, categoryGroups, targets),
+        0,
+      )
+    : 0;
+  const netIncomeSpent = incomeGroup
+    ? (incomeGroup.categories ?? []).reduce(
+        (sum, cat) =>
+          sum + getCspSpentAmount(cat, actuals, audits, categoryGroups),
+        0,
+      )
+    : 0;
+
+  return {
+    actuals,
+    targets,
+    audits,
+    netIncome: { target: netIncomeTarget, spent: netIncomeSpent },
+    categoryGroups,
+  };
+}
+
+export function useCspCategoryAmounts(
+  category: CategoryEntity,
+  month?: string,
+) {
+  const { actuals, audits, netIncome, categoryGroups, targets } =
+    useCspMonthData(month);
 
   const targetAmount = getCspTargetAmount(category, categoryGroups, targets);
   const spentAmount = getCspSpentAmount(
@@ -458,12 +515,9 @@ export function useCspCategoryAmounts(category: CategoryEntity) {
   };
 }
 
-export function useCspGroupAmounts(group: CategoryGroupEntity) {
-  const actuals = useContext(CspActualsContext);
-  const audits = useContext(CspAuditsContext);
-  const netIncome = useContext(CspNetIncomeContext);
-  const categoryGroups = useCategoriesOverride() || [];
-  const targets = useContext(CspTargetsContext);
+export function useCspGroupAmounts(group: CategoryGroupEntity, month?: string) {
+  const { actuals, audits, netIncome, categoryGroups, targets } =
+    useCspMonthData(month);
 
   const totalTarget = (group.categories ?? []).reduce(
     (sum, cat) => sum + getCspTargetAmount(cat, categoryGroups, targets),
@@ -509,7 +563,7 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
     spentPercentage,
     isIncome,
     isAutomatic,
-  } = useCspCategoryAmounts(category);
+  } = useCspCategoryAmounts(category, month);
 
   return (
     <View
@@ -593,7 +647,7 @@ const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
     targetPercentage,
     spentPercentage,
     isIncome,
-  } = useCspGroupAmounts(group);
+  } = useCspGroupAmounts(group, month);
 
   return (
     <View
@@ -659,7 +713,7 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
 }: CategoryMonthProps) {
   const queryClient = useQueryClient();
   const { targetAmount, spentAmount, targetPercentage, spentPercentage } =
-    useCspCategoryAmounts(category);
+    useCspCategoryAmounts(category, month);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row' }}>
@@ -742,8 +796,9 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
 
 const CspIncomeGroupMonth = memo(function CspIncomeGroupMonth({
   group,
+  month,
 }: CategoryGroupMonthProps) {
-  const { totalTarget, totalSpent } = useCspGroupAmounts(group);
+  const { totalTarget, totalSpent } = useCspGroupAmounts(group, month);
 
   return (
     <View
@@ -1317,16 +1372,6 @@ export function Csp() {
 
   const categoryGroups = useCspCategoryGroups();
 
-  // Fetch actuals for the current view month
-  const { data: actuals = {} } = useCspActualsForMonth(startMonth);
-  const { data: targets = {} } = useCspTargetsForMonth(startMonth);
-  const { data: categoriesData } = useCspCategories();
-  const { data: audits = {} } = useCspCategoryAudits(
-    startMonth,
-    categoriesData?.list ?? [],
-    bounds.start,
-  );
-
   const init = useEffectEvent(() => {
     async function run() {
       const { start, end } = await send('get-budget-bounds');
@@ -1438,30 +1483,6 @@ export function Csp() {
     [],
   );
 
-  // Calculate Net Income dynamically for percentages
-  const incomeGroup = categoryGroups.find(g =>
-    g.name.toLowerCase().includes('income'),
-  );
-
-  const netIncomeTarget = incomeGroup
-    ? (incomeGroup.categories ?? []).reduce(
-        (sum, cat) => sum + getCspTargetAmount(cat, categoryGroups, targets),
-        0,
-      )
-    : 0;
-  const netIncomeSpent = incomeGroup
-    ? (incomeGroup.categories ?? []).reduce(
-        (sum, cat) =>
-          sum + getCspSpentAmount(cat, actuals, audits, categoryGroups),
-        0,
-      )
-    : 0;
-
-  const netIncome: CspNetIncomeInfo = {
-    target: netIncomeTarget,
-    spent: netIncomeSpent,
-  };
-
   if (!initialized || categoryGroups.length === 0) {
     return null;
   }
@@ -1472,57 +1493,43 @@ export function Csp() {
   return (
     <CspComponentsProvider value={cspComponents}>
       <CategoriesOverrideProvider value={categoryGroups}>
-        <CspTargetsContext.Provider value={targets}>
-          <CspActualsContext.Provider value={actuals}>
-            <CspAuditsContext.Provider value={audits}>
-              <CspNetIncomeContext.Provider value={netIncome}>
-                <SheetNameProvider name={monthUtils.sheetForMonth(startMonth)}>
-                  <View
-                    style={{
-                      ...styles.page,
-                      paddingLeft: 8,
-                      paddingRight: 8,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <BudgetProvider
-                      summaryCollapsed={summaryCollapsed ?? false}
-                      onBudgetAction={noopBudgetAction}
-                      onToggleSummaryCollapse={onToggleCollapse}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <AutoSizingBudgetTable
-                          type={budgetType}
-                          prewarmStartMonth={startMonth}
-                          startMonth={startMonth}
-                          monthBounds={bounds}
-                          maxMonths={maxMonths}
-                          onMonthSelect={onMonthSelect}
-                          onDeleteCategory={id => deleteCategory.mutate({ id })}
-                          onDeleteGroup={id =>
-                            deleteCategoryGroup.mutate({ id })
-                          }
-                          onSaveCategory={category =>
-                            saveCategory.mutate({ category })
-                          }
-                          onSaveGroup={group =>
-                            saveCategoryGroup.mutate({ group })
-                          }
-                          onBudgetAction={noopBudgetAction}
-                          onShowActivity={onShowActivity}
-                          onReorderCategory={reorderCategory.mutate}
-                          onReorderGroup={noop}
-                          onApplyBudgetTemplatesInGroup={noop}
-                          onSortCategories={noop}
-                        />
-                      </View>
-                    </BudgetProvider>
-                  </View>
-                </SheetNameProvider>
-              </CspNetIncomeContext.Provider>
-            </CspAuditsContext.Provider>
-          </CspActualsContext.Provider>
-        </CspTargetsContext.Provider>
+        <SheetNameProvider name={monthUtils.sheetForMonth(startMonth)}>
+          <View
+            style={{
+              ...styles.page,
+              paddingLeft: 8,
+              paddingRight: 8,
+              overflow: 'hidden',
+            }}
+          >
+            <BudgetProvider
+              summaryCollapsed={summaryCollapsed ?? false}
+              onBudgetAction={noopBudgetAction}
+              onToggleSummaryCollapse={onToggleCollapse}
+            >
+              <View style={{ flex: 1 }}>
+                <AutoSizingBudgetTable
+                  type={budgetType}
+                  prewarmStartMonth={startMonth}
+                  startMonth={startMonth}
+                  monthBounds={bounds}
+                  maxMonths={maxMonths}
+                  onMonthSelect={onMonthSelect}
+                  onDeleteCategory={id => deleteCategory.mutate({ id })}
+                  onDeleteGroup={id => deleteCategoryGroup.mutate({ id })}
+                  onSaveCategory={category => saveCategory.mutate({ category })}
+                  onSaveGroup={group => saveCategoryGroup.mutate({ group })}
+                  onBudgetAction={noopBudgetAction}
+                  onShowActivity={onShowActivity}
+                  onReorderCategory={reorderCategory.mutate}
+                  onReorderGroup={noop}
+                  onApplyBudgetTemplatesInGroup={noop}
+                  onSortCategories={noop}
+                />
+              </View>
+            </BudgetProvider>
+          </View>
+        </SheetNameProvider>
       </CategoriesOverrideProvider>
     </CspComponentsProvider>
   );
