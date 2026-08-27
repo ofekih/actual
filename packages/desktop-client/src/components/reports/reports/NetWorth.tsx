@@ -337,6 +337,7 @@ function NetWorthInner({ widget }: NetWorthInnerProps) {
         earliestTransaction={earliestTransaction}
         latestTransaction={latestTransaction}
         firstDayOfWeekIdx={firstDayOfWeekIdx}
+        granularities={['month', 'day']}
         mode={mode}
         onChangeDates={onChangeDates}
         filters={conditions}

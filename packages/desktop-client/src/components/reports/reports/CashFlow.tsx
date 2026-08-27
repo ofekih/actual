@@ -44,9 +44,11 @@ import { addNotification } from '#notifications/notificationsSlice';
 import { useDispatch } from '#redux';
 import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
 
+// Month-shaped so the range means the whole current month (the query clamps
+// to today); day-shaped values here would slide by days instead.
 export const defaultTimeFrame = {
-  start: monthUtils.dayFromDate(monthUtils.currentMonth()),
-  end: monthUtils.currentDay(),
+  start: monthUtils.currentMonth(),
+  end: monthUtils.currentMonth(),
   mode: 'sliding-window',
 } satisfies TimeFrame;
 
@@ -315,6 +317,7 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
         earliestTransaction={earliestTransaction}
         latestTransaction={latestTransaction}
         firstDayOfWeekIdx={firstDayOfWeekIdx}
+        granularities={['month', 'day']}
         mode={mode}
         show1Month
         onChangeDates={onChangeDates}
@@ -325,17 +328,15 @@ function CashFlowInner({ widget }: CashFlowInnerProps) {
         conditionsOp={conditionsOp}
         onConditionsOpChange={onConditionsOpChange}
       >
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Button onPress={() => setShowBalance(state => !state)}>
-            {showBalance ? t('Hide balance') : t('Show balance')}
-          </Button>
+        <Button onPress={() => setShowBalance(state => !state)}>
+          {showBalance ? t('Hide balance') : t('Show balance')}
+        </Button>
 
-          {widget && (
-            <Button variant="primary" onPress={onSaveWidget}>
-              <Trans>Save widget</Trans>
-            </Button>
-          )}
-        </View>
+        {widget && (
+          <Button variant="primary" onPress={onSaveWidget}>
+            <Trans>Save widget</Trans>
+          </Button>
+        )}
       </Header>
       <View
         style={{

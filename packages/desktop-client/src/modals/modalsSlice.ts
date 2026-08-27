@@ -3,6 +3,7 @@ import type { IntegerAmount } from '@actual-app/core/shared/util';
 import type { File } from '@actual-app/core/types/file';
 import type {
   AccountEntity,
+  BankSyncCredentialSource,
   CategoryEntity,
   CategoryGroupEntity,
   CSPCategoryEntity,
@@ -25,6 +26,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { accountQueries } from '#accounts';
 import { resetApp, setAppState } from '#app/appSlice';
 import type { SelectLinkedAccountsModalProps } from '#components/modals/SelectLinkedAccountsModal';
+import type { TransactionTableColumn } from '#components/transactions/table/columns';
 import type { CspCategoryGroupWithCategories } from '#hooks/useCspCategories';
 import { createAppAsyncThunk } from '#redux';
 import { signOut } from '#users/usersSlice';
@@ -148,7 +150,8 @@ export type Modal =
   | {
       name: 'pluggyai-init';
       options: {
-        onSuccess: () => void;
+        onSuccess: (perBudgetFile: boolean) => void;
+        credentialSource: BankSyncCredentialSource;
       };
     }
   | {
@@ -403,9 +406,17 @@ export type Modal =
         onReopenAccount: (accountId: AccountEntity['id']) => void;
         onEditNotes: (id: NoteEntity['id']) => void;
         onClose?: () => void;
+        onReconcile?: () => void;
         onToggleRunningBalance?: () => void;
         onToggleReconciled?: () => void;
         onToggleOffBudget?: () => void;
+      };
+    }
+  | {
+      name: 'account-reconcile';
+      options: {
+        accountId: AccountEntity['id'];
+        onReconcile: (amount: number) => void;
       };
     }
   | {
@@ -622,11 +633,20 @@ export type Modal =
       };
     }
   | {
+      name: 'transaction-table-columns';
+      options: {
+        columns: TransactionTableColumn[];
+        onSave: (
+          columns: TransactionTableColumn[],
+          applyToAll: boolean,
+        ) => void;
+      };
+    }
+  | {
       name: 'convert-to-schedule';
       options: {
         onConfirm: () => void;
         onCancel?: () => void;
-        isBeyondWindow?: boolean;
         daysUntilTransaction?: number;
         upcomingDays?: number;
       };
