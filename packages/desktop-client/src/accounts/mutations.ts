@@ -372,6 +372,7 @@ type LinkAccountBasePayload = {
   offBudget?: boolean;
   startingDate?: string;
   startingBalance?: number;
+  cspAccountType?: string;
 };
 
 type LinkAccountPayload = LinkAccountBasePayload & {
@@ -392,6 +393,7 @@ export function useLinkAccountMutation() {
       offBudget,
       startingDate,
       startingBalance,
+      cspAccountType,
     }: LinkAccountPayload) => {
       await send('gocardless-accounts-link', {
         requisitionId,
@@ -400,6 +402,7 @@ export function useLinkAccountMutation() {
         offBudget,
         startingDate,
         startingBalance,
+        cspAccountType,
       });
     },
     onSuccess: () => {
@@ -433,6 +436,7 @@ export function useLinkAccountSimpleFinMutation() {
       offBudget,
       startingDate,
       startingBalance,
+      cspAccountType,
     }: LinkAccountSimpleFinPayload) => {
       await send('simplefin-accounts-link', {
         externalAccount,
@@ -440,6 +444,7 @@ export function useLinkAccountSimpleFinMutation() {
         offBudget,
         startingDate,
         startingBalance,
+        cspAccountType,
       });
     },
     onSuccess: () => {
@@ -475,6 +480,7 @@ export function useLinkAccountPluggyAiMutation() {
       offBudget,
       startingDate,
       startingBalance,
+      cspAccountType,
     }: LinkAccountPluggyAiPayload) => {
       await send('pluggyai-accounts-link', {
         externalAccount,
@@ -482,6 +488,7 @@ export function useLinkAccountPluggyAiMutation() {
         offBudget,
         startingDate,
         startingBalance,
+        cspAccountType,
       });
     },
     onSuccess: () => {
@@ -517,6 +524,7 @@ export function useLinkAccountAkahuMutation() {
       offBudget,
       startingDate,
       startingBalance,
+      cspAccountType,
     }: LinkAccountAkahuPayload) => {
       await send('akahu-accounts-link', {
         externalAccount,
@@ -524,6 +532,7 @@ export function useLinkAccountAkahuMutation() {
         offBudget,
         startingDate,
         startingBalance,
+        cspAccountType,
       });
     },
     onSuccess: () => {
@@ -557,6 +566,7 @@ export function useLinkAccountEnableBankingMutation() {
       offBudget,
       startingDate,
       startingBalance,
+      cspAccountType,
     }: LinkAccountEnableBankingPayload) => {
       await send('enablebanking-accounts-link', {
         externalAccount,
@@ -564,6 +574,7 @@ export function useLinkAccountEnableBankingMutation() {
         offBudget,
         startingDate,
         startingBalance,
+        cspAccountType,
       });
     },
     onSuccess: () => {

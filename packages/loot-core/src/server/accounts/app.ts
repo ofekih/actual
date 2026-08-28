@@ -49,7 +49,25 @@ type LinkAccountBaseParams = {
   offBudget?: boolean;
   startingDate?: string;
   startingBalance?: number;
+  cspAccountType?: string;
 };
+
+async function saveCspAccountType(id: string, cspAccountType?: string) {
+  if (cspAccountType && cspAccountType !== 'auto') {
+    const row = await db.first<{ value: string }>(
+      'SELECT value FROM preferences WHERE id = ?',
+      ['csp-account-types'],
+    );
+    const existing: Record<string, string> = row?.value
+      ? JSON.parse(row.value)
+      : {};
+    existing[id] = cspAccountType;
+    await db.update('preferences', {
+      id: 'csp-account-types',
+      value: JSON.stringify(existing),
+    });
+  }
+}
 
 export type AccountHandlers = {
   'account-update': typeof updateAccount;
@@ -189,6 +207,7 @@ async function linkGoCardlessAccount({
   offBudget = false,
   startingDate,
   startingBalance,
+  cspAccountType,
 }: LinkAccountBaseParams & {
   requisitionId: string;
   account: SyncServerGoCardlessAccount;
@@ -231,6 +250,8 @@ async function linkGoCardlessAccount({
     });
   }
 
+  await saveCspAccountType(id, cspAccountType);
+
   const syncRes = await bankSync.syncAccount(
     undefined,
     undefined,
@@ -257,6 +278,7 @@ async function linkSimpleFinAccount({
   offBudget = false,
   startingDate,
   startingBalance,
+  cspAccountType,
 }: LinkAccountBaseParams & {
   externalAccount: SyncServerSimpleFinAccount;
 }) {
@@ -308,6 +330,8 @@ async function linkSimpleFinAccount({
     });
   }
 
+  await saveCspAccountType(id, cspAccountType);
+
   const syncRes = await bankSync.syncAccount(
     undefined,
     undefined,
@@ -334,6 +358,7 @@ async function linkPluggyAiAccount({
   offBudget = false,
   startingDate,
   startingBalance,
+  cspAccountType,
 }: LinkAccountBaseParams & {
   externalAccount: SyncServerPluggyAiAccount;
 }) {
@@ -386,6 +411,8 @@ async function linkPluggyAiAccount({
     });
   }
 
+  await saveCspAccountType(id, cspAccountType);
+
   const syncRes = await bankSync.syncAccount(
     undefined,
     undefined,
@@ -413,6 +440,7 @@ async function linkAkahuAccount({
   offBudget = false,
   startingDate,
   startingBalance,
+  cspAccountType,
 }: LinkAccountBaseParams & {
   externalAccount: SyncServerAkahuAccount;
 }) {
@@ -461,6 +489,8 @@ async function linkAkahuAccount({
     });
   }
 
+  await saveCspAccountType(id, cspAccountType);
+
   const syncRes = await bankSync.syncAccount(
     undefined,
     undefined,
@@ -487,6 +517,7 @@ async function linkEnableBankingAccount({
   offBudget = false,
   startingDate,
   startingBalance,
+  cspAccountType,
 }: LinkAccountBaseParams & {
   externalAccount: SyncServerEnableBankingAccount;
 }) {
@@ -545,6 +576,8 @@ async function linkEnableBankingAccount({
   if (id == null) {
     throw new Error('id was not assigned in linkEnableBankingAccount');
   }
+
+  await saveCspAccountType(id, cspAccountType);
 
   const syncRes = await bankSync.syncAccount(
     undefined,

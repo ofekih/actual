@@ -18,20 +18,21 @@ export function AccountsHeader({ unlinked }: AccountsHeaderProps) {
         style={{ paddingLeft: '10px' }}
       />
       {!unlinked && (
-        <>
-          <Cell
-            value={t('Bank')}
-            width="flex"
-            style={{ paddingLeft: '10px' }}
-          />
-          <Cell
-            value={t('Last sync')}
-            width={160}
-            style={{ paddingLeft: '10px' }}
-          />
-          <Cell value="" width={100} style={{ paddingLeft: '10px' }} />
-        </>
+        <Cell value={t('Bank')} width="flex" style={{ paddingLeft: '10px' }} />
       )}
+      <Cell
+        value={t('Account Type')}
+        width={160}
+        style={{ paddingLeft: '10px' }}
+      />
+      {!unlinked && (
+        <Cell
+          value={t('Last sync')}
+          width={160}
+          style={{ paddingLeft: '10px' }}
+        />
+      )}
+      <Cell value="" width={100} style={{ paddingLeft: '10px' }} />
     </TableHeader>
   );
 }

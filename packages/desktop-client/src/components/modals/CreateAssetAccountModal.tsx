@@ -20,6 +20,7 @@ import {
   ModalTitle,
 } from '#components/common/Modal';
 import { useNavigate } from '#hooks/useNavigate';
+import { useSyncedPref } from '#hooks/useSyncedPref';
 import { closeModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
 
@@ -34,6 +35,7 @@ export function CreateAssetAccountModal() {
 
   const [error, setError] = useState<string | null>(null);
 
+  const [accountTypesRaw, setAccountTypes] = useSyncedPref('csp-account-types');
   const createAccount = useCreateAccountMutation();
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -59,6 +61,13 @@ export function CreateAssetAccountModal() {
             account_id: vin,
             account_sync_source: 'autohub',
           });
+
+          // Tag new car account as 'assets' for CSP category
+          const accountTypes: Record<string, string> = accountTypesRaw
+            ? JSON.parse(accountTypesRaw)
+            : {};
+          accountTypes[id] = 'assets';
+          setAccountTypes(JSON.stringify(accountTypes));
 
           // Create the mileage note
           await send('notes-save', {

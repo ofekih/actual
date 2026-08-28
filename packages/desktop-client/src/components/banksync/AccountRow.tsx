@@ -1,7 +1,8 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
+import { Select } from '@actual-app/components/select';
 import { styles } from '@actual-app/components/styles';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
@@ -11,6 +12,7 @@ import { format as formatDate } from 'date-fns';
 import type { Locale } from 'date-fns';
 
 import { Cell, Row } from '#components/table';
+import { useSyncedPref } from '#hooks/useSyncedPref';
 
 type AccountRowProps = {
   account: AccountEntity;
@@ -24,6 +26,35 @@ export const AccountRow = memo(
   ({ account, hovered, onHover, onAction, locale }: AccountRowProps) => {
     const { t } = useTranslation();
     const backgroundFocus = hovered;
+    const [accountTypesRaw, setAccountTypes] =
+      useSyncedPref('csp-account-types');
+    const accountTypes: Record<string, string> = useMemo(
+      () => (accountTypesRaw ? JSON.parse(accountTypesRaw) : {}),
+      [accountTypesRaw],
+    );
+
+    const accountTypeOptions: Array<[string, string]> = useMemo(
+      () => [
+        ['auto', t('Uncategorized')],
+        ['savings', t('Savings')],
+        ['investments', t('Investments')],
+        ['assets', t('Assets')],
+        ['debt', t('Debt')],
+      ],
+      [t],
+    );
+
+    const currentAccountType = accountTypes[account.id] || 'auto';
+
+    const onSelectAccountType = (newType: string) => {
+      const updated = { ...accountTypes };
+      if (newType === 'auto') {
+        delete updated[account.id];
+      } else {
+        updated[account.id] = newType;
+      }
+      setAccountTypes(JSON.stringify(updated));
+    };
 
     // The bank name is stored as null when the sync provider doesn't report an
     // institution; show a localized fallback for linked accounts.
@@ -59,20 +90,36 @@ export const AccountRow = memo(
       >
         <Cell
           name="accountName"
-          width={250}
+          width={account.account_sync_source ? 250 : 'flex'}
           plain
           style={{ color: theme.tableText, padding: '10px' }}
         >
           {potentiallyTruncatedAccountName}
         </Cell>
 
+        {account.account_sync_source && (
+          <Cell
+            name="bankName"
+            width="flex"
+            plain
+            style={{ color: theme.tableText, padding: '10px' }}
+          >
+            {bankName}
+          </Cell>
+        )}
+
         <Cell
-          name="bankName"
-          width="flex"
+          name="accountType"
+          width={160}
           plain
-          style={{ color: theme.tableText, padding: '10px' }}
+          style={{ padding: '5px 10px' }}
         >
-          {bankName}
+          <Select
+            options={accountTypeOptions}
+            value={currentAccountType}
+            onChange={onSelectAccountType}
+            style={{ width: '100%' }}
+          />
         </Cell>
 
         {account.account_sync_source ? (
@@ -85,7 +132,7 @@ export const AccountRow = memo(
           >
             <Cell
               name="lastSync"
-              width={200}
+              width={160}
               plain
               style={{
                 color: theme.tableText,
@@ -100,18 +147,16 @@ export const AccountRow = memo(
               {lastSyncString}
             </Cell>
           </Tooltip>
-        ) : (
-          ''
-        )}
+        ) : null}
 
         {account.account_sync_source ? (
-          <Cell name="edit" plain style={{ paddingRight: '10px' }}>
+          <Cell name="edit" width={100} plain style={{ paddingRight: '10px' }}>
             <Button onPress={() => onAction(account, 'edit')}>
               <Trans>Edit</Trans>
             </Button>
           </Cell>
         ) : (
-          <Cell name="link" plain style={{ paddingRight: '10px' }}>
+          <Cell name="link" width={100} plain style={{ paddingRight: '10px' }}>
             <Button onPress={() => onAction(account, 'link')}>
               <Trans>Link account</Trans>
             </Button>

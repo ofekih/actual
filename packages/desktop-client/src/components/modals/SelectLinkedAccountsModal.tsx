@@ -4,6 +4,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Button } from '@actual-app/components/button';
 import { useResponsive } from '@actual-app/components/hooks/useResponsive';
 import { Input } from '@actual-app/components/input';
+import { Select } from '@actual-app/components/select';
 import { SpaceBetween } from '@actual-app/components/space-between';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
@@ -39,10 +40,25 @@ import { AmountInput } from '#components/util/AmountInput';
 import { useAccounts } from '#hooks/useAccounts';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { useFormat } from '#hooks/useFormat';
+import { useSyncedPref } from '#hooks/useSyncedPref';
 import { closeModal } from '#modals/modalsSlice';
 import { transactions } from '#queries';
 import { liveQuery } from '#queries/liveQuery';
 import { useDispatch } from '#redux';
+
+function useAccountTypeOptions(): Array<[string, string]> {
+  const { t } = useTranslation();
+  return useMemo(
+    () => [
+      ['auto', t('Uncategorized')],
+      ['savings', t('Savings')],
+      ['investments', t('Investments')],
+      ['assets', t('Assets')],
+      ['debt', t('Debt')],
+    ],
+    [t],
+  );
+}
 
 function useAddBudgetAccountOptions() {
   const { t } = useTranslation();
@@ -272,8 +288,44 @@ export function SelectLinkedAccountsModal({
   const [customStartingDates, setCustomStartingDates] = useState<
     Record<string, CustomStartingSettings>
   >({});
+  const [customCspTypes, setCustomCspTypes] = useState<Record<string, string>>(
+    {},
+  );
+  const [accountTypesRaw, setAccountTypes] = useSyncedPref('csp-account-types');
+  const existingAccountTypes: Record<string, string> = useMemo(
+    () => (accountTypesRaw ? JSON.parse(accountTypesRaw) : {}),
+    [accountTypesRaw],
+  );
   const { addOnBudgetAccountOption, addOffBudgetAccountOption } =
     useAddBudgetAccountOptions();
+
+  function getCspAccountType(
+    accountId: string,
+    externalAccount: ExternalAccount,
+  ): string {
+    if (customCspTypes[accountId]) {
+      return customCspTypes[accountId];
+    }
+    const chosenAccount = getChosenAccount(accountId);
+    if (
+      chosenAccount &&
+      chosenAccount.id !== addOnBudgetAccountOption.id &&
+      chosenAccount.id !== addOffBudgetAccountOption.id
+    ) {
+      return existingAccountTypes[chosenAccount.id] || 'auto';
+    }
+    if (externalAccount.balance != null && externalAccount.balance < 0) {
+      return 'debt';
+    }
+    return 'auto';
+  }
+
+  function setCspAccountType(accountId: string, type: string) {
+    setCustomCspTypes(prev => ({
+      ...prev,
+      [accountId]: type,
+    }));
+  }
 
   const linkAccount = useLinkAccountMutation();
   const unlinkAccount = useUnlinkAccountMutation();
@@ -292,6 +344,9 @@ export function SelectLinkedAccountsModal({
       .filter(acc => !chosenLocalAccountIds.includes(acc.id))
       .forEach(acc => unlinkAccount.mutate({ id: acc.id }));
 
+    const updatedAccountTypes = { ...existingAccountTypes };
+    let hasUpdatedCspTypes = false;
+
     // Link new accounts
     Object.entries(chosenAccounts).forEach(
       ([chosenExternalAccountId, chosenLocalAccountId]) => {
@@ -307,92 +362,89 @@ export function SelectLinkedAccountsModal({
           return;
         }
 
+        const externalAccount =
+          propsWithSortedExternalAccounts.externalAccounts[
+            externalAccountIndex
+          ];
+        const chosenCspType = getCspAccountType(
+          chosenExternalAccountId,
+          externalAccount,
+        );
+
+        if (
+          chosenLocalAccountId !== addOnBudgetAccountOption.id &&
+          chosenLocalAccountId !== addOffBudgetAccountOption.id
+        ) {
+          if (chosenCspType && chosenCspType !== 'auto') {
+            updatedAccountTypes[chosenLocalAccountId] = chosenCspType;
+          } else {
+            delete updatedAccountTypes[chosenLocalAccountId];
+          }
+          hasUpdatedCspTypes = true;
+        }
+
         // Finally link the matched account
         const { startingDate, startingBalance } = resolveStartingSettings(
           customStartingDates[chosenExternalAccountId],
         );
 
+        const basePayload = {
+          upgradingId:
+            chosenLocalAccountId !== addOnBudgetAccountOption.id &&
+            chosenLocalAccountId !== addOffBudgetAccountOption.id
+              ? chosenLocalAccountId
+              : undefined,
+          offBudget,
+          startingDate,
+          startingBalance,
+          cspAccountType: chosenCspType,
+        };
+
         if (propsWithSortedExternalAccounts.syncSource === 'simpleFin') {
           linkAccountSimpleFin.mutate({
-            externalAccount:
-              propsWithSortedExternalAccounts.externalAccounts[
-                externalAccountIndex
-              ],
-            upgradingId:
-              chosenLocalAccountId !== addOnBudgetAccountOption.id &&
-              chosenLocalAccountId !== addOffBudgetAccountOption.id
-                ? chosenLocalAccountId
-                : undefined,
-            offBudget,
-            startingDate,
-            startingBalance,
+            externalAccount: propsWithSortedExternalAccounts.externalAccounts[
+              externalAccountIndex
+            ] as SyncServerSimpleFinAccount,
+            ...basePayload,
           });
         } else if (propsWithSortedExternalAccounts.syncSource === 'pluggyai') {
           linkAccountPluggyAi.mutate({
-            externalAccount:
-              propsWithSortedExternalAccounts.externalAccounts[
-                externalAccountIndex
-              ],
-            upgradingId:
-              chosenLocalAccountId !== addOnBudgetAccountOption.id &&
-              chosenLocalAccountId !== addOffBudgetAccountOption.id
-                ? chosenLocalAccountId
-                : undefined,
-            offBudget,
-            startingDate,
-            startingBalance,
+            externalAccount: propsWithSortedExternalAccounts.externalAccounts[
+              externalAccountIndex
+            ] as SyncServerPluggyAiAccount,
+            ...basePayload,
           });
         } else if (propsWithSortedExternalAccounts.syncSource === 'akahu') {
           linkAccountAkahu.mutate({
-            externalAccount:
-              propsWithSortedExternalAccounts.externalAccounts[
-                externalAccountIndex
-              ],
-            upgradingId:
-              chosenLocalAccountId !== addOnBudgetAccountOption.id &&
-              chosenLocalAccountId !== addOffBudgetAccountOption.id
-                ? chosenLocalAccountId
-                : undefined,
-            offBudget,
-            startingDate,
-            startingBalance,
+            externalAccount: propsWithSortedExternalAccounts.externalAccounts[
+              externalAccountIndex
+            ] as SyncServerAkahuAccount,
+            ...basePayload,
           });
         } else if (
           propsWithSortedExternalAccounts.syncSource === 'enableBanking'
         ) {
           linkAccountEnableBanking.mutate({
-            externalAccount:
-              propsWithSortedExternalAccounts.externalAccounts[
-                externalAccountIndex
-              ],
-            upgradingId:
-              chosenLocalAccountId !== addOnBudgetAccountOption.id &&
-              chosenLocalAccountId !== addOffBudgetAccountOption.id
-                ? chosenLocalAccountId
-                : undefined,
-            offBudget,
-            startingDate,
-            startingBalance,
+            externalAccount: propsWithSortedExternalAccounts.externalAccounts[
+              externalAccountIndex
+            ] as SyncServerEnableBankingAccount,
+            ...basePayload,
           });
         } else {
           linkAccount.mutate({
             requisitionId: propsWithSortedExternalAccounts.requisitionId,
-            account:
-              propsWithSortedExternalAccounts.externalAccounts[
-                externalAccountIndex
-              ],
-            upgradingId:
-              chosenLocalAccountId !== addOnBudgetAccountOption.id &&
-              chosenLocalAccountId !== addOffBudgetAccountOption.id
-                ? chosenLocalAccountId
-                : undefined,
-            offBudget,
-            startingDate,
-            startingBalance,
+            account: propsWithSortedExternalAccounts.externalAccounts[
+              externalAccountIndex
+            ] as SyncServerGoCardlessAccount,
+            ...basePayload,
           });
         }
       },
     );
+
+    if (hasUpdatedCspTypes) {
+      setAccountTypes(JSON.stringify(updatedAccountTypes));
+    }
 
     dispatch(closeModal());
   }
@@ -429,6 +481,15 @@ export function SelectLinkedAccountsModal({
         setDraftLinkAccounts(prev =>
           new Map(prev).set(externalAccount.account_id, 'linking'),
         );
+        if (
+          localAccountId !== addOnBudgetAccountOption.id &&
+          localAccountId !== addOffBudgetAccountOption.id
+        ) {
+          setCspAccountType(
+            externalAccount.account_id,
+            existingAccountTypes[localAccountId] || 'auto',
+          );
+        }
       } else {
         delete updatedAccounts[externalAccount.account_id];
         setDraftLinkAccounts(prev =>
@@ -503,7 +564,7 @@ export function SelectLinkedAccountsModal({
               display: 'flex',
               flexDirection: 'column',
             }
-          : { width: 1000 },
+          : { width: 1100, maxWidth: '95vw' },
       }}
     >
       {({ state }) => (
@@ -551,6 +612,11 @@ export function SelectLinkedAccountsModal({
                   onSetLinkedAccount={onSetLinkedAccount}
                   customStartingDate={getCustomStartingDate(account.account_id)}
                   onSetCustomStartingDate={setCustomStartingDate}
+                  cspAccountType={getCspAccountType(
+                    account.account_id,
+                    account,
+                  )}
+                  onSetCspAccountType={setCspAccountType}
                 />
               ))}
             </View>
@@ -559,13 +625,14 @@ export function SelectLinkedAccountsModal({
               style={{ ...styles.tableContainer, height: 300, flex: 'unset' }}
             >
               <TableHeader>
-                <Cell value={t('Institution to Sync')} width={150} />
-                <Cell value={t('Bank Account To Sync')} width={150} />
-                <Cell value={t('Balance')} width={120} />
+                <Cell value={t('Institution to Sync')} width={140} />
+                <Cell value={t('Bank Account To Sync')} width={140} />
+                <Cell value={t('Balance')} width={110} />
                 <Cell value={t('Account in Actual')} width="flex" />
-                <Cell value={t('Starting Date')} width={120} />
-                <Cell value={t('Starting Balance')} width={120} />
-                <Cell value={t('Actions')} width={150} textAlign="center" />
+                <Cell value={t('Account Type')} width={130} />
+                <Cell value={t('Starting Date')} width={110} />
+                <Cell value={t('Starting Balance')} width={110} />
+                <Cell value={t('Actions')} width={140} textAlign="center" />
               </TableHeader>
 
               <Table<ExternalAccount & { id: string }>
@@ -595,6 +662,8 @@ export function SelectLinkedAccountsModal({
                         item.account_id,
                       )}
                       onSetCustomStartingDate={setCustomStartingDate}
+                      cspAccountType={getCspAccountType(item.account_id, item)}
+                      onSetCspAccountType={setCspAccountType}
                       showStartingOptions={shouldShowStartingOptions}
                     />
                   );
@@ -695,6 +764,8 @@ type SharedAccountRowProps = {
     externalAccount: ExternalAccount,
     localAccountId: string | null | undefined,
   ) => void;
+  cspAccountType: string;
+  onSetCspAccountType: (accountId: string, type: string) => void;
 };
 
 type TableRowProps = SharedAccountRowProps & {
@@ -746,6 +817,8 @@ function TableRow({
   onSetLinkedAccount,
   customStartingDate,
   onSetCustomStartingDate,
+  cspAccountType,
+  onSetCspAccountType,
   showStartingOptions,
 }: TableRowProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -754,6 +827,7 @@ function TableRow({
   const format = useFormat();
   const dateFormat = useDateFormat() || 'MM/dd/yyyy';
   const { t } = useTranslation();
+  const accountTypeOptions = useAccountTypeOptions();
   const startingBalanceInfo = useStartingBalanceInfo(
     showStartingOptions ? undefined : chosenAccount?.id,
   );
@@ -770,7 +844,7 @@ function TableRow({
   return (
     <Row style={{ backgroundColor: theme.tableBackground }}>
       {/* Institution to Sync */}
-      <Field width={150}>
+      <Field width={140}>
         <Tooltip content={getInstitutionName(externalAccount)}>
           <View
             style={{
@@ -784,7 +858,7 @@ function TableRow({
         </Tooltip>
       </Field>
       {/* Bank Account To Sync */}
-      <Field width={150}>
+      <Field width={140}>
         <Tooltip content={externalAccount.name}>
           <View
             style={{
@@ -798,7 +872,7 @@ function TableRow({
         </Tooltip>
       </Field>
       {/* Balance */}
-      <Field width={120} style={{ textAlign: 'right' }}>
+      <Field width={110} style={{ textAlign: 'right' }}>
         <PrivacyFilter>
           {externalAccount.balance != null ? (
             <FinancialText>
@@ -833,6 +907,18 @@ function TableRow({
           chosenAccount?.name
         )}
       </Field>
+      {/* Account Type */}
+      <Field width={130} truncate={false}>
+        <Select
+          options={accountTypeOptions}
+          value={cspAccountType}
+          onChange={newType =>
+            onSetCspAccountType(externalAccount.account_id, newType)
+          }
+          disabled={!chosenAccount}
+          style={{ width: '100%' }}
+        />
+      </Field>
       {showStartingOptions ? (
         <StartingOptionsFields
           accountId={externalAccount.account_id}
@@ -844,7 +930,7 @@ function TableRow({
       ) : (
         <>
           {/* Starting Date */}
-          <Field width={120} truncate={false} style={{ textAlign: 'right' }}>
+          <Field width={110} truncate={false} style={{ textAlign: 'right' }}>
             {startingBalanceInfo ? (
               <Text
                 style={{
@@ -857,7 +943,7 @@ function TableRow({
             ) : null}
           </Field>
           {/* Starting Balance */}
-          <Field width={120} truncate={false} style={{ textAlign: 'right' }}>
+          <Field width={110} truncate={false} style={{ textAlign: 'right' }}>
             {startingBalanceInfo ? (
               <PrivacyFilter>
                 <FinancialText
@@ -874,7 +960,7 @@ function TableRow({
         </>
       )}
       {/* Actions */}
-      <Field width={150}>
+      <Field width={140}>
         {chosenAccount ? (
           <Button
             onPress={() => {
@@ -939,7 +1025,7 @@ function StartingOptionsFields({
     return (
       <>
         {/* Starting Date */}
-        <Field width={120} truncate={false}>
+        <Field width={110} truncate={false}>
           <Input
             type="date"
             value={customStartingDate.date}
@@ -953,7 +1039,7 @@ function StartingOptionsFields({
           />
         </Field>
         {/* Starting Balance */}
-        <Field width={120} truncate={false} style={{ textAlign: 'right' }}>
+        <Field width={110} truncate={false} style={{ textAlign: 'right' }}>
           <AmountInput
             value={customStartingDate.amount ?? 0}
             zeroSign={zeroSign}
@@ -1046,6 +1132,8 @@ function AccountCard({
   onSetLinkedAccount,
   customStartingDate,
   onSetCustomStartingDate,
+  cspAccountType,
+  onSetCspAccountType,
 }: AccountCardProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const { addOnBudgetAccountOption, addOffBudgetAccountOption } =
@@ -1053,6 +1141,7 @@ function AccountCard({
   const format = useFormat();
   const dateFormat = useDateFormat() || 'MM/dd/yyyy';
   const { t } = useTranslation();
+  const accountTypeOptions = useAccountTypeOptions();
 
   const availableAccountOptions = getSelectableAccountOptions({
     localAccounts,
@@ -1148,6 +1237,33 @@ function AccountCard({
           </Text>
         )}
       </SpaceBetween>
+
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Text
+          style={{
+            fontSize: '0.9em',
+            color: theme.pageTextSubdued,
+          }}
+        >
+          <Trans>Account type:</Trans>
+        </Text>
+        <Select
+          options={accountTypeOptions}
+          value={cspAccountType}
+          onChange={newType =>
+            onSetCspAccountType(externalAccount.account_id, newType)
+          }
+          disabled={!chosenAccount}
+          style={{ width: 140 }}
+        />
+      </View>
 
       {!shouldShowStartingOptions && startingBalanceInfo && (
         <View
