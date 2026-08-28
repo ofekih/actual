@@ -116,16 +116,6 @@ describe('sidebar Account context menu', () => {
     fireEvent.contextMenu(screen.getByText('Bank of America'));
 
     expect(store.getState().contextMenu.isOpen).toBe(true);
-    expect(contextMenuItemNames()).toEqual([
-      'account-rename',
-      'account-close',
-      null,
-      'CSP Category',
-      'csp-auto',
-      'csp-savings',
-      'csp-investments',
-      'csp-assets',
-      'csp-debt',
-    ]);
+    expect(contextMenuItemNames()).toEqual(['account-rename', 'account-close']);
   });
 });

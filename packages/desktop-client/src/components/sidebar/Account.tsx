@@ -5,14 +5,12 @@ import { useTranslation } from 'react-i18next';
 
 import { AlignedText } from '@actual-app/components/aligned-text';
 import { Button } from '@actual-app/components/button';
-import { SvgCheckmark } from '@actual-app/components/icons/v1';
 import {
   SvgArrowButtonDown1,
   SvgArrowButtonUp1,
 } from '@actual-app/components/icons/v2';
 import { InitialFocus } from '@actual-app/components/initial-focus';
 import { Input } from '@actual-app/components/input';
-import { Menu } from '@actual-app/components/menu';
 import { SpaceBetween } from '@actual-app/components/space-between';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
@@ -91,9 +89,7 @@ export function Account<FieldName extends SheetFields<'account'>>({
   const type = account
     ? account.closed
       ? 'account-closed'
-      : account.offbudget
-        ? 'account-offbudget'
-        : 'account-onbudget'
+      : 'account-active'
     : 'title';
 
   const triggerRef = useRef(null);
@@ -119,10 +115,6 @@ export function Account<FieldName extends SheetFields<'account'>>({
   const dispatch = useDispatch();
 
   const [isEditing, setIsEditing] = useState(false);
-
-  const [accountTypesRaw, setAccountTypes] = useSyncedPref('csp-account-types');
-  const accountTypes = accountTypesRaw ? JSON.parse(accountTypesRaw) : {};
-  const currentCspType = account ? accountTypes[account.id] || 'auto' : 'auto';
 
   const accountNote = useNotes(`account-${account?.id}`);
   const isTouchDevice =
@@ -161,62 +153,6 @@ export function Account<FieldName extends SheetFields<'account'>>({
             onClick: () =>
               dispatch(openAccountCloseModal({ accountId: account.id })),
           },
-      Menu.line,
-      {
-        name: t('CSP Category') as unknown as string,
-        text: '',
-        type: Menu.label as unknown as 'label',
-      },
-      {
-        name: 'csp-auto',
-        text: t('Uncategorized'),
-        icon: currentCspType === 'auto' ? SvgCheckmark : undefined,
-        onClick: () => {
-          const newTypes = { ...accountTypes };
-          delete newTypes[account.id];
-          setAccountTypes(JSON.stringify(newTypes));
-        },
-      },
-      {
-        name: 'csp-savings',
-        text: t('Savings'),
-        icon: currentCspType === 'savings' ? SvgCheckmark : undefined,
-        onClick: () => {
-          const newTypes = { ...accountTypes };
-          newTypes[account.id] = 'savings';
-          setAccountTypes(JSON.stringify(newTypes));
-        },
-      },
-      {
-        name: 'csp-investments',
-        text: t('Investments'),
-        icon: currentCspType === 'investments' ? SvgCheckmark : undefined,
-        onClick: () => {
-          const newTypes = { ...accountTypes };
-          newTypes[account.id] = 'investments';
-          setAccountTypes(JSON.stringify(newTypes));
-        },
-      },
-      {
-        name: 'csp-assets',
-        text: t('Assets'),
-        icon: currentCspType === 'assets' ? SvgCheckmark : undefined,
-        onClick: () => {
-          const newTypes = { ...accountTypes };
-          newTypes[account.id] = 'assets';
-          setAccountTypes(JSON.stringify(newTypes));
-        },
-      },
-      {
-        name: 'csp-debt',
-        text: t('Debt'),
-        icon: currentCspType === 'debt' ? SvgCheckmark : undefined,
-        onClick: () => {
-          const newTypes = { ...accountTypes };
-          newTypes[account.id] = 'debt';
-          setAccountTypes(JSON.stringify(newTypes));
-        },
-      },
     ],
   });
 

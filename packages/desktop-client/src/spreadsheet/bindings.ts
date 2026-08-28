@@ -85,6 +85,21 @@ export function closedAccountBalance() {
   } satisfies Binding<'account', 'closed-accounts-balance'>;
 }
 
+export function categoryAccountsBalance(
+  categoryKey: string,
+  accountIds: AccountEntity['id'][],
+) {
+  return {
+    name: `category-accounts-balance-${categoryKey}`,
+    query: q('transactions')
+      .filter({
+        account: { $oneof: accountIds.length > 0 ? accountIds : ['__none__'] },
+        'account.closed': false,
+      })
+      .calculate({ $sum: '$amount' }),
+  } satisfies Binding<'account', `category-accounts-balance-${string}`>;
+}
+
 export function categoryBalance(
   categoryId: CategoryEntity['id'],
   month: string,
