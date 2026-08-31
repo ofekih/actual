@@ -55,7 +55,15 @@ type BudgetTableProps = {
     id: CategoryGroupEntity['id'];
     targetId: CategoryEntity['id'] | null;
   }) => void;
-  onShowActivity: (id: CategoryEntity['id'], month?: string) => void;
+  onShowActivity: (
+    id: CategoryEntity['id'],
+    month?: string,
+    field?:
+      | 'category'
+      | 'category_group'
+      | 'csp_category'
+      | 'csp_category_group',
+  ) => void;
   onBudgetAction: (month: string, type: string, args: unknown) => void;
 };
 
@@ -236,14 +244,22 @@ export function BudgetTable(props: BudgetTableProps) {
     onCollapse(categoryGroups.map(g => g.id));
   };
 
-  const _onShowActivity = (id: string, month?: string) => {
+  const _onShowActivity = (
+    id: string,
+    month?: string,
+    field?:
+      | 'category'
+      | 'category_group'
+      | 'csp_category'
+      | 'csp_category_group',
+  ) => {
     if (scrollContainerRef.current) {
       sessionStorage.setItem(
         'budget-scroll-position',
         String(scrollContainerRef.current.scrollTop),
       );
     }
-    onShowActivity(id, month);
+    onShowActivity(id, month, field);
   };
 
   const schedulesQuery = useMemo(() => q('schedules').select('*'), []);

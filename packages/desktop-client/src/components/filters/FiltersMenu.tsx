@@ -38,6 +38,7 @@ import { AmountInput } from '#components/util/AmountInput';
 import { GenericInput } from '#components/util/GenericInput';
 import { useAccounts } from '#hooks/useAccounts';
 import { useCategories } from '#hooks/useCategories';
+import { useCspCategories } from '#hooks/useCspCategories';
 import { useDateFormat } from '#hooks/useDateFormat';
 import { useFormat } from '#hooks/useFormat';
 import { usePayees } from '#hooks/usePayees';
@@ -101,6 +102,7 @@ function ConfigureField<T extends RuleConditionEntity>({
   const dateFormat = useDateFormat() || 'MM/dd/yyyy';
   const accounts = useAccounts();
   const categories = useCategories();
+  const cspCategories = useCspCategories();
   const payees = usePayees();
   const field = initialField === 'category_group' ? 'category' : initialField;
   const [subfield, setSubfield] = useState(initialSubfield);
@@ -189,6 +191,16 @@ function ConfigureField<T extends RuleConditionEntity>({
         }
       }
     }
+    if (field === 'csp_category') {
+      const category = cspCategories.data?.list.find(cat => cat.id === value);
+      return category?.name ?? '';
+    }
+    if (field === 'csp_category_group') {
+      const group = cspCategories.data?.grouped.find(
+        group => group.id === value,
+      );
+      return group?.name ?? '';
+    }
     return '';
   };
 
@@ -222,11 +234,25 @@ function ConfigureField<T extends RuleConditionEntity>({
       }
       return matches.length === 1 ? matches[0].id : null;
     }
+    if (field === 'csp_category') {
+      const matches =
+        cspCategories.data?.list.filter(cat => cat.name === value) ?? [];
+      return matches.length === 1 ? matches[0].id : null;
+    }
+    if (field === 'csp_category_group') {
+      const matches =
+        cspCategories.data?.grouped.filter(group => group.name === value) ?? [];
+      return matches.length === 1 ? matches[0].id : null;
+    }
     return null;
   };
 
   const isIdField =
-    field === 'account' || field === 'payee' || field === 'category';
+    field === 'account' ||
+    field === 'payee' ||
+    field === 'category' ||
+    field === 'csp_category' ||
+    field === 'csp_category_group';
 
   // Converting values when switching between ops is a bit tricky, so we have some specific rules:
   const setOp = (nextOp: T['op']) => {

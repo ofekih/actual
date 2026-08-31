@@ -797,6 +797,7 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
 const CspIncomeGroupMonth = memo(function CspIncomeGroupMonth({
   group,
   month,
+  onShowActivity,
 }: CategoryGroupMonthProps) {
   const { totalTarget, totalSpent } = useCspGroupAmounts(group, month);
 
@@ -825,19 +826,23 @@ const CspIncomeGroupMonth = memo(function CspIncomeGroupMonth({
         style={{
           textAlign: 'right',
           fontWeight: 600,
-          paddingRight: styles.monthRightPadding,
         }}
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 6,
-          }}
+        <ClickableCell
+          style={{ paddingRight: styles.monthRightPadding }}
+          onClick={() => onShowActivity(group.id, month, 'csp_category_group')}
         >
-          <CspAmountCell amount={totalSpent} dimIfZero />
-        </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 6,
+            }}
+          >
+            <CspAmountCell amount={totalSpent} dimIfZero isIncome />
+          </View>
+        </ClickableCell>
       </Field>
     </View>
   );
@@ -1444,10 +1449,21 @@ export function Csp() {
   const onShowActivity = (
     categoryId: string,
     month?: string,
-    field: 'csp_category' | 'csp_category_group' = 'csp_category',
+    field:
+      | 'category'
+      | 'category_group'
+      | 'csp_category'
+      | 'csp_category_group' = 'csp_category',
   ) => {
+    const resolvedField =
+      field === 'category_group'
+        ? 'csp_category_group'
+        : field === 'category'
+          ? 'csp_category'
+          : field;
+
     const filterConditions = [
-      { field, op: 'is', value: categoryId, type: 'id' },
+      { field: resolvedField, op: 'is', value: categoryId, type: 'id' },
       ...(month
         ? [
             {
