@@ -660,7 +660,7 @@ async function getCspTargets({ month }: { month: string }) {
   );
   const targets: Record<string, number> = {};
   for (const row of rows) {
-    targets[row.category] = row.amount;
+    targets[row.category] = Math.abs(row.amount);
   }
   return targets;
 }
@@ -683,18 +683,23 @@ async function setCspTarget({
       monthInt,
     ]);
   } else {
+    const sanitizedAmount = Math.abs(amount);
     // Insert or update
     const existing = await db.first<{ id: string }>(
       'SELECT id FROM csp_targets WHERE category = ? AND month = ?',
       [category, monthInt],
     );
     if (existing) {
-      await db.update('csp_targets', { id: existing.id, amount, tombstone: 0 });
+      await db.update('csp_targets', {
+        id: existing.id,
+        amount: sanitizedAmount,
+        tombstone: 0,
+      });
     } else {
       await db.insertWithUUID('csp_targets', {
         category,
         month: monthInt,
-        amount,
+        amount: sanitizedAmount,
       });
     }
   }

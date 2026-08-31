@@ -348,8 +348,8 @@ function CspIncomeGroup({
           marginRight: 15,
         }}
       >
-        <Label title={t('Expected')} style={{ width: columnWidth }} />
-        <Label title={t('Received')} style={{ width: columnWidth }} />
+        <Label title={t('Planned')} style={{ width: columnWidth }} />
+        <Label title={t('Actual')} style={{ width: columnWidth }} />
       </View>
 
       <Card style={{ marginTop: 0 }}>
@@ -503,13 +503,13 @@ function CspBudgetTableHeader({
       >
         <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
           <Label
-            title={t('Target')}
+            title={t('Planned')}
             style={{ color: theme.formInputText, paddingRight: 4 }}
           />
         </View>
         <View style={{ width: columnWidth, alignItems: 'flex-end' }}>
           <Label
-            title={t('Spent')}
+            title={t('Actual')}
             style={{ color: theme.formInputText, paddingRight: 4 }}
           />
         </View>

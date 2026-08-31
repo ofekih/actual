@@ -102,7 +102,6 @@ export const getCspTargetAmount = (
   categoryGroups: CategoryGroupEntity[],
   targets: Record<string, number>,
 ) => {
-  const isIncome = isIncomeCategory(cat, categoryGroups);
   const group = categoryGroups.find(g => g.id === cat.group);
   const isGuiltFree = group && group.name.toLowerCase().includes('guilt-free');
 
@@ -129,7 +128,7 @@ export const getCspTargetAmount = (
       const gIsIncome = g.name.toLowerCase().includes('income');
 
       for (const c of g.categories ?? []) {
-        const cTarget = targets[c.id] ?? 0;
+        const cTarget = Math.abs(targets[c.id] ?? 0);
 
         if (gIsIncome) {
           totalIncome += cTarget;
@@ -144,7 +143,7 @@ export const getCspTargetAmount = (
   }
 
   if (plannedAmount != null) {
-    return isIncome ? plannedAmount : -plannedAmount;
+    return Math.abs(plannedAmount);
   }
   return 0;
 };
@@ -153,15 +152,14 @@ export const getCspSpentAmount = (
   cat: CategoryEntity,
   actuals: Record<string, number>,
   audits: Record<string, CspAudit>,
-  categoryGroups: CategoryGroupEntity[],
+  _categoryGroups?: CategoryGroupEntity[],
 ) => {
   const auditPeriod = (cat as CSPCategoryEntity).moving_average_months;
   if (auditPeriod != null && auditPeriod > 0) {
     const avg = audits[cat.id]?.average ?? 0;
-    const isIncome = isIncomeCategory(cat, categoryGroups);
-    return isIncome ? avg : -avg;
+    return Math.abs(avg);
   }
-  return actuals[cat.id] ?? 0;
+  return Math.abs(actuals[cat.id] ?? 0);
 };
 
 export function useCspCategoryAudits(
@@ -359,7 +357,8 @@ export function CspAmountCell({
   spentAmount?: number;
   isIncome?: boolean;
 }) {
-  const formatted = integerToCurrency(amount);
+  const absAmount = Math.abs(amount);
+  const formatted = integerToCurrency(absAmount);
 
   const { devColor, ArrowIcon } = getDeviationStyles(
     targetAmount,
@@ -367,12 +366,12 @@ export function CspAmountCell({
     isIncome,
   );
 
-  const defaultColorStyle = makeAmountGrey(amount) ?? {
-    color: amount < 0 ? theme.errorText : theme.tableText,
+  const defaultColorStyle = makeAmountGrey(absAmount) ?? {
+    color: theme.tableText,
   };
 
   const colorStyle =
-    dimIfZero && amount === 0
+    dimIfZero && absAmount === 0
       ? { color: theme.pageTextSubdued }
       : defaultColorStyle;
 
@@ -499,9 +498,7 @@ export function useCspCategoryAmounts(
     guiltFreeGroup.categories[0].id === category.id;
 
   const targetPercentage =
-    netIncome.target > 0
-      ? (Math.abs(targetAmount) / netIncome.target) * 100
-      : undefined;
+    netIncome.target > 0 ? (targetAmount / netIncome.target) * 100 : undefined;
   const spentPercentage =
     netIncome.spent > 0
       ? (Math.abs(spentAmount) / netIncome.spent) * 100
@@ -534,7 +531,7 @@ export function useCspGroupAmounts(group: CategoryGroupEntity, month?: string) {
 
   const targetPercentage =
     netIncome.target > 0 && !isIncome
-      ? (Math.abs(totalTarget) / netIncome.target) * 100
+      ? (totalTarget / netIncome.target) * 100
       : undefined;
   const spentPercentage =
     netIncome.spent > 0 && !isIncome
@@ -620,9 +617,11 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
           )}
           onUpdate={async value => {
             if (isAutomatic) return;
-            const newAmount = value
-              ? amountToInteger(currencyToAmount(value) || 0)
-              : null;
+            const parsed = value ? currencyToAmount(value) : null;
+            const newAmount =
+              parsed !== null && !isNaN(parsed)
+                ? Math.abs(amountToInteger(parsed))
+                : null;
             if (newAmount !== targetAmount) {
               await send('csp/set-target', {
                 month,
@@ -782,9 +781,11 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
             />
           )}
           onUpdate={async value => {
-            const newAmount = value
-              ? amountToInteger(currencyToAmount(value) || 0)
-              : null;
+            const parsed = value ? currencyToAmount(value) : null;
+            const newAmount =
+              parsed !== null && !isNaN(parsed)
+                ? Math.abs(amountToInteger(parsed))
+                : null;
             if (newAmount !== targetAmount) {
               await send('csp/set-target', {
                 month,
@@ -920,12 +921,12 @@ const CspBudgetTotalsMonth = memo(function CspBudgetTotalsMonth() {
     >
       <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
         <Text style={{ color: theme.tableHeaderText }}>
-          <Trans>Expected</Trans>
+          <Trans>Planned</Trans>
         </Text>
       </View>
       <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
         <Text style={{ color: theme.tableHeaderText }}>
-          <Trans>Received</Trans>
+          <Trans>Actual</Trans>
         </Text>
       </View>
     </View>
