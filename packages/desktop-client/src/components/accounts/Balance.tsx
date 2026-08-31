@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import type { RefObject } from 'react';
-import { useTranslation } from 'react-i18next';
+import type { ReactNode, RefObject } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { SvgArrowButtonRight1 } from '@actual-app/components/icons/v2';
@@ -27,12 +27,14 @@ type DetailedBalanceProps = {
   name: string;
   balance: number;
   isExactBalance?: boolean;
+  extra?: ReactNode;
 };
 
 function DetailedBalance({
   name,
   balance,
   isExactBalance = true,
+  extra,
 }: DetailedBalanceProps) {
   const format = useFormat();
   return (
@@ -51,6 +53,7 @@ function DetailedBalance({
           {format(balance, 'financial')}
         </FinancialText>
       </PrivacyFilter>
+      {extra && <>{' '}{extra}</>}
     </Text>
   );
 }
@@ -133,16 +136,39 @@ export function SelectedBalance({
 
 type FilteredBalanceProps = {
   filteredAmount?: number | null;
+  movingAverageMonths?: number;
 };
 
-function FilteredBalance({ filteredAmount }: FilteredBalanceProps) {
+function FilteredBalance({
+  filteredAmount,
+  movingAverageMonths,
+}: FilteredBalanceProps) {
   const { t } = useTranslation();
+  const format = useFormat();
+
+  const monthlyAverage =
+    movingAverageMonths && movingAverageMonths > 1 && filteredAmount != null
+      ? Math.round(filteredAmount / movingAverageMonths)
+      : null;
 
   return (
     <DetailedBalance
       name={t('Filtered balance:')}
       balance={filteredAmount ?? 0}
       isExactBalance
+      extra={
+        monthlyAverage !== null ? (
+          <Text style={{ color: theme.pageTextSubdued }}>
+            (
+            <PrivacyFilter>
+              <FinancialText style={{ fontWeight: 600 }}>
+                {format(monthlyAverage, 'financial')}
+              </FinancialText>
+            </PrivacyFilter>
+            <Trans> / month</Trans>)
+          </Text>
+        ) : undefined
+      }
     />
   );
 }
@@ -182,6 +208,7 @@ type BalancesProps = {
   account?: AccountEntity;
   isFiltered: boolean;
   filteredAmount?: number | null;
+  movingAverageMonths?: number;
 };
 
 export function Balances({
@@ -191,6 +218,7 @@ export function Balances({
   account,
   isFiltered,
   filteredAmount,
+  movingAverageMonths,
 }: BalancesProps) {
   const selectedItems = useSelectedItems();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -263,7 +291,12 @@ export function Balances({
       {selectedItems.size > 0 && (
         <SelectedBalance selectedItems={selectedItems} account={account} />
       )}
-      {isFiltered && <FilteredBalance filteredAmount={filteredAmount} />}
+      {isFiltered && (
+        <FilteredBalance
+          filteredAmount={filteredAmount}
+          movingAverageMonths={movingAverageMonths}
+        />
+      )}
     </View>
   );
 }

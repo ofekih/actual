@@ -78,6 +78,7 @@ type AccountHeaderProps = {
   reconcileAmount?: number | null;
   isFiltered: boolean;
   filteredAmount?: number | null;
+  movingAverageMonths?: number;
   isSorted: boolean;
   search: string;
   filterConditions: RuleConditionEntity[];
@@ -150,6 +151,7 @@ export function AccountHeader({
   reconcileAmount,
   isFiltered,
   filteredAmount,
+  movingAverageMonths,
   isSorted,
   search,
   filterConditions,
@@ -323,6 +325,7 @@ export function AccountHeader({
               account={account}
               isFiltered={isFiltered}
               filteredAmount={filteredAmount}
+              movingAverageMonths={movingAverageMonths}
             />
           </View>
 

@@ -250,6 +250,7 @@ type AccountInternalProps = {
   >['onBatchUnlinkSchedule'];
   onBatchDelete: ReturnType<typeof useTransactionBatchActions>['onBatchDelete'];
   categoryId?: string;
+  movingAverageMonths?: number;
   location: ReturnType<typeof useLocation>;
   dateFormat: ReturnType<typeof useDateFormat>;
   payees: PayeeEntity[];
@@ -290,6 +291,7 @@ type AccountInternalState = {
     prevAscDesc?: 'asc' | 'desc' | undefined;
   } | null;
   filteredAmount: null | number;
+  movingAverageMonths?: number;
 };
 
 export type TableRef = RefObject<{
@@ -334,6 +336,7 @@ class AccountInternal extends PureComponent<
       isAdding: false,
       sort: null,
       filteredAmount: null,
+      movingAverageMonths: props.movingAverageMonths,
     };
   }
 
@@ -427,11 +430,20 @@ class AccountInternal extends PureComponent<
       this.setState({ sort: null, search: '', filterConditions: [] });
     }
 
-    // Detect filterConditions prop change (e.g. from click-to-filter category/group cells)
-    if (!isEqual(this.props.filterConditions, prevProps.filterConditions)) {
-      this.setState({ filterConditions: this.props.filterConditions }, () => {
-        this.fetchTransactions(this.state.filterConditions);
-      });
+    // Detect filterConditions or movingAverageMonths prop change (e.g. from click-to-filter category/group cells)
+    if (
+      !isEqual(this.props.filterConditions, prevProps.filterConditions) ||
+      this.props.movingAverageMonths !== prevProps.movingAverageMonths
+    ) {
+      this.setState(
+        {
+          filterConditions: this.props.filterConditions,
+          movingAverageMonths: this.props.movingAverageMonths,
+        },
+        () => {
+          this.fetchTransactions(this.state.filterConditions);
+        },
+      );
     }
   }
 
@@ -1461,8 +1473,11 @@ class AccountInternal extends PureComponent<
   };
 
   onClearFilters = () => {
-    this.setState({ filterConditionsOp: 'and' });
-    this.setState({ filterId: undefined });
+    this.setState({
+      filterConditionsOp: 'and',
+      filterId: undefined,
+      movingAverageMonths: undefined,
+    });
     void this.applyFilters([]);
     if (this.state.search !== '') {
       this.onSearch(this.state.search);
@@ -1494,7 +1509,11 @@ class AccountInternal extends PureComponent<
       this.state.filterConditions.filter(c => c !== condition),
     );
     if (this.state.filterConditions.length === 1) {
-      this.setState({ filterId: undefined, filterConditionsOp: 'and' });
+      this.setState({
+        filterId: undefined,
+        filterConditionsOp: 'and',
+        movingAverageMonths: undefined,
+      });
     } else {
       this.setState(state => ({
         filterId: {
@@ -1872,6 +1891,7 @@ class AccountInternal extends PureComponent<
                 showEmptyMessage={showEmptyMessage ?? false}
                 balanceQuery={balanceQuery}
                 filteredAmount={filteredAmount}
+                movingAverageMonths={this.state.movingAverageMonths}
                 isFiltered={transactionsFiltered ?? false}
                 isSorted={this.state.sort !== null}
                 reconcileAmount={reconcileAmount}
@@ -2143,6 +2163,7 @@ export function Account() {
             categoryGroups={categoryGroups}
             accountId={params.id}
             categoryId={location?.state?.categoryId}
+            movingAverageMonths={location?.state?.movingAverageMonths}
             location={location}
             savedFilters={savedFiters}
             onReopenAccount={onReopenAccount}

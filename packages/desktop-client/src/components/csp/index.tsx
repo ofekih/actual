@@ -1464,25 +1464,71 @@ export function Csp() {
           ? 'csp_category'
           : field;
 
+    const cat =
+      resolvedField === 'csp_category'
+        ? categoryGroups
+            .flatMap(g => g.categories ?? [])
+            .find(c => c.id === categoryId)
+        : null;
+    const movingAverageMonths = (cat as CSPCategoryEntity | undefined)
+      ?.moving_average_months;
+
+    let dateConditions: Array<{
+      field: string;
+      op: string;
+      value: unknown;
+      options?: Record<string, unknown>;
+      type: string;
+    }> = [];
+
+    if (month) {
+      if (movingAverageMonths && movingAverageMonths > 1) {
+        const catStartMonth = monthUtils.subMonths(
+          month,
+          movingAverageMonths - 1,
+        );
+        dateConditions = [
+          {
+            field: 'date',
+            op: 'gte',
+            value: monthUtils.firstDayOfMonth(catStartMonth),
+            type: 'date',
+          },
+          {
+            field: 'date',
+            op: 'lte',
+            value: monthUtils.lastDayOfMonth(month),
+            type: 'date',
+          },
+        ];
+      } else {
+        dateConditions = [
+          {
+            field: 'date',
+            op: 'is',
+            value: month,
+            options: { month: true },
+            type: 'date',
+          },
+        ];
+      }
+    }
+
     const filterConditions = [
       { field: resolvedField, op: 'is', value: categoryId, type: 'id' },
-      ...(month
-        ? [
-            {
-              field: 'date',
-              op: 'is',
-              value: month,
-              options: { month: true },
-              type: 'date',
-            },
-          ]
-        : []),
+      { field: 'account', op: 'onBudget', value: '' },
+      ...dateConditions,
     ];
+
     void navigate('/accounts', {
       state: {
         goBack: true,
         filterConditions,
         categoryId,
+        movingAverageMonths:
+          movingAverageMonths && movingAverageMonths > 1
+            ? movingAverageMonths
+            : undefined,
       },
     });
   };
