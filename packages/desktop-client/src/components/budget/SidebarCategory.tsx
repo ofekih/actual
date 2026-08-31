@@ -96,7 +96,7 @@ export function SidebarCategory({
       },
       isCsp && {
         name: 'csp-settings',
-        text: t('Amortize & Audit...'),
+        text: t('Amortize...'),
         onClick: () => {
           dispatch(
             pushModal({
@@ -189,7 +189,7 @@ export function SidebarCategory({
       <TextOneLine data-testid="category-name">{category.name}</TextOneLine>
       {isMovingAverage && (
         <Tooltip
-          content={t('Spent amount is a {{months}}-month moving average', {
+          content={t('Amortized over {{months}} months', {
             months: auditWindowMonths,
           })}
         >

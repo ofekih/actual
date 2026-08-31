@@ -34,7 +34,7 @@ export function CspCategorySettingsModal({
     closeModal();
   };
 
-  const auditWindowOptions: [string, string][] = [
+  const amortizationPeriodOptions: [string, string][] = [
     ['0', t('None (Actual Spent)')],
     ['3', t('3 Months')],
     ['6', t('6 Months')],
@@ -50,21 +50,21 @@ export function CspCategorySettingsModal({
       {({ state }) => (
         <>
           <ModalHeader
-            title={t('Category Smoothing: {{name}}', {
+            title={t('Category Amortization: {{name}}', {
               name: category.name,
             })}
             rightContent={<ModalCloseButton onPress={() => state.close()} />}
           />
           <Paragraph style={{ color: theme.pageTextSubdued, fontSize: 13 }}>
             <Trans>
-              Use these settings to optionally smooth out irregular or large
+              Use these settings to optionally amortize irregular or large
               expenses in your Conscious Spending Plan.
             </Trans>
           </Paragraph>
           <Paragraph style={{ color: theme.pageTextSubdued, fontSize: 13 }}>
             <Trans>
-              Setting a <strong>Moving Average Period</strong> replaces the
-              actual monthly spending with an average to better reflect
+              Setting an <strong>Amortization Period</strong> replaces the
+              actual monthly spending with a moving average to better reflect
               long-term trends. You can edit the <strong>Target Amount</strong>{' '}
               directly by clicking on it in the table.
             </Trans>
@@ -73,10 +73,10 @@ export function CspCategorySettingsModal({
           <View style={{ gap: 15, marginTop: 15 }}>
             <View style={{ flexDirection: 'column', gap: 5 }}>
               <Text style={{ fontWeight: 'bold', color: theme.formLabelText }}>
-                <Trans>Moving Average Period</Trans>
+                <Trans>Amortization Period</Trans>
               </Text>
               <Select
-                options={auditWindowOptions}
+                options={amortizationPeriodOptions}
                 value={movingAverageMonths}
                 onChange={setMovingAverageMonths}
               />

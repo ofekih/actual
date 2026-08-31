@@ -53,7 +53,7 @@ function DetailedBalance({
           {format(balance, 'financial')}
         </FinancialText>
       </PrivacyFilter>
-      {extra && <>{' '}{extra}</>}
+      {extra && <> {extra}</>}
     </Text>
   );
 }
