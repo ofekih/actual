@@ -15,6 +15,8 @@ import { Block } from '@actual-app/components/block';
 import { Button } from '@actual-app/components/button';
 import {
   SvgArrowButtonDown1,
+  SvgArrowButtonSingleDown1,
+  SvgArrowButtonSingleUp1,
   SvgArrowButtonUp1,
 } from '@actual-app/components/icons/v2';
 import { Popover } from '@actual-app/components/popover';
@@ -329,13 +331,13 @@ function getDeviationStyles(
       ArrowIcon = SvgArrowButtonUp1;
     } else if (deviation >= 0.05) {
       devColor = isIncome ? theme.noticeTextLight : theme.warningText; // Light Green or Orange
-      ArrowIcon = SvgArrowButtonUp1;
+      ArrowIcon = SvgArrowButtonSingleUp1;
     } else if (deviation <= -0.1) {
       devColor = isIncome ? theme.errorText : '#0055cc'; // Red or Blue
       ArrowIcon = SvgArrowButtonDown1;
     } else if (deviation <= -0.05) {
       devColor = isIncome ? theme.warningText : '#3399ff'; // Orange or Light Blue
-      ArrowIcon = SvgArrowButtonDown1;
+      ArrowIcon = SvgArrowButtonSingleDown1;
     }
   }
 
