@@ -316,7 +316,7 @@ function getDeviationStyles(
   spentAmount?: number,
   isIncome?: boolean,
 ) {
-  let devColor = theme.pageTextSubdued;
+  let devColor: string | null = null;
   let ArrowIcon = null;
 
   if (targetAmount != null && spentAmount != null && targetAmount !== 0) {
@@ -325,10 +325,10 @@ function getDeviationStyles(
     const deviation = (absSpent - absTarget) / absTarget;
 
     if (deviation >= 0.1) {
-      devColor = isIncome ? '#118c4f' : theme.errorText; // Green or Red
+      devColor = isIncome ? theme.noticeText : theme.errorText; // Green or Red
       ArrowIcon = SvgArrowButtonUp1;
     } else if (deviation >= 0.05) {
-      devColor = isIncome ? '#22a06b' : theme.warningText; // Light Green or Orange
+      devColor = isIncome ? theme.noticeTextLight : theme.warningText; // Light Green or Orange
       ArrowIcon = SvgArrowButtonUp1;
     } else if (deviation <= -0.1) {
       devColor = isIncome ? theme.errorText : '#0055cc'; // Red or Blue
@@ -367,7 +367,7 @@ export function CspAmountCell({
   );
 
   const defaultColorStyle = makeAmountGrey(absAmount) ?? {
-    color: theme.tableText,
+    color: devColor ?? theme.tableText,
   };
 
   const colorStyle =
@@ -384,25 +384,25 @@ export function CspAmountCell({
       }}
     >
       {percentage !== undefined && (
-        <View
+        <Text
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginRight: 8,
-            color: devColor,
+            fontSize: 11,
+            color: theme.pageTextSubdued,
+            marginRight: 6,
           }}
         >
-          {ArrowIcon && (
-            <ArrowIcon
-              width={10}
-              height={10}
-              style={{ color: devColor, marginRight: 2 }}
-            />
-          )}
-          <Text style={{ fontSize: 11, color: devColor }}>
-            {percentage.toFixed(1)}%
-          </Text>
-        </View>
+          {percentage.toFixed(1)}%
+        </Text>
+      )}
+      {ArrowIcon && (
+        <ArrowIcon
+          width={10}
+          height={10}
+          style={{
+            color: devColor ?? theme.pageTextSubdued,
+            marginRight: 2,
+          }}
+        />
       )}
       <Text style={{ ...styles.tnum, textAlign: 'right', ...colorStyle }}>
         {formatted}
