@@ -198,6 +198,7 @@ export function useCspCategoryAudits(
         q('transactions')
           .filter({
             tombstone: false,
+            'account.offbudget': false,
             csp_category: { $ne: null },
             date: {
               $transform: '$month',
@@ -274,6 +275,7 @@ export function useCspActualsForMonth(month: string) {
           .filter({
             date: { $transform: '$month', $eq: month },
             tombstone: false,
+            'account.offbudget': false,
             csp_category: { $ne: null },
           })
           .select(['csp_category', 'amount', 'transfer_id'])

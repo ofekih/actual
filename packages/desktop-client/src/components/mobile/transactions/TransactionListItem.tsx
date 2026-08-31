@@ -292,7 +292,9 @@ export function TransactionListItem({
                     }}
                   >
                     {prettyCategory || t('Uncategorized')}
-                    {cspCategoryName ? ` (${cspCategoryName})` : ''}
+                    {cspCategoryName && !specialCategory
+                      ? ` (${cspCategoryName})`
+                      : ''}
                   </TextOneLine>
                 </View>
               )}

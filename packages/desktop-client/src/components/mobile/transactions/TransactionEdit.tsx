@@ -569,10 +569,20 @@ const ChildTransactionEdit = forwardRef<
             icon={<SvgTag width={17} height={17} />}
             placeholder={t('Select a CSP category')}
             rightContent={dropdownChevron}
-            value={cspCategory?.name ?? ''}
+            textStyle={{
+              ...((isOffBudget || isBudgetTransfer(transaction)) && {
+                fontStyle: 'italic',
+                color: theme.pageTextSubdued,
+                fontWeight: 300,
+              }),
+            }}
+            value={getCategory(transaction, isOffBudget, cspCategory?.name)}
             isDisabled={
-              !!editingField &&
-              editingField !== getFieldName(transaction.id, 'csp_category')
+              (!!editingField &&
+                editingField !==
+                  getFieldName(transaction.id, 'csp_category')) ||
+              isOffBudget ||
+              isBudgetTransfer(transaction)
             }
             onPress={() => onEditField(transaction.id, 'csp_category')}
             data-testid={`csp-category-field-${transaction.id}`}
@@ -1441,11 +1451,24 @@ const TransactionEditInner = memo<TransactionEditInnerProps>(
                   icon={<SvgTag width={17} height={17} />}
                   placeholder={t('Select a CSP category')}
                   rightContent={dropdownChevron}
-                  value={parentCspCategory?.name ?? ''}
+                  textStyle={{
+                    ...((isOffBudget || isBudgetTransfer(transaction)) && {
+                      fontStyle: 'italic',
+                      color: theme.pageTextSubdued,
+                      fontWeight: 300,
+                    }),
+                  }}
+                  value={getCategory(
+                    transaction,
+                    isOffBudget,
+                    parentCspCategory?.name,
+                  )}
                   isDisabled={
-                    !!editingField &&
-                    editingField !==
-                      getFieldName(transaction.id, 'csp_category')
+                    (!!editingField &&
+                      editingField !==
+                        getFieldName(transaction.id, 'csp_category')) ||
+                    isOffBudget ||
+                    isBudgetTransfer(transaction)
                   }
                   onPress={() =>
                     onEditFieldInner(transaction.id, 'csp_category')
