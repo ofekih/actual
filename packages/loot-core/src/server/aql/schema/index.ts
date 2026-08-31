@@ -167,6 +167,7 @@ export const schema = {
   notes: {
     id: f('id'),
     note: f('string'),
+    tombstone: f('boolean'),
   },
   preferences: {
     id: f('id'),

@@ -4,18 +4,24 @@ import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { SvgCheck } from '@actual-app/components/icons/v2';
+import { Text } from '@actual-app/components/text';
+import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
+import * as monthUtils from '@actual-app/core/shared/months';
 
 import { Modal, ModalCloseButton, ModalHeader } from '#components/common/Modal';
 import { Notes } from '#components/Notes';
-import { useNotes } from '#hooks/useNotes';
+import { useLocale } from '#hooks/useLocale';
+import { useNoteInfo } from '#hooks/useNotes';
 import type { Modal as ModalType } from '#modals/modalsSlice';
 
 type NotesModalProps = Extract<ModalType, { name: 'notes' }>['options'];
 
 export function NotesModal({ id, name, onSave }: NotesModalProps) {
   const { t } = useTranslation();
-  const originalNotes = useNotes(id);
+  const locale = useLocale();
+  const noteInfo = useNoteInfo(id);
+  const originalNotes = noteInfo.note ?? '';
 
   const [notes, setNotes] = useState(originalNotes);
   useEffect(() => setNotes(originalNotes), [originalNotes]);
@@ -45,6 +51,28 @@ export function NotesModal({ id, name, onSave }: NotesModalProps) {
               flexDirection: 'column',
             }}
           >
+            {noteInfo.isInherited && noteInfo.sourceMonth && (
+              <View style={{ paddingBottom: 6 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: theme.pageTextSubdued,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  <Trans>
+                    Inherited from{' '}
+                    {{
+                      month: monthUtils.format(
+                        noteInfo.sourceMonth,
+                        "MMMM ''yy",
+                        locale,
+                      ),
+                    }}
+                  </Trans>
+                </Text>
+              </View>
+            )}
             <Notes
               notes={notes}
               editable

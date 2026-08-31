@@ -1,4 +1,5 @@
 export type NoteEntity = {
   id: string;
-  note: string;
+  note: string | null;
+  tombstone?: boolean;
 };

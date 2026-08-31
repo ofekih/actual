@@ -135,6 +135,17 @@ describe('sheet language', () => {
     );
   });
 
+  it('`like` should work on id fields', () => {
+    const result = generateSQLWithState(
+      q('accounts')
+        .select('id')
+        .filter({ id: { $like: 'acc-%' } })
+        .serialize(),
+      schemaWithRefs,
+    );
+    expect(result.sql).toMatch(`UNICODE_LIKE('acc-%', NORMALISE(accounts.id))`);
+  });
+
   it('`notlike` should use unicode and normalise function', () => {
     const result = generateSQLWithState(
       q('transactions')

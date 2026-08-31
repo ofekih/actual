@@ -573,53 +573,67 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
         flex: 1,
         flexDirection: 'row',
         backgroundColor: theme.budgetCurrentMonth,
+        '& .hover-visible': {
+          opacity: 0,
+          transition: 'opacity .25s',
+        },
+        '&:hover .hover-visible, & .force-visible .hover-visible': {
+          opacity: 1,
+        },
       }}
     >
-      <InputCell
-        name="target"
-        width="flex"
-        style={{ textAlign: 'right' }}
-        exposed={editing && !isAutomatic}
-        focused={editing && !isAutomatic}
-        onExpose={() => !isAutomatic && onEdit(category.id, month)}
-        onBlur={() => !isAutomatic && onEdit(null)}
-        valueStyle={{
-          cursor: isAutomatic ? 'default' : 'text',
-          margin: 1,
-          padding: '0 4px',
-          borderRadius: 4,
-          ...(isAutomatic
-            ? {}
-            : {
-                ':hover': {
-                  boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
-                  backgroundColor: theme.budgetCurrentMonth,
-                },
-              }),
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
         }}
-        value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
-        formatter={() => (
-          <CspAmountCell
-            amount={targetAmount}
-            percentage={targetPercentage}
-            dimIfZero
-          />
-        )}
-        onUpdate={async value => {
-          if (isAutomatic) return;
-          const newAmount = value
-            ? amountToInteger(currencyToAmount(value) || 0)
-            : null;
-          if (newAmount !== targetAmount) {
-            await send('csp/set-target', {
-              month,
-              category: category.id,
-              amount: newAmount,
-            });
-            void queryClient.invalidateQueries({ queryKey: ['csp-targets'] });
-          }
-        }}
-      />
+      >
+        <InputCell
+          name="target"
+          width="flex"
+          style={{ textAlign: 'right' }}
+          exposed={editing && !isAutomatic}
+          focused={editing && !isAutomatic}
+          onExpose={() => !isAutomatic && onEdit(category.id, month)}
+          onBlur={() => !isAutomatic && onEdit(null)}
+          valueStyle={{
+            cursor: isAutomatic ? 'default' : 'text',
+            margin: 1,
+            padding: '0 4px',
+            borderRadius: 4,
+            ...(isAutomatic
+              ? {}
+              : {
+                  ':hover': {
+                    boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
+                    backgroundColor: theme.budgetCurrentMonth,
+                  },
+                }),
+          }}
+          value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
+          formatter={() => (
+            <CspAmountCell
+              amount={targetAmount}
+              percentage={targetPercentage}
+              dimIfZero
+            />
+          )}
+          onUpdate={async value => {
+            if (isAutomatic) return;
+            const newAmount = value
+              ? amountToInteger(currencyToAmount(value) || 0)
+              : null;
+            if (newAmount !== targetAmount) {
+              await send('csp/set-target', {
+                month,
+                category: category.id,
+                amount: newAmount,
+              });
+              void queryClient.invalidateQueries({ queryKey: ['csp-targets'] });
+            }
+          }}
+        />
+      </View>
       <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
         <ClickableCell
           onClick={() => onShowActivity(category.id, month, 'csp_category')}
@@ -718,51 +732,70 @@ const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
     useCspCategoryAmounts(category, month);
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row' }}>
-      <InputCell
-        name="target"
-        width="flex"
+    <View
+      style={{
+        flex: 1,
+        flexDirection: 'row',
+        '& .hover-visible': {
+          opacity: 0,
+          transition: 'opacity .25s',
+        },
+        '&:hover .hover-visible, & .force-visible .hover-visible': {
+          opacity: 1,
+        },
+      }}
+    >
+      <View
         style={{
-          textAlign: 'right',
-          ...(isLast && { borderBottomWidth: 0 }),
-          backgroundColor: theme.budgetCurrentMonth,
+          flex: 1,
+          flexDirection: 'row',
         }}
-        exposed={editing}
-        focused={editing}
-        onExpose={() => onEdit(category.id, month)}
-        onBlur={() => onEdit(null)}
-        valueStyle={{
-          cursor: 'default',
-          margin: 1,
-          padding: '0 4px',
-          borderRadius: 4,
-          ':hover': {
-            boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
+      >
+        <InputCell
+          name="target"
+          width="flex"
+          style={{
+            textAlign: 'right',
+            ...(isLast && { borderBottomWidth: 0 }),
             backgroundColor: theme.budgetCurrentMonth,
-          },
-        }}
-        value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
-        formatter={() => (
-          <CspAmountCell
-            amount={targetAmount}
-            percentage={targetPercentage}
-            dimIfZero
-          />
-        )}
-        onUpdate={async value => {
-          const newAmount = value
-            ? amountToInteger(currencyToAmount(value) || 0)
-            : null;
-          if (newAmount !== targetAmount) {
-            await send('csp/set-target', {
-              month,
-              category: category.id,
-              amount: newAmount,
-            });
-            void queryClient.invalidateQueries({ queryKey: ['csp-targets'] });
-          }
-        }}
-      />
+          }}
+          exposed={editing}
+          focused={editing}
+          onExpose={() => onEdit(category.id, month)}
+          onBlur={() => onEdit(null)}
+          valueStyle={{
+            cursor: 'default',
+            margin: 1,
+            padding: '0 4px',
+            borderRadius: 4,
+            ':hover': {
+              boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
+              backgroundColor: theme.budgetCurrentMonth,
+            },
+          }}
+          value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
+          formatter={() => (
+            <CspAmountCell
+              amount={targetAmount}
+              percentage={targetPercentage}
+              dimIfZero
+            />
+          )}
+          onUpdate={async value => {
+            const newAmount = value
+              ? amountToInteger(currencyToAmount(value) || 0)
+              : null;
+            if (newAmount !== targetAmount) {
+              await send('csp/set-target', {
+                month,
+                category: category.id,
+                amount: newAmount,
+              });
+              void queryClient.invalidateQueries({ queryKey: ['csp-targets'] });
+            }
+          }}
+        />
+      </View>
       <Field
         name="spent"
         width="flex"

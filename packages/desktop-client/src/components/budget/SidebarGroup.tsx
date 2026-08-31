@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import React, { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import type { CSSProperties, RefCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +17,7 @@ import type {
 } from '@actual-app/core/types/models';
 import { css, cx } from '@emotion/css';
 
+import { MonthsContext } from '#components/budget/MonthsContext';
 import { NotesButton } from '#components/NotesButton';
 import { InputCell } from '#components/table';
 import { useContextMenu } from '#hooks/useContextMenu';
@@ -65,6 +66,8 @@ export function SidebarGroup({
   const isGoalTemplatesEnabled = useFeatureFlag('goalTemplatesEnabled');
   const [categoryExpandedStatePref] = useGlobalPref('categoryExpandedState');
   const categoryExpandedState = categoryExpandedStatePref ?? 0;
+  const { months } = useContext(MonthsContext);
+  const noteId = months?.[0] ? `${group.id}-${months[0]}` : group.id;
 
   const temporary = group.id === 'new';
   const canSortCategories =
@@ -188,7 +191,7 @@ export function SidebarGroup({
               </Button>
             </Tooltip>
 
-            <NotesButton id={group.id} defaultColor={theme.pageTextLight} />
+            <NotesButton id={noteId} defaultColor={theme.pageTextLight} />
           </View>
         </>
       )}

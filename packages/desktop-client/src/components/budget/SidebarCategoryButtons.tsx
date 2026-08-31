@@ -12,15 +12,18 @@ type SidebarCategoryButtonsProps = {
   category: CategoryEntity;
   dragging: boolean;
   goalsShown: boolean;
+  month?: string;
 };
 
 export const SidebarCategoryButtons = ({
   category,
   dragging,
   goalsShown,
+  month,
 }: SidebarCategoryButtonsProps) => {
   const isGoalTemplatesUIEnabled = useFeatureFlag('goalTemplatesUIEnabled');
-  const notes = useNotes(category.id) || '';
+  const noteId = month ? `${category.id}-${month}` : category.id;
+  const notes = useNotes(noteId) || '';
 
   return (
     <>
@@ -37,7 +40,7 @@ export const SidebarCategoryButtons = ({
       )}
       <View style={{ flexShrink: 0 }}>
         <NotesButton
-          id={category.id}
+          id={noteId}
           style={dragging ? { color: 'currentColor' } : undefined}
           defaultColor={theme.pageTextLight}
           showPlaceholder={

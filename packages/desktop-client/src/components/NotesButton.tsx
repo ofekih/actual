@@ -1,18 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentProps } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { SvgCustomNotesPaper } from '@actual-app/components/icons/v2';
 import { Popover } from '@actual-app/components/popover';
 import type { CSSProperties } from '@actual-app/components/styles';
+import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
 import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
+import * as monthUtils from '@actual-app/core/shared/months';
 import { css, cx } from '@emotion/css';
 
-import { useNotes } from '#hooks/useNotes';
+import { useLocale } from '#hooks/useLocale';
+import { useNoteInfo } from '#hooks/useNotes';
 
 import { Notes } from './Notes';
 
@@ -35,9 +38,11 @@ export function NotesButton({
   style,
 }: NotesButtonProps) {
   const { t } = useTranslation();
+  const locale = useLocale();
   const triggerRef = useRef(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const note = useNotes(id) || '';
+  const noteInfo = useNoteInfo(id);
+  const note = noteInfo.note || '';
   const hasNotes = note && note !== '';
 
   const [tempNotes, setTempNotes] = useState<string>(note);
@@ -59,7 +64,32 @@ export function NotesButton({
 
   return (
     <Tooltip
-      content={<Notes notes={note} />}
+      content={
+        <View>
+          {noteInfo.isInherited && noteInfo.sourceMonth && (
+            <Text
+              style={{
+                fontSize: 11,
+                color: theme.pageTextSubdued,
+                fontStyle: 'italic',
+                marginBottom: 4,
+              }}
+            >
+              <Trans>
+                Inherited from{' '}
+                {{
+                  month: monthUtils.format(
+                    noteInfo.sourceMonth,
+                    "MMMM ''yy",
+                    locale,
+                  ),
+                }}
+              </Trans>
+            </Text>
+          )}
+          <Notes notes={note} />
+        </View>
+      }
       placement={tooltipPosition}
       triggerProps={{
         isDisabled: !hasNotes || isOpen,
@@ -97,8 +127,36 @@ export function NotesButton({
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         placement={tooltipPosition}
-        style={{ padding: 4 }}
+        style={{ padding: 6, minWidth: 200 }}
       >
+        {noteInfo.isInherited && noteInfo.sourceMonth && (
+          <View
+            style={{
+              paddingBottom: 4,
+              marginBottom: 4,
+              borderBottom: `1px solid ${theme.tableBorder}`,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                color: theme.pageTextSubdued,
+                fontStyle: 'italic',
+              }}
+            >
+              <Trans>
+                Inherited from{' '}
+                {{
+                  month: monthUtils.format(
+                    noteInfo.sourceMonth,
+                    "MMMM ''yy",
+                    locale,
+                  ),
+                }}
+              </Trans>
+            </Text>
+          </View>
+        )}
         <Notes notes={tempNotes} editable focused onChange={setTempNotes} />
       </Popover>
     </Tooltip>

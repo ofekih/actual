@@ -218,6 +218,7 @@ export function SidebarCategory({
         category={category}
         dragging={dragging}
         goalsShown={goalsShown}
+        month={months?.[0]}
       />
     </View>
   );

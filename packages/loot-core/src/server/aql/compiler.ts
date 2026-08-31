@@ -326,6 +326,10 @@ function castInput(state, expr, type) {
     if (expr.type === 'string') {
       return typed(expr.value, 'id', { literal: expr.literal });
     }
+  } else if (type === 'string') {
+    if (expr.type === 'id') {
+      return typed(expr.value, 'string', { literal: expr.literal });
+    }
   } else if (type === 'float') {
     if (expr.type === 'integer') {
       return typed(expr.value, 'float', { literal: expr.literal });
