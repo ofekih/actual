@@ -547,8 +547,9 @@ export function useCspGroupAmounts(group: CategoryGroupEntity, month?: string) {
   };
 }
 
-const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
+const CspCategoryMonth = memo(function CspCategoryMonth({
   category,
+  isLast,
   month,
   editing,
   onEdit,
@@ -588,7 +589,10 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
         <InputCell
           name="target"
           width="flex"
-          style={{ textAlign: 'right' }}
+          style={{
+            textAlign: 'right',
+            ...(isLast && { borderBottomWidth: 0 }),
+          }}
           exposed={editing && !isAutomatic}
           focused={editing && !isAutomatic}
           onExpose={() => !isAutomatic && onEdit(category.id, month)}
@@ -633,7 +637,14 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
           }}
         />
       </View>
-      <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
+      <Field
+        name="spent"
+        width="flex"
+        style={{
+          textAlign: 'right',
+          ...(isLast && { borderBottomWidth: 0 }),
+        }}
+      >
         <ClickableCell
           onClick={() => onShowActivity(category.id, month, 'csp_category')}
         >
@@ -651,7 +662,7 @@ const CspExpenseCategoryMonth = memo(function CspExpenseCategoryMonth({
   );
 });
 
-const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
+const CspGroupMonth = memo(function CspGroupMonth({
   group,
   month,
   onShowActivity,
@@ -718,196 +729,7 @@ const CspExpenseGroupMonth = memo(function CspExpenseGroupMonth({
   );
 });
 
-const CspIncomeCategoryMonth = memo(function CspIncomeCategoryMonth({
-  category,
-  isLast,
-  month,
-  editing,
-  onEdit,
-  onShowActivity,
-}: CategoryMonthProps) {
-  const queryClient = useQueryClient();
-  const { targetAmount, spentAmount, targetPercentage, spentPercentage } =
-    useCspCategoryAmounts(category, month);
-
-  return (
-    <View
-      style={{
-        flex: 1,
-        flexDirection: 'row',
-        '& .hover-visible': {
-          opacity: 0,
-          transition: 'opacity .25s',
-        },
-        '&:hover .hover-visible, & .force-visible .hover-visible': {
-          opacity: 1,
-        },
-      }}
-    >
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-        }}
-      >
-        <InputCell
-          name="target"
-          width="flex"
-          style={{
-            textAlign: 'right',
-            ...(isLast && { borderBottomWidth: 0 }),
-            backgroundColor: theme.budgetCurrentMonth,
-          }}
-          exposed={editing}
-          focused={editing}
-          onExpose={() => onEdit(category.id, month)}
-          onBlur={() => onEdit(null)}
-          valueStyle={{
-            cursor: 'default',
-            margin: 1,
-            padding: '0 4px',
-            borderRadius: 4,
-            ':hover': {
-              boxShadow: 'inset 0 0 0 1px ' + theme.pageTextSubdued,
-              backgroundColor: theme.budgetCurrentMonth,
-            },
-          }}
-          value={targetAmount === null ? '' : integerToCurrency(targetAmount)}
-          formatter={() => (
-            <CspAmountCell
-              amount={targetAmount}
-              percentage={targetPercentage}
-              dimIfZero
-            />
-          )}
-          onUpdate={async value => {
-            const parsed = value ? currencyToAmount(value) : null;
-            const newAmount =
-              parsed !== null && !isNaN(parsed)
-                ? Math.abs(amountToInteger(parsed))
-                : null;
-            if (newAmount !== targetAmount) {
-              await send('csp/set-target', {
-                month,
-                category: category.id,
-                amount: newAmount,
-              });
-              void queryClient.invalidateQueries({ queryKey: ['csp-targets'] });
-            }
-          }}
-        />
-      </View>
-      <Field
-        name="spent"
-        width="flex"
-        style={{
-          textAlign: 'right',
-          ...(isLast && { borderBottomWidth: 0 }),
-          backgroundColor: theme.budgetCurrentMonth,
-        }}
-      >
-        <ClickableCell
-          onClick={() => onShowActivity(category.id, month, 'csp_category')}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 6,
-            }}
-          >
-            <CspAmountCell
-              amount={spentAmount}
-              percentage={spentPercentage}
-              dimIfZero
-              isIncome
-            />
-          </View>
-        </ClickableCell>
-      </Field>
-    </View>
-  );
-});
-
-const CspIncomeGroupMonth = memo(function CspIncomeGroupMonth({
-  group,
-  month,
-  onShowActivity,
-}: CategoryGroupMonthProps) {
-  const { totalTarget, totalSpent } = useCspGroupAmounts(group, month);
-
-  return (
-    <View
-      style={{
-        flex: 1,
-        flexDirection: 'row',
-        backgroundColor: theme.budgetHeaderCurrentMonth,
-      }}
-    >
-      <Field
-        name="target"
-        width="flex"
-        style={{
-          textAlign: 'right',
-          fontWeight: 600,
-          paddingRight: styles.monthRightPadding,
-        }}
-      >
-        <CspAmountCell amount={totalTarget} dimIfZero />
-      </Field>
-      <Field
-        name="spent"
-        width="flex"
-        style={{
-          textAlign: 'right',
-          fontWeight: 600,
-        }}
-      >
-        <ClickableCell
-          style={{ paddingRight: styles.monthRightPadding }}
-          onClick={() => onShowActivity(group.id, month, 'csp_category_group')}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 6,
-            }}
-          >
-            <CspAmountCell amount={totalSpent} dimIfZero isIncome />
-          </View>
-        </ClickableCell>
-      </Field>
-    </View>
-  );
-});
-
-function CspIncomeHeaderMonth() {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        marginRight: styles.monthRightPadding,
-        paddingBottom: 8,
-      }}
-    >
-      <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
-        <Text style={{ color: theme.tableHeaderText }}>
-          <Trans>Planned</Trans>
-        </Text>
-      </View>
-      <View style={{ flex: 1, padding: '0 5px', textAlign: 'right' }}>
-        <Text style={{ color: theme.tableHeaderText }}>
-          <Trans>Actual</Trans>
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-const CspBudgetTotalsMonth = memo(function CspBudgetTotalsMonth() {
+const CspHeaderMonth = memo(function CspHeaderMonth() {
   return (
     <View
       style={{
@@ -1571,12 +1393,12 @@ export function Csp() {
   const cspComponents = useMemo<BudgetComponents>(
     () => ({
       SummaryComponent: CspBudgetSummary,
-      ExpenseCategoryComponent: CspExpenseCategoryMonth,
-      ExpenseGroupComponent: CspExpenseGroupMonth,
-      IncomeCategoryComponent: CspIncomeCategoryMonth,
-      IncomeGroupComponent: CspIncomeGroupMonth,
-      BudgetTotalsComponent: CspBudgetTotalsMonth,
-      IncomeHeaderComponent: CspIncomeHeaderMonth,
+      ExpenseCategoryComponent: CspCategoryMonth,
+      ExpenseGroupComponent: CspGroupMonth,
+      IncomeCategoryComponent: CspCategoryMonth,
+      IncomeGroupComponent: CspGroupMonth,
+      BudgetTotalsComponent: CspHeaderMonth,
+      IncomeHeaderComponent: CspHeaderMonth,
     }),
     [],
   );

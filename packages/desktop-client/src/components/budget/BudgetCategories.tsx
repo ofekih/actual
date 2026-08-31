@@ -167,7 +167,9 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
           ),
         );
 
-        incomeCategoryItems.push({ type: 'income-separator' });
+        if (!cspOverride) {
+          incomeCategoryItems.push({ type: 'income-separator' });
+        }
 
         items = incomeCategoryItems.concat(items);
       }
