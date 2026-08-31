@@ -13,7 +13,7 @@ _Note: While category options should generally be fixed, if the LLM determines n
 
 ## 2. LLM Requirements & Context Injection
 
-- **Model**: Gemini 3.5.
+- **Model**: Gemini 3.7 Flash.
 - **Workflow:** A button at the top of the transaction list will query the LLM for all uncategorized items to quickly categorize them.
 - **One-off vs. Rule Creation:** The LLM should be able to suggest a one-off categorization or propose a rule to handle similar transactions indefinitely. The UI must allow the user to override these suggestions.
 - **Grounding**: Must use Google Search Grounding to identify obscure merchants.
