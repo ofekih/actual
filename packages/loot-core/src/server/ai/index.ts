@@ -46,7 +46,7 @@ export async function testGeminiConnection(): Promise<{
     const apiKey = await requireGeminiApiKey();
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       contents: 'Respond with exactly one word: "Success".',
     });
 
