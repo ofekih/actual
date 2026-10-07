@@ -66,7 +66,7 @@ export function SidebarGroup({
   const isGoalTemplatesEnabled = useFeatureFlag('goalTemplatesEnabled');
   const [categoryExpandedStatePref] = useGlobalPref('categoryExpandedState');
   const categoryExpandedState = categoryExpandedStatePref ?? 0;
-  const { months } = useContext(MonthsContext);
+  const { months } = useContext(MonthsContext) ?? {};
   const noteId = months?.[0] ? `${group.id}-${months[0]}` : group.id;
 
   const temporary = group.id === 'new';

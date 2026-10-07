@@ -69,6 +69,7 @@ describe('SidebarCategory context menu', () => {
     expect(contextMenuItemNames()).toEqual([
       'rename',
       'toggle-visibility',
+      'move-group',
       'delete',
     ]);
 
@@ -117,6 +118,7 @@ describe('SidebarCategory context menu', () => {
     expect(contextMenuItemNames()).toEqual([
       'rename',
       'toggle-visibility',
+      'move-group',
       'delete',
     ]);
   });

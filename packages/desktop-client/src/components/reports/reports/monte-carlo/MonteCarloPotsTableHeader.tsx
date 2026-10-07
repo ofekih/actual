@@ -3,8 +3,9 @@ import { Trans } from 'react-i18next';
 import { Text } from '@actual-app/components/text';
 import { View } from '@actual-app/components/view';
 
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
 import { Field, TableHeader } from '#components/table';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
 
 // Shared by the header and the pot rows so the columns line up. The
 // drag/expand/remove columns are fixed; the rest flex evenly, with these

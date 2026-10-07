@@ -6,16 +6,17 @@ import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import type { MonteCarloWithdrawalRuleType } from '@actual-app/core/types/models';
 
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
-import { MAX_AMOUNT } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import type { MonteCarloWithdrawalRuleConfig } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+import { FinancialInput } from '#components/util/FinancialInput';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
+import { MAX_AMOUNT } from './monteCarloSimulation';
+import type { MonteCarloWithdrawalRuleConfig } from './monteCarloSimulation';
 import {
   FIELD_LABEL_ROW_STYLE,
   FIELD_LABEL_STYLE,
   FIELD_STYLE,
-} from '#components/reports/reports/monte-carlo/monteCarloStyles';
-import { FinancialInput } from '#components/util/FinancialInput';
+} from './monteCarloStyles';
 
 const SENTENCE_STYLE = {
   color: theme.pageText,

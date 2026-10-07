@@ -10,17 +10,18 @@ import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import { v4 as uuidv4 } from 'uuid';
 
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
+import { Field, Row, TableHeader } from '#components/table';
+import { FinancialInput } from '#components/util/FinancialInput';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
 import {
   createMonteCarloSpendingPhase,
   MAX_AMOUNT,
   sortMonteCarloSpendingPhases,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import type { MonteCarloSpendingPhase } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { FIELD_LABEL_STYLE } from '#components/reports/reports/monte-carlo/monteCarloStyles';
-import { Field, Row, TableHeader } from '#components/table';
-import { FinancialInput } from '#components/util/FinancialInput';
+} from './monteCarloSimulation';
+import type { MonteCarloSpendingPhase } from './monteCarloSimulation';
+import { FIELD_LABEL_STYLE } from './monteCarloStyles';
 
 // Fixed remove column; the rest flex evenly with these minimum widths
 const PHASE_COLUMNS = {
@@ -37,6 +38,7 @@ type MonteCarloSpendingPhasesProps = {
   phases: MonteCarloSpendingPhase[];
   currentAge: number;
   targetAge: number;
+  timeAxis?: 'age' | 'year';
   onPhasesChange: (phases: MonteCarloSpendingPhase[]) => void;
 };
 
@@ -44,6 +46,7 @@ export function MonteCarloSpendingPhases({
   phases,
   currentAge,
   targetAge,
+  timeAxis = 'age',
   onPhasesChange,
 }: MonteCarloSpendingPhasesProps) {
   const { t } = useTranslation();
@@ -120,7 +123,11 @@ export function MonteCarloSpendingPhases({
               <Trans>Phase name</Trans>
             </Field>
             <Field width="flex" style={{ minWidth: PHASE_COLUMNS.fromAge }}>
-              <Trans>From age</Trans>
+              {timeAxis === 'year' ? (
+                <Trans>From year</Trans>
+              ) : (
+                <Trans>From age</Trans>
+              )}
             </Field>
             <Field width="flex" style={{ minWidth: PHASE_COLUMNS.until }}>
               <Trans>Until</Trans>
@@ -168,12 +175,16 @@ export function MonteCarloSpendingPhases({
                 >
                   {index === 0 ? (
                     <Text style={{ color: theme.tableText }}>
-                      {t('Now ({{age}})', { age: currentAge })}
+                      {timeAxis === 'year'
+                        ? t('Now ({{year}})', { year: currentAge })
+                        : t('Now ({{age}})', { age: currentAge })}
                     </Text>
                   ) : (
                     <MonteCarloNumberInput
                       value={phase.fromAge}
-                      aria-label={t('From age')}
+                      aria-label={
+                        timeAxis === 'year' ? t('From year') : t('From age')
+                      }
                       roundToInteger
                       min={currentAge + 1}
                       max={targetAge}
@@ -194,7 +205,9 @@ export function MonteCarloSpendingPhases({
                 >
                   <Text style={{ color: theme.tableText }}>
                     {nextPhase?.fromAge != null
-                      ? t('Age {{age}}', { age: nextPhase.fromAge - 1 })
+                      ? timeAxis === 'year'
+                        ? String(nextPhase.fromAge - 1)
+                        : t('Age {{age}}', { age: nextPhase.fromAge - 1 })
                       : t('Onwards')}
                   </Text>
                 </Field>

@@ -4,7 +4,7 @@ import type {
   MonteCarloRuleExplanation,
   MonteCarloRunDetailRow,
   MonteCarloWithdrawalRuleConfig,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+} from './monteCarloSimulation';
 
 /**
  * Enough precision that multiplying the displayed rate by the balance

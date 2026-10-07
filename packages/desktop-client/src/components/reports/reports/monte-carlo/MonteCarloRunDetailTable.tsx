@@ -14,24 +14,25 @@ import { View } from '@actual-app/components/view';
 
 import { FinancialText } from '#components/FinancialText';
 import { PrivacyFilter } from '#components/PrivacyFilter';
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
+import { useFormat } from '#hooks/useFormat';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
 import {
   getMonteCarloPotLabel,
   getMonteCarloSurplusPotLabel,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+} from './monteCarloSimulation';
 import type {
   MonteCarloIncomeStream,
   MonteCarloPot,
   MonteCarloRuleExplanation,
   MonteCarloRunDetailRow,
   MonteCarloWithdrawalRuleConfig,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { GROUP_HEADING_STYLE } from '#components/reports/reports/monte-carlo/monteCarloStyles';
+} from './monteCarloSimulation';
+import { GROUP_HEADING_STYLE } from './monteCarloStyles';
 import {
   buildMonteCarloYearStory,
   formatRuleRate,
-} from '#components/reports/reports/monte-carlo/monteCarloYearStory';
-import { useFormat } from '#hooks/useFormat';
+} from './monteCarloYearStory';
 
 // The minWidth keeps amounts readable on narrow screens - the table
 // scrolls sideways instead of letting columns collapse into each other
@@ -54,6 +55,7 @@ type MonteCarloRunDetailTableProps = {
   simulationIndex: number;
   simulationCount: number;
   startAge: number;
+  timeAxis?: 'age' | 'year';
   /** Show the Contributions columns (the plan has contributions set up) */
   hasContributions: boolean;
   /** The plan's income streams; the Income column shows when there are any */
@@ -71,6 +73,7 @@ export function MonteCarloRunDetailTable({
   simulationIndex,
   simulationCount,
   startAge,
+  timeAxis = 'age',
   hasContributions,
   incomeStreams,
   withdrawalRule,
@@ -386,18 +389,28 @@ export function MonteCarloRunDetailTable({
         </Button>
         <Text style={{ fontWeight: 600 }}>
           {hasSurvived
-            ? t('Run {{number}} of {{total}} - survived to age {{age}}', {
-                number: simulationIndex + 1,
-                total: simulationCount,
-                age: lastRow ? startAge + lastRow.year : startAge,
-              })
-            : t('Run {{number}} of {{total}} - ran out at age {{age}}', {
-                number: simulationIndex + 1,
-                total: simulationCount,
-                // The failure row's own age: the year the withdrawal
-                // couldn't be funded
-                age: lastRow ? startAge + lastRow.year - 1 : startAge,
-              })}
+            ? timeAxis === 'year'
+              ? t('Run {{number}} of {{total}} - survived to {{year}}', {
+                  number: simulationIndex + 1,
+                  total: simulationCount,
+                  year: lastRow ? startAge + lastRow.year : startAge,
+                })
+              : t('Run {{number}} of {{total}} - survived to age {{age}}', {
+                  number: simulationIndex + 1,
+                  total: simulationCount,
+                  age: lastRow ? startAge + lastRow.year : startAge,
+                })
+            : timeAxis === 'year'
+              ? t('Run {{number}} of {{total}} - ran out in {{year}}', {
+                  number: simulationIndex + 1,
+                  total: simulationCount,
+                  year: lastRow ? startAge + lastRow.year - 1 : startAge,
+                })
+              : t('Run {{number}} of {{total}} - ran out at age {{age}}', {
+                  number: simulationIndex + 1,
+                  total: simulationCount,
+                  age: lastRow ? startAge + lastRow.year - 1 : startAge,
+                })}
         </Text>
         <Button
           variant="bare"
@@ -450,7 +463,7 @@ export function MonteCarloRunDetailTable({
           >
             <View style={{ width: 36 }} />
             <Text style={{ ...GROUP_HEADING_STYLE, width: 60 }}>
-              <Trans>Age</Trans>
+              {timeAxis === 'year' ? <Trans>Year</Trans> : <Trans>Age</Trans>}
             </Text>
             <Text style={{ ...GROUP_HEADING_STYLE, ...AMOUNT_CELL_STYLE }}>
               <Trans>Starting balance</Trans>

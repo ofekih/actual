@@ -21,6 +21,10 @@ import { MonteCarloCashflowLegendGroup } from '#components/reports/graphs/MonteC
 import { computePadding } from '#components/reports/graphs/util/computePadding';
 import { buildMonteCarloCashflowChart } from '#components/reports/graphs/util/monteCarloCashflowChart';
 import { useMonteCarloTickFormatter } from '#components/reports/graphs/util/useMonteCarloTickFormatter';
+import {
+  computeTimelineTicks,
+  formatShortYear,
+} from '#components/reports/reports/monte-carlo/csp/useTimeAxis';
 import type {
   MonteCarloContribution,
   MonteCarloIncomeStream,
@@ -44,8 +48,9 @@ type MonteCarloCashflowGraphProps = {
   contributions: MonteCarloContribution[];
   incomeStreams: MonteCarloIncomeStream[];
   spendingPhases: MonteCarloSpendingPhase[];
-  /** The user's current age; the x-axis shows startAge + year - 1 */
+  /** The user's current age or start year; the x-axis shows startAge + year - 1 */
   startAge: number;
+  timeAxis?: 'age' | 'year';
 };
 
 /**
@@ -61,6 +66,7 @@ export function MonteCarloCashflowGraph({
   incomeStreams,
   spendingPhases,
   startAge,
+  timeAxis = 'age',
 }: MonteCarloCashflowGraphProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -77,6 +83,10 @@ export function MonteCarloCashflowGraph({
       startAge,
       translate: t,
     });
+
+  const minVal = data.length > 0 ? data[0].age : startAge;
+  const maxVal = data.length > 0 ? data[data.length - 1].age : startAge;
+  const xAxisTicks = computeTimelineTicks(minVal, maxVal, 12);
 
   return (
     <View style={style}>
@@ -99,9 +109,15 @@ export function MonteCarloCashflowGraph({
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="age"
+              ticks={xAxisTicks}
+              interval={0}
               tick={{ fill: theme.pageText }}
               tickLine={{ stroke: theme.pageText }}
-              minTickGap={30}
+              tickFormatter={
+                timeAxis === 'year'
+                  ? val => formatShortYear(Number(val))
+                  : undefined
+              }
             />
             <YAxis
               tickFormatter={tickFormatter}

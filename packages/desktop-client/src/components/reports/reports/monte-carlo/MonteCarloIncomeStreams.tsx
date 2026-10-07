@@ -10,19 +10,20 @@ import { View } from '@actual-app/components/view';
 import { v4 as uuidv4 } from 'uuid';
 
 import { LabeledCheckbox } from '#components/forms/LabeledCheckbox';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
+import { Field, Row, TableHeader } from '#components/table';
+import { FinancialInput } from '#components/util/FinancialInput';
+
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
 import {
   createMonteCarloIncomeStream,
   MAX_AMOUNT,
   MAX_WITHDRAWAL_TAX_RATE,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+} from './monteCarloSimulation';
 import type {
   MonteCarloConfig,
   MonteCarloContribution,
   MonteCarloIncomeStream,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { Field, Row, TableHeader } from '#components/table';
-import { FinancialInput } from '#components/util/FinancialInput';
+} from './monteCarloSimulation';
 
 const INCOME_ROW_HEIGHT = 43;
 
@@ -34,6 +35,7 @@ type MonteCarloIncomeStreamsProps = {
   usesTaxBands: boolean;
   currentAge: number;
   targetAge: number;
+  timeAxis?: 'age' | 'year';
   onConfigChange: (changes: Partial<MonteCarloConfig>) => void;
 };
 
@@ -43,6 +45,7 @@ export function MonteCarloIncomeStreams({
   usesTaxBands,
   currentAge,
   targetAge,
+  timeAxis = 'age',
   onConfigChange,
 }: MonteCarloIncomeStreamsProps) {
   const { t } = useTranslation();
@@ -97,10 +100,18 @@ export function MonteCarloIncomeStreams({
               <Trans>Income name</Trans>
             </Field>
             <Field width="flex" style={{ minWidth: 100 }}>
-              <Trans>From age</Trans>
+              {timeAxis === 'year' ? (
+                <Trans>From year</Trans>
+              ) : (
+                <Trans>From age</Trans>
+              )}
             </Field>
             <Field width="flex" style={{ minWidth: 100 }}>
-              <Trans>To age</Trans>
+              {timeAxis === 'year' ? (
+                <Trans>To year</Trans>
+              ) : (
+                <Trans>To age</Trans>
+              )}
             </Field>
             <Field width="flex" style={{ minWidth: 140 }}>
               <Trans>Amount (per year)</Trans>
@@ -144,7 +155,9 @@ export function MonteCarloIncomeStreams({
               <Field width="flex" style={{ minWidth: 100 }} truncate={false}>
                 <MonteCarloNumberInput
                   value={incomeStream.fromAge}
-                  aria-label={t('From age')}
+                  aria-label={
+                    timeAxis === 'year' ? t('From year') : t('From age')
+                  }
                   allowEmpty
                   roundToInteger
                   min={currentAge}
@@ -160,7 +173,7 @@ export function MonteCarloIncomeStreams({
               <Field width="flex" style={{ minWidth: 100 }} truncate={false}>
                 <MonteCarloNumberInput
                   value={incomeStream.toAge}
-                  aria-label={t('To age')}
+                  aria-label={timeAxis === 'year' ? t('To year') : t('To age')}
                   allowEmpty
                   roundToInteger
                   min={incomeStream.fromAge ?? currentAge}

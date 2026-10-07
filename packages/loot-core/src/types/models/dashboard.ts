@@ -256,6 +256,8 @@ export type MonteCarloContributionMeta = {
    * gross before its tax is worked out (salary sacrifice)
    */
   beforeTax?: boolean;
+  /** CSP category ID linked to this contribution */
+  cspCategoryId?: string | null;
 };
 
 /**
@@ -317,6 +319,14 @@ export type MonteCarloWidget = AbstractWidget<
     /** Age the pot must last to; the horizon is targetAge - currentAge */
     targetAge?: number;
     simulationCount?: number;
+    /** Timeline display axis: 'age' (default) or 'year' */
+    timeAxis?: 'age' | 'year';
+    /** Optional birth year for user age hints in year mode */
+    userBirthYear?: number | null;
+    /** Optional birth year for spouse age hints in year mode */
+    spouseBirthYear?: number | null;
+    /** Target retirement year / age */
+    retirementYear?: number | null;
   } | null
 >;
 

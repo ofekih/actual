@@ -13,12 +13,13 @@ import { PrivacyFilter } from '#components/PrivacyFilter';
 import { MonteCarloGraph } from '#components/reports/graphs/MonteCarloGraph';
 import { ReportCard } from '#components/reports/ReportCard';
 import { ReportCardName } from '#components/reports/ReportCardName';
+
 import {
   getMonteCarloHorizonYears,
   monteCarloConfigFromMeta,
   runMonteCarloSimulation,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { useResolvedMonteCarloConfig } from '#components/reports/reports/monte-carlo/useResolvedMonteCarloConfig';
+} from './monteCarloSimulation';
+import { useResolvedMonteCarloConfig } from './useResolvedMonteCarloConfig';
 
 // Stable default so an unsaved widget doesn't bust the simulation's
 // memoization on every re-render (e.g. hover state changes)

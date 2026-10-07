@@ -72,6 +72,12 @@ export type SyncedPrefs = Partial<
     | 'geminiCustomInstructions'
     | 'autohubApiKey'
     | 'csp-account-types'
+    | 'csp-user-birth-date'
+    | 'csp-spouse-birth-date'
+    | 'csp-spouse-name'
+    | 'csp-user-birth-year'
+    | 'csp-spouse-birth-year'
+    | 'csp-monte-carlo-config'
     | `show-hidden-tags`,
     string
   >

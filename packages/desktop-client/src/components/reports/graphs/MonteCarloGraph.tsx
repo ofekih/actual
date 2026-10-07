@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import type { CSSProperties } from '@actual-app/components/styles';
 import { theme } from '@actual-app/components/theme';
 import {
@@ -5,6 +7,7 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
@@ -22,18 +25,31 @@ import {
 } from '#components/reports/graphs/MonteCarloGraphTooltip';
 import { computePadding } from '#components/reports/graphs/util/computePadding';
 import { useMonteCarloTickFormatter } from '#components/reports/graphs/util/useMonteCarloTickFormatter';
+import type { InvestmentHistoryPoint } from '#components/reports/reports/monte-carlo/csp/types';
+import {
+  computeTimelineTicks,
+  formatShortYear,
+  isYearMode,
+} from '#components/reports/reports/monte-carlo/csp/useTimeAxis';
 import type { MonteCarloPercentileBand } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
 import { useFormat } from '#hooks/useFormat';
 
 type MonteCarloGraphProps = {
   style?: CSSProperties;
   percentileBands: MonteCarloPercentileBand[];
-  /** The user's current age; the x-axis shows startAge + year */
+  /** The user's current age or year; the x-axis shows startAge + year */
   startAge: number;
   worstRunPath?: number[];
   view?: MonteCarloGraphView;
   compact?: boolean;
   showTooltip?: boolean;
+  timeAxis?: 'age' | 'year';
+  userBirthYear?: number | null;
+  spouseBirthYear?: number | null;
+  spouseName?: string | null;
+  history?: InvestmentHistoryPoint[];
+  deterministicPath?: number[];
+  showDeterministic?: boolean;
 };
 
 export function MonteCarloGraph({
@@ -44,12 +60,39 @@ export function MonteCarloGraph({
   view = 'all',
   compact = false,
   showTooltip = true,
+  timeAxis = 'age',
+  userBirthYear,
+  spouseBirthYear,
+  spouseName,
+  history,
+  deterministicPath,
+  showDeterministic = false,
 }: MonteCarloGraphProps) {
+  const { t } = useTranslation();
   const format = useFormat();
   const tickFormatter = useMonteCarloTickFormatter();
   const animationProps = useRechartsAnimation({ animationDuration: 1000 });
+  const yearMode = isYearMode(timeAxis);
 
-  const data: FanChartDataPoint[] = percentileBands.map(band => ({
+  // Construct historical data points (year < 0)
+  const historicalPoints: FanChartDataPoint[] = [];
+  const currentCalendarYear = new Date().getFullYear();
+
+  if (history && history.length > 0) {
+    history
+      .filter(pt => pt.year < (yearMode ? startAge : currentCalendarYear))
+      .forEach(pt => {
+        const offset = pt.year - (yearMode ? startAge : currentCalendarYear);
+        historicalPoints.push({
+          year: offset,
+          age: yearMode ? pt.year : startAge + offset,
+          historicalBalance: pt.balance,
+        });
+      });
+  }
+
+  // Projection points (year >= 0)
+  const projectionPoints: FanChartDataPoint[] = percentileBands.map(band => ({
     year: band.year,
     age: startAge + band.year,
     band80: [band.p10, band.p90],
@@ -63,7 +106,26 @@ export function MonteCarloGraph({
     p75: band.p75,
     p90: band.p90,
     worstRun: worstRunPath?.[band.year],
+    deterministic: deterministicPath?.[band.year],
+    // At year 0, connect the historical line to today's starting balance
+    historicalBalance:
+      band.year === 0 && historicalPoints.length > 0 ? band.p50 : undefined,
   }));
+
+  const data: FanChartDataPoint[] = [...historicalPoints, ...projectionPoints];
+
+  const minAge = data.length > 0 ? data[0].age : startAge;
+  const maxAge =
+    data.length > 0
+      ? data[data.length - 1].age
+      : startAge + percentileBands.length;
+  const xAxisTicks = computeTimelineTicks(minAge, maxAge, compact ? 6 : 12);
+
+  const xAxisTickFormatter = (val: unknown) => {
+    const num = Number(val);
+    if (isNaN(num)) return String(val);
+    return yearMode ? formatShortYear(num) : String(num);
+  };
 
   return (
     <Container
@@ -79,11 +141,17 @@ export function MonteCarloGraph({
           data={data}
           margin={{
             top: compact ? 0 : 15,
-            right: 0,
+            right: 15,
             left: compact
               ? 0
               : computePadding(
-                  data.map(point => point.p90),
+                  data.map(point =>
+                    Math.max(
+                      point.p90 ?? 0,
+                      point.historicalBalance ?? 0,
+                      point.deterministic ?? 0,
+                    ),
+                  ),
                   value => format(value, 'financial-no-decimals'),
                 ),
             bottom: compact ? 0 : 10,
@@ -93,6 +161,9 @@ export function MonteCarloGraph({
           <XAxis
             dataKey="age"
             hide={compact}
+            ticks={xAxisTicks}
+            interval={0}
+            tickFormatter={xAxisTickFormatter}
             tick={{ fill: theme.pageText }}
             tickLine={{ stroke: theme.pageText }}
           />
@@ -104,10 +175,64 @@ export function MonteCarloGraph({
           />
           {showTooltip && (
             <Tooltip
-              content={<MonteCarloGraphTooltip view={view} />}
+              content={
+                <MonteCarloGraphTooltip
+                  view={view}
+                  timeAxis={timeAxis}
+                  userBirthYear={userBirthYear}
+                  spouseBirthYear={spouseBirthYear}
+                  spouseName={spouseName}
+                  showDeterministic={showDeterministic}
+                />
+              }
               isAnimationActive={false}
             />
           )}
+
+          {/* Reference line for Today / start point */}
+          {historicalPoints.length > 0 && !compact && (
+            <ReferenceLine
+              x={startAge}
+              stroke={theme.pageTextSubdued}
+              strokeDasharray="3 3"
+              label={{
+                value: t('Today'),
+                fill: theme.pageTextSubdued,
+                position: 'top',
+                fontSize: 12,
+              }}
+            />
+          )}
+
+          {/* Historical balances line */}
+          {historicalPoints.length > 0 && (
+            <Line
+              type="monotone"
+              dataKey="historicalBalance"
+              name={t('Historical')}
+              dot={{ r: 3, fill: theme.noticeText }}
+              stroke={theme.noticeText}
+              strokeWidth={2}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {/* Optional deterministic expected return line */}
+          {showDeterministic && (
+            <Line
+              type="monotone"
+              dataKey="deterministic"
+              name={t('Average return')}
+              dot={false}
+              stroke={theme.warningText}
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          )}
+
           {view === 'all' ? (
             <>
               <Area

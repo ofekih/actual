@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 
-import type { MonteCarloConfig } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
 import { useAccountBalances } from '#hooks/useAccountBalances';
+
+import type { MonteCarloConfig } from './monteCarloSimulation';
 
 /**
  * Resolves account-linked pots to their live balances: a linked pot takes

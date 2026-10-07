@@ -11,23 +11,21 @@ import { View } from '@actual-app/components/view';
 import type { MonteCarloTaxModel } from '@actual-app/core/types/models';
 import { v4 as uuidv4 } from 'uuid';
 
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
+import { Field, Row, TableHeader } from '#components/table';
+import { FinancialInput } from '#components/util/FinancialInput';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
 import {
   createMonteCarloTaxBand,
   MAX_AMOUNT,
   MAX_TAX_BAND_RATE,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+} from './monteCarloSimulation';
 import type {
   MonteCarloConfig,
   MonteCarloTaxBand,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import {
-  FIELD_LABEL_ROW_STYLE,
-  FIELD_LABEL_STYLE,
-} from '#components/reports/reports/monte-carlo/monteCarloStyles';
-import { Field, Row, TableHeader } from '#components/table';
-import { FinancialInput } from '#components/util/FinancialInput';
+} from './monteCarloSimulation';
+import { FIELD_LABEL_ROW_STYLE, FIELD_LABEL_STYLE } from './monteCarloStyles';
 
 const BAND_ROW_HEIGHT = 43;
 

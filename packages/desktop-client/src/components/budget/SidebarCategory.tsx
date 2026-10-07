@@ -77,7 +77,7 @@ export function SidebarCategory({
   const moveCspCategory = useMoveCspCategoryMutation();
   const categoriesOverride = useCategoriesOverride();
   const isCsp = categoriesOverride !== null;
-  const { months } = useContext(MonthsContext);
+  const { months } = useContext(MonthsContext) ?? {};
   const targets = useContext(CspTargetsContext);
   const auditWindowMonths =
     (category as unknown as CSPCategoryEntity).moving_average_months ?? null;

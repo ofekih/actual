@@ -15,12 +15,14 @@ type MonteCarloHistogramTooltipProps = {
   active?: boolean;
   payload?: PayloadItem[];
   simulationCount: number;
+  timeAxis?: 'age' | 'year';
 };
 
 export function MonteCarloHistogramTooltip({
   active,
   payload,
   simulationCount,
+  timeAxis = 'age',
 }: MonteCarloHistogramTooltipProps) {
   const { t } = useTranslation();
 
@@ -38,14 +40,23 @@ export function MonteCarloHistogramTooltip({
           padding: 10,
         })}
       >
-        {t(
-          '{{failedCount}} of {{total}} scenarios ran out of money at age {{age}}',
-          {
-            failedCount: point.count,
-            total: simulationCount,
-            age: point.age,
-          },
-        )}
+        {timeAxis === 'year'
+          ? t(
+              '{{failedCount}} of {{total}} scenarios ran out of money in {{year}}',
+              {
+                failedCount: point.count,
+                total: simulationCount,
+                year: point.age,
+              },
+            )
+          : t(
+              '{{failedCount}} of {{total}} scenarios ran out of money at age {{age}}',
+              {
+                failedCount: point.count,
+                total: simulationCount,
+                age: point.age,
+              },
+            )}
       </div>
     );
   }

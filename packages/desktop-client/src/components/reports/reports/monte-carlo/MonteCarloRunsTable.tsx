@@ -9,8 +9,9 @@ import { View } from '@actual-app/components/view';
 
 import { FinancialText } from '#components/FinancialText';
 import { PrivacyFilter } from '#components/PrivacyFilter';
-import { GROUP_HEADING_STYLE } from '#components/reports/reports/monte-carlo/monteCarloStyles';
 import { useFormat } from '#hooks/useFormat';
+
+import { GROUP_HEADING_STYLE } from './monteCarloStyles';
 
 const PAGE_SIZE = 20;
 
@@ -40,6 +41,7 @@ type MonteCarloRunsTableProps = {
   depletionYearBySimulation: Int32Array;
   totalWithdrawnBySimulation: Float64Array;
   startAge: number;
+  timeAxis?: 'age' | 'year';
   onSelectRun: (simulationIndex: number) => void;
 };
 
@@ -49,6 +51,7 @@ export function MonteCarloRunsTable({
   depletionYearBySimulation,
   totalWithdrawnBySimulation,
   startAge,
+  timeAxis = 'age',
   onSelectRun,
 }: MonteCarloRunsTableProps) {
   const { t } = useTranslation();
@@ -194,11 +197,15 @@ export function MonteCarloRunsTable({
               >
                 {hasSurvived
                   ? t('Survived')
-                  : t('Ran out at age {{age}}', {
-                      // The age of the year that couldn't be funded, matching
-                      // the drill-in's failure row
-                      age: startAge + depletionYear - 1,
-                    })}
+                  : timeAxis === 'year'
+                    ? t('Ran out in {{year}}', {
+                        year: startAge + depletionYear - 1,
+                      })
+                    : t('Ran out at age {{age}}', {
+                        // The age of the year that couldn't be funded, matching
+                        // the drill-in's failure row
+                        age: startAge + depletionYear - 1,
+                      })}
               </Text>
               <Text style={{ width: 160, textAlign: 'right' }}>
                 {hasSurvived ? (

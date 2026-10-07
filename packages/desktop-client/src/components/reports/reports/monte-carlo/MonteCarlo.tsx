@@ -24,29 +24,34 @@ import { MonteCarloGraph } from '#components/reports/graphs/MonteCarloGraph';
 import type { MonteCarloGraphView } from '#components/reports/graphs/MonteCarloGraphTooltip';
 import { MonteCarloHistogram } from '#components/reports/graphs/MonteCarloHistogram';
 import { LoadingIndicator } from '#components/reports/LoadingIndicator';
-import { MonteCarloConfiguration } from '#components/reports/reports/monte-carlo/MonteCarloConfiguration';
-import { HISTORICAL_ANNUAL_RETURNS } from '#components/reports/reports/monte-carlo/monteCarloHistoricalReturns';
-import { MonteCarloRunDetailTable } from '#components/reports/reports/monte-carlo/MonteCarloRunDetailTable';
+import { useDashboardWidget } from '#hooks/useDashboardWidget';
+import { useFormat } from '#hooks/useFormat';
+import { useNavigate } from '#hooks/useNavigate';
+import { useSyncedPref } from '#hooks/useSyncedPref';
+import { addNotification } from '#notifications/notificationsSlice';
+import { useDispatch } from '#redux';
+import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
+
+import { CspMonteCarloToolbar } from './csp/CspMonteCarloToolbar';
+import { computeDeterministicPath } from './csp/deterministicPath';
+import { useCspInvestmentData } from './csp/useCspInvestmentData';
+import { MonteCarloConfiguration } from './MonteCarloConfiguration';
+import { HISTORICAL_ANNUAL_RETURNS } from './monteCarloHistoricalReturns';
+import { MonteCarloRunDetailTable } from './MonteCarloRunDetailTable';
 import {
   getRunPercentileOptions,
   MonteCarloRunsTable,
-} from '#components/reports/reports/monte-carlo/MonteCarloRunsTable';
+} from './MonteCarloRunsTable';
 import {
   getMonteCarloHorizonYears,
   MONTE_CARLO_DEFAULTS,
   monteCarloConfigFromMeta,
   rankSimulationsWorstFirst,
   runMonteCarloSimulation,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import type { MonteCarloConfig } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { GROUP_HEADING_STYLE } from '#components/reports/reports/monte-carlo/monteCarloStyles';
-import { useResolvedMonteCarloConfig } from '#components/reports/reports/monte-carlo/useResolvedMonteCarloConfig';
-import { useDashboardWidget } from '#hooks/useDashboardWidget';
-import { useFormat } from '#hooks/useFormat';
-import { useNavigate } from '#hooks/useNavigate';
-import { addNotification } from '#notifications/notificationsSlice';
-import { useDispatch } from '#redux';
-import { useUpdateDashboardWidgetMutation } from '#reports/mutations';
+} from './monteCarloSimulation';
+import type { MonteCarloConfig } from './monteCarloSimulation';
+import { GROUP_HEADING_STYLE } from './monteCarloStyles';
+import { useResolvedMonteCarloConfig } from './useResolvedMonteCarloConfig';
 
 const firstYear = HISTORICAL_ANNUAL_RETURNS[0].year;
 const lastYear =
@@ -65,7 +70,12 @@ export function MonteCarlo() {
   const navigate = useNavigate();
   const { isNarrowWidth } = useResponsive();
 
+  const cspData = useCspInvestmentData();
+  const [savedConfigPref, setSavedConfigPref] = useSyncedPref(
+    'csp-monte-carlo-config',
+  );
   const [config, setConfig] = useState<MonteCarloConfig>(MONTE_CARLO_DEFAULTS);
+  const [showDeterministic, setShowDeterministic] = useState(false);
   const [graphView, setGraphView] = useState<MonteCarloGraphView>('all');
   const [resultsView, setResultsView] = useState<'chart' | 'cashflow' | 'runs'>(
     'chart',
@@ -96,19 +106,42 @@ export function MonteCarlo() {
     setSelectionsInitialized(false);
   }, [widget?.id]);
 
-  // initialize once when the widget (if any) is available
+  // initialize once when the widget (if any) or savedConfig is available
   useEffect(() => {
     if (selectionsInitialized || isLoading) {
       return;
     }
 
-    setConfig(monteCarloConfigFromMeta(widget?.meta));
+    if (widget?.meta) {
+      setConfig(monteCarloConfigFromMeta(widget.meta));
+    } else if (savedConfigPref) {
+      try {
+        const parsed = JSON.parse(savedConfigPref);
+        setConfig(monteCarloConfigFromMeta(parsed));
+      } catch {
+        setConfig(monteCarloConfigFromMeta(undefined));
+      }
+    } else {
+      setConfig(monteCarloConfigFromMeta(undefined));
+    }
     setSelectionsInitialized(true);
-  }, [selectionsInitialized, isLoading, widget?.meta]);
+  }, [selectionsInitialized, isLoading, widget?.meta, savedConfigPref]);
 
   // Only the stable `mutate` is kept: the mutation result is a new object
   // every render, and closing over it would defeat memoisation below
   const { mutate: updateWidget } = useUpdateDashboardWidgetMutation();
+
+  function onSaveConfig() {
+    setSavedConfigPref(JSON.stringify(resolvedConfig));
+    dispatch(
+      addNotification({
+        notification: {
+          type: 'message',
+          message: t('Configuration successfully saved.'),
+        },
+      }),
+    );
+  }
 
   async function onSaveWidget() {
     // The save button only renders when a widget exists
@@ -178,6 +211,13 @@ export function MonteCarlo() {
     return { params, result: runMonteCarloSimulation(params) };
   }, [resolvedConfig, showTodaysMoney, selectionsInitialized]);
 
+  const deterministicPath = useMemo(() => {
+    if (!showDeterministic || simulation == null) {
+      return null;
+    }
+    return computeDeterministicPath(simulation.params);
+  }, [showDeterministic, simulation]);
+
   // The worst-first ranking shared by the runs table and the cashflow
   // view's percentile picker, sorted once per simulation
   const rankedRunIndices = useMemo(
@@ -240,6 +280,7 @@ export function MonteCarlo() {
     incomeStreams: resolvedConfig.incomeStreams,
     spendingPhases: resolvedConfig.spendingPhases,
     startAge: config.currentAge,
+    timeAxis: config.timeAxis,
   };
 
   // The age the simulation actually runs to (differs from targetAge only
@@ -296,6 +337,23 @@ export function MonteCarlo() {
           gap: 10,
         }}
       >
+        {/* CSP Integration Toolbar */}
+        <View style={{ flexShrink: 0 }}>
+          <CspMonteCarloToolbar
+            config={config}
+            onConfigChange={changes => {
+              setConfig(prev => {
+                const next = { ...prev, ...changes };
+                setSavedConfigPref(JSON.stringify(next));
+                return next;
+              });
+            }}
+            cspData={cspData}
+            showDeterministic={showDeterministic}
+            onToggleDeterministic={setShowDeterministic}
+          />
+        </View>
+
         {/* Configuration */}
         <View style={{ flexShrink: 0 }}>
           <View
@@ -315,17 +373,25 @@ export function MonteCarlo() {
             >
               <Trans>Configuration</Trans>
             </Text>
-            {widget && (
+            {widget ? (
               <Button variant="primary" onPress={onSaveWidget}>
                 <Trans>Save widget</Trans>
+              </Button>
+            ) : (
+              <Button variant="primary" onPress={onSaveConfig}>
+                <Trans>Save configuration</Trans>
               </Button>
             )}
           </View>
           <MonteCarloConfiguration
             config={resolvedConfig}
-            onConfigChange={changes =>
-              setConfig(prev => ({ ...prev, ...changes }))
-            }
+            onConfigChange={changes => {
+              setConfig(prev => {
+                const next = { ...prev, ...changes };
+                setSavedConfigPref(JSON.stringify(next));
+                return next;
+              });
+            }}
           />
         </View>
 
@@ -428,11 +494,16 @@ export function MonteCarlo() {
                   <Trans>Typical failure runs out at</Trans>
                 </Text>
                 <Text style={{ ...styles.mediumText, fontWeight: 500 }}>
-                  {t('Age {{age}}', {
-                    // Ages here are the failure year itself, matching the
-                    // drill-in's failure row
-                    age: config.currentAge + result.medianDepletionYear - 1,
-                  })}
+                  {config.timeAxis === 'year'
+                    ? t('Year {{year}}', {
+                        year:
+                          config.currentAge + result.medianDepletionYear - 1,
+                      })
+                    : t('Age {{age}}', {
+                        // Ages here are the failure year itself, matching the
+                        // drill-in's failure row
+                        age: config.currentAge + result.medianDepletionYear - 1,
+                      })}
                 </Text>
               </View>
             )}
@@ -442,14 +513,23 @@ export function MonteCarlo() {
               <Trans>Summary</Trans>
             </Text>
             <Text>
-              {t(
-                'In {{successPercent}}% of {{simulationCount}} simulated scenarios, your pot lasted until age {{endAge}}.',
-                {
-                  successPercent,
-                  simulationCount: result.simulationCount,
-                  endAge,
-                },
-              )}
+              {config.timeAxis === 'year'
+                ? t(
+                    'In {{successPercent}}% of {{simulationCount}} simulated scenarios, your pot lasted until {{endAge}}.',
+                    {
+                      successPercent,
+                      simulationCount: result.simulationCount,
+                      endAge,
+                    },
+                  )
+                : t(
+                    'In {{successPercent}}% of {{simulationCount}} simulated scenarios, your pot lasted until age {{endAge}}.',
+                    {
+                      successPercent,
+                      simulationCount: result.simulationCount,
+                      endAge,
+                    },
+                  )}
             </Text>
           </View>
         </View>
@@ -561,6 +641,15 @@ export function MonteCarlo() {
                 startAge={config.currentAge}
                 worstRunPath={result.worstRunPath}
                 view={graphView}
+                timeAxis={config.timeAxis}
+                userBirthYear={config.userBirthYear ?? cspData.userBirthYear}
+                spouseBirthYear={
+                  config.spouseBirthYear ?? cspData.spouseBirthYear
+                }
+                spouseName={cspData.spouseName}
+                history={cspData.historicalBalances}
+                deterministicPath={deterministicPath ?? undefined}
+                showDeterministic={showDeterministic}
                 style={{ height: '100%', flex: 1 }}
               />
             </>
@@ -595,6 +684,7 @@ export function MonteCarlo() {
               simulationIndex={selectedRunIndex}
               simulationCount={result.simulationCount}
               startAge={config.currentAge}
+              timeAxis={config.timeAxis}
               hasContributions={
                 config.contributions.length > 0 ||
                 config.pots.some(pot => pot.isSurplus)
@@ -617,6 +707,7 @@ export function MonteCarlo() {
               depletionYearBySimulation={result.depletionYearBySimulation}
               totalWithdrawnBySimulation={result.totalWithdrawnBySimulation}
               startAge={config.currentAge}
+              timeAxis={config.timeAxis}
               onSelectRun={simulationIndex =>
                 setSelectedRun({ forConfig: config, index: simulationIndex })
               }
@@ -659,28 +750,47 @@ export function MonteCarlo() {
                   startAge={config.currentAge}
                   medianDepletionYear={result.medianDepletionYear}
                   simulationCount={result.simulationCount}
+                  timeAxis={config.timeAxis}
                   style={{ height: 200 }}
                 />
               </View>
               <View style={{ marginTop: 10, flexShrink: 0 }}>
                 <Text style={{ color: theme.pageText }}>
-                  {t(
-                    'Worst case: money ran out at age {{worst}}. Among failures, the typical depletion age was {{median}}; the luckiest failure lasted until age {{best}}.',
-                    {
-                      worst:
-                        config.currentAge +
-                        (result.earliestDepletionYear ?? 1) -
-                        1,
-                      median:
-                        config.currentAge +
-                        (result.medianDepletionYear ?? 1) -
-                        1,
-                      best:
-                        config.currentAge +
-                        (result.latestDepletionYear ?? 1) -
-                        1,
-                    },
-                  )}
+                  {config.timeAxis === 'year'
+                    ? t(
+                        'Worst case: money ran out in {{worst}}. Among failures, the typical depletion year was {{median}}; the luckiest failure lasted until {{best}}.',
+                        {
+                          worst:
+                            config.currentAge +
+                            (result.earliestDepletionYear ?? 1) -
+                            1,
+                          median:
+                            config.currentAge +
+                            (result.medianDepletionYear ?? 1) -
+                            1,
+                          best:
+                            config.currentAge +
+                            (result.latestDepletionYear ?? 1) -
+                            1,
+                        },
+                      )
+                    : t(
+                        'Worst case: money ran out at age {{worst}}. Among failures, the typical depletion age was {{median}}; the luckiest failure lasted until age {{best}}.',
+                        {
+                          worst:
+                            config.currentAge +
+                            (result.earliestDepletionYear ?? 1) -
+                            1,
+                          median:
+                            config.currentAge +
+                            (result.medianDepletionYear ?? 1) -
+                            1,
+                          best:
+                            config.currentAge +
+                            (result.latestDepletionYear ?? 1) -
+                            1,
+                        },
+                      )}
                 </Text>
               </View>
             </>

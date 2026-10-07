@@ -19,12 +19,14 @@ import { css } from '@emotion/css';
 import { v4 as uuidv4 } from 'uuid';
 
 import { LabeledCheckbox } from '#components/forms/LabeledCheckbox';
-import { MonteCarloContributions } from '#components/reports/reports/monte-carlo/MonteCarloContributions';
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
-import { MonteCarloIncomeStreams } from '#components/reports/reports/monte-carlo/MonteCarloIncomeStreams';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
-import { MonteCarloPotConfiguration } from '#components/reports/reports/monte-carlo/MonteCarloPotConfiguration';
-import { MonteCarloPotsTableHeader } from '#components/reports/reports/monte-carlo/MonteCarloPotsTableHeader';
+
+import { convertTimelineMode, getCurrentYear } from './csp/useTimeAxis';
+import { MonteCarloContributions } from './MonteCarloContributions';
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloIncomeStreams } from './MonteCarloIncomeStreams';
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
+import { MonteCarloPotConfiguration } from './MonteCarloPotConfiguration';
+import { MonteCarloPotsTableHeader } from './MonteCarloPotsTableHeader';
 import {
   createMonteCarloPot,
   createMonteCarloSurplusPot,
@@ -32,20 +34,17 @@ import {
   MAX_SIMULATION_COUNT,
   MIN_SIMULATION_COUNT,
   MONTE_CARLO_DEFAULTS,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import type {
-  MonteCarloConfig,
-  MonteCarloPot,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { MonteCarloSpendingPhases } from '#components/reports/reports/monte-carlo/MonteCarloSpendingPhases';
+} from './monteCarloSimulation';
+import type { MonteCarloConfig, MonteCarloPot } from './monteCarloSimulation';
+import { MonteCarloSpendingPhases } from './MonteCarloSpendingPhases';
 import {
   FIELD_LABEL_ROW_STYLE,
   FIELD_LABEL_STYLE,
   FIELD_STYLE,
   GROUP_HEADING_STYLE,
-} from '#components/reports/reports/monte-carlo/monteCarloStyles';
-import { MonteCarloTaxConfiguration } from '#components/reports/reports/monte-carlo/MonteCarloTaxConfiguration';
-import { MonteCarloWithdrawalRuleConfiguration } from '#components/reports/reports/monte-carlo/MonteCarloWithdrawalRuleConfiguration';
+} from './monteCarloStyles';
+import { MonteCarloTaxConfiguration } from './MonteCarloTaxConfiguration';
+import { MonteCarloWithdrawalRuleConfiguration } from './MonteCarloWithdrawalRuleConfiguration';
 
 type ConfigurationTab =
   | 'plan'
@@ -276,22 +275,62 @@ export function MonteCarloConfiguration({
               <Trans>Your plan</Trans>
             </Text>
             <View style={PLAN_GROUP_FIELDS_STYLE}>
+              <View style={{ width: 200 }}>
+                <View style={FIELD_LABEL_ROW_STYLE}>
+                  <Text style={FIELD_LABEL_STYLE}>
+                    <Trans>Timeline mode</Trans>
+                  </Text>
+                </View>
+                <Select
+                  value={config.timeAxis ?? 'age'}
+                  onChange={value => {
+                    const newMode = value as 'age' | 'year';
+                    const converted = convertTimelineMode(
+                      config.currentAge,
+                      config.targetAge,
+                      newMode,
+                    );
+                    onConfigChange({
+                      timeAxis: newMode,
+                      currentAge: converted.currentAge,
+                      targetAge: converted.targetAge,
+                    });
+                  }}
+                  options={[
+                    ['age', t('Age-based')],
+                    ['year', t("Calendar year ('26, '27...)")],
+                  ]}
+                />
+              </View>
+
               <View style={FIELD_STYLE}>
                 <View style={FIELD_LABEL_ROW_STYLE}>
                   <Text style={FIELD_LABEL_STYLE}>
-                    <Trans>Your current age</Trans>
+                    {config.timeAxis === 'year' ? (
+                      <Trans>Current year</Trans>
+                    ) : (
+                      <Trans>Your current age</Trans>
+                    )}
                   </Text>
                 </View>
                 <MonteCarloNumberInput
                   value={config.currentAge}
-                  aria-label={t('Your current age')}
+                  aria-label={
+                    config.timeAxis === 'year'
+                      ? t('Current year')
+                      : t('Your current age')
+                  }
                   roundToInteger
-                  min={16}
-                  max={119}
+                  min={config.timeAxis === 'year' ? 1900 : 16}
+                  max={config.timeAxis === 'year' ? 2199 : 119}
                   step={1}
                   onCommit={newValue =>
                     onConfigChange({
-                      currentAge: newValue ?? MONTE_CARLO_DEFAULTS.currentAge,
+                      currentAge:
+                        newValue ??
+                        (config.timeAxis === 'year'
+                          ? getCurrentYear()
+                          : MONTE_CARLO_DEFAULTS.currentAge),
                     })
                   }
                 />
@@ -300,23 +339,97 @@ export function MonteCarloConfiguration({
               <View style={FIELD_STYLE}>
                 <View style={FIELD_LABEL_ROW_STYLE}>
                   <Text style={FIELD_LABEL_STYLE}>
-                    <Trans>Pot must last until age</Trans>
+                    {config.timeAxis === 'year' ? (
+                      <Trans>Pot must last until year</Trans>
+                    ) : (
+                      <Trans>Pot must last until age</Trans>
+                    )}
                   </Text>
                 </View>
                 <MonteCarloNumberInput
                   value={config.targetAge}
-                  aria-label={t('Pot must last until age')}
+                  aria-label={
+                    config.timeAxis === 'year'
+                      ? t('Pot must last until year')
+                      : t('Pot must last until age')
+                  }
                   roundToInteger
                   min={config.currentAge + 1}
-                  max={120}
+                  max={config.timeAxis === 'year' ? 2250 : 120}
                   step={1}
                   onCommit={newValue =>
                     onConfigChange({
-                      targetAge: newValue ?? MONTE_CARLO_DEFAULTS.targetAge,
+                      targetAge:
+                        newValue ??
+                        (config.timeAxis === 'year'
+                          ? config.currentAge + 30
+                          : MONTE_CARLO_DEFAULTS.targetAge),
                     })
                   }
                 />
               </View>
+
+              {config.timeAxis === 'year' && (
+                <>
+                  <View style={FIELD_STYLE}>
+                    <View style={FIELD_LABEL_ROW_STYLE}>
+                      <Text style={FIELD_LABEL_STYLE}>
+                        <Trans>Your birth year</Trans>
+                      </Text>
+                      <MonteCarloHelpTooltip>
+                        <Trans>
+                          Used to display your age alongside calendar years in
+                          charts and tooltips.
+                        </Trans>
+                      </MonteCarloHelpTooltip>
+                    </View>
+                    <MonteCarloNumberInput
+                      value={config.userBirthYear ?? null}
+                      aria-label={t('Your birth year')}
+                      roundToInteger
+                      allowEmpty
+                      placeholder={t('Optional')}
+                      min={1900}
+                      max={2100}
+                      step={1}
+                      onCommit={newValue =>
+                        onConfigChange({
+                          userBirthYear: newValue ?? null,
+                        })
+                      }
+                    />
+                  </View>
+
+                  <View style={FIELD_STYLE}>
+                    <View style={FIELD_LABEL_ROW_STYLE}>
+                      <Text style={FIELD_LABEL_STYLE}>
+                        <Trans>Spouse birth year</Trans>
+                      </Text>
+                      <MonteCarloHelpTooltip>
+                        <Trans>
+                          Used to display your spouse&apos;s age alongside
+                          calendar years.
+                        </Trans>
+                      </MonteCarloHelpTooltip>
+                    </View>
+                    <MonteCarloNumberInput
+                      value={config.spouseBirthYear ?? null}
+                      aria-label={t('Spouse birth year')}
+                      roundToInteger
+                      allowEmpty
+                      placeholder={t('Optional')}
+                      min={1900}
+                      max={2100}
+                      step={1}
+                      onCommit={newValue =>
+                        onConfigChange({
+                          spouseBirthYear: newValue ?? null,
+                        })
+                      }
+                    />
+                  </View>
+                </>
+              )}
             </View>
           </View>
 
@@ -593,6 +706,7 @@ export function MonteCarloConfiguration({
                       config.pots.indexOf(pot),
                       t,
                     )}
+                    timeAxis={config.timeAxis}
                     // The surplus pot is managed by the Manage surplus toggle
                     canRemove={ordinaryPotCount > 1 && !pot.isSurplus}
                     usesHistoricalReturns={config.returnModel !== 'normal'}
@@ -635,6 +749,7 @@ export function MonteCarloConfiguration({
           incomeStreams={config.incomeStreams}
           currentAge={config.currentAge}
           targetAge={config.targetAge}
+          timeAxis={config.timeAxis}
           onConfigChange={onConfigChange}
         />
       )}
@@ -647,6 +762,7 @@ export function MonteCarloConfiguration({
           usesTaxBands={config.taxModel === 'bands'}
           currentAge={config.currentAge}
           targetAge={config.targetAge}
+          timeAxis={config.timeAxis}
           onConfigChange={onConfigChange}
         />
       )}
@@ -658,6 +774,7 @@ export function MonteCarloConfiguration({
             phases={config.spendingPhases}
             currentAge={config.currentAge}
             targetAge={config.targetAge}
+            timeAxis={config.timeAxis}
             onPhasesChange={phases =>
               onConfigChange({ spendingPhases: phases })
             }

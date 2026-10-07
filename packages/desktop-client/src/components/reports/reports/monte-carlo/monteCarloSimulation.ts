@@ -39,7 +39,7 @@ export type MonteCarloAssetWeights = {
 
 // Asset mix behind each preset, used by the historical return models to
 // blend the stocks/bonds/cash series into a single yearly return per pot
-const PRESET_ASSET_WEIGHTS: Record<
+export const PRESET_ASSET_WEIGHTS: Record<
   Exclude<MonteCarloAllocationPreset, 'custom' | 'custom-mix'>,
   MonteCarloAssetWeights
 > = {
@@ -262,6 +262,8 @@ export type MonteCarloContribution = {
    * gross before its tax is worked out (salary sacrifice)
    */
   beforeTax: boolean;
+  /** CSP category ID linked to this contribution; null = unlinked */
+  cspCategoryId?: string | null;
 };
 
 export function createMonteCarloContribution(
@@ -278,6 +280,7 @@ export function createMonteCarloContribution(
     adjustsWithInflation: true,
     sourceIncomeStreamId: null,
     beforeTax: false,
+    cspCategoryId: null,
   };
 }
 
@@ -513,6 +516,14 @@ export type MonteCarloConfig = {
   /** Age the pot must last to; the horizon is targetAge - currentAge */
   targetAge: number;
   simulationCount: number;
+  /** Timeline display axis: 'age' (default) or 'year' */
+  timeAxis?: 'age' | 'year';
+  /** Optional birth year for user age hints in year mode */
+  userBirthYear?: number | null;
+  /** Optional birth year for spouse age hints in year mode */
+  spouseBirthYear?: number | null;
+  /** Target retirement year / age */
+  retirementYear?: number | null;
 };
 
 export const MONTE_CARLO_DEFAULTS: MonteCarloConfig = {
@@ -534,6 +545,10 @@ export const MONTE_CARLO_DEFAULTS: MonteCarloConfig = {
   currentAge: 60,
   targetAge: 90,
   simulationCount: 5000,
+  timeAxis: 'age',
+  userBirthYear: null,
+  spouseBirthYear: null,
+  retirementYear: null,
 };
 
 /** Simulated years, derived from the configured ages */
@@ -617,6 +632,7 @@ function contributionFromMeta(
       contributionMeta.adjustsWithInflation ?? defaults.adjustsWithInflation,
     sourceIncomeStreamId: contributionMeta.sourceIncomeStreamId ?? null,
     beforeTax: contributionMeta.beforeTax ?? defaults.beforeTax,
+    cspCategoryId: contributionMeta.cspCategoryId ?? null,
   };
 }
 
@@ -677,6 +693,10 @@ export function monteCarloConfigFromMeta(
     targetAge: meta?.targetAge ?? MONTE_CARLO_DEFAULTS.targetAge,
     simulationCount:
       meta?.simulationCount ?? MONTE_CARLO_DEFAULTS.simulationCount,
+    timeAxis: meta?.timeAxis ?? 'age',
+    userBirthYear: meta?.userBirthYear ?? null,
+    spouseBirthYear: meta?.spouseBirthYear ?? null,
+    retirementYear: meta?.retirementYear ?? null,
   };
 }
 

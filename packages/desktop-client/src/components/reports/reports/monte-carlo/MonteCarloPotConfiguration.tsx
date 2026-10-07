@@ -19,9 +19,13 @@ import { css } from '@emotion/css';
 
 import { FinancialText } from '#components/FinancialText';
 import { LabeledCheckbox } from '#components/forms/LabeledCheckbox';
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
-import { POT_COLUMNS } from '#components/reports/reports/monte-carlo/MonteCarloPotsTableHeader';
+import { Field, Row } from '#components/table';
+import { FinancialInput } from '#components/util/FinancialInput';
+import { useAccounts } from '#hooks/useAccounts';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
+import { POT_COLUMNS } from './MonteCarloPotsTableHeader';
 import {
   ALLOCATION_PRESETS,
   getHistoricalMixStats,
@@ -29,17 +33,14 @@ import {
   MAX_AMOUNT,
   MAX_ANNUAL_FEE_RATE,
   MAX_WITHDRAWAL_TAX_RATE,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import type { MonteCarloPot } from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+} from './monteCarloSimulation';
+import type { MonteCarloPot } from './monteCarloSimulation';
 import {
   FIELD_LABEL_ROW_STYLE,
   FIELD_LABEL_STYLE,
   FIELD_STYLE,
   GROUP_HEADING_STYLE,
-} from '#components/reports/reports/monte-carlo/monteCarloStyles';
-import { Field, Row } from '#components/table';
-import { FinancialInput } from '#components/util/FinancialInput';
-import { useAccounts } from '#hooks/useAccounts';
+} from './monteCarloStyles';
 
 const POT_ROW_HEIGHT = 43;
 
@@ -53,6 +54,7 @@ type MonteCarloPotConfigurationProps = ComponentPropsWithoutRef<
   usesHistoricalReturns: boolean;
   /** True when the bands tax model is active */
   usesTaxBands: boolean;
+  timeAxis?: 'age' | 'year';
   onPotChange: (changes: Partial<MonteCarloPot>) => void;
   onRemove: () => void;
 };
@@ -63,6 +65,7 @@ export function MonteCarloPotConfiguration({
   canRemove,
   usesHistoricalReturns,
   usesTaxBands,
+  timeAxis = 'age',
   onPotChange,
   onRemove,
   ...props
@@ -599,7 +602,11 @@ export function MonteCarloPotConfiguration({
             <View style={FIELD_STYLE}>
               <View style={FIELD_LABEL_ROW_STYLE}>
                 <Text style={FIELD_LABEL_STYLE}>
-                  <Trans>Accessible from age</Trans>
+                  {timeAxis === 'year' ? (
+                    <Trans>Accessible from year</Trans>
+                  ) : (
+                    <Trans>Accessible from age</Trans>
+                  )}
                 </Text>
                 <MonteCarloHelpTooltip>
                   <Trans>
@@ -614,11 +621,15 @@ export function MonteCarloPotConfiguration({
               </View>
               <MonteCarloNumberInput
                 value={pot.accessAge}
-                aria-label={t('Accessible from age')}
+                aria-label={
+                  timeAxis === 'year'
+                    ? t('Accessible from year')
+                    : t('Accessible from age')
+                }
                 allowEmpty
                 roundToInteger
-                min={16}
-                max={120}
+                min={timeAxis === 'year' ? 1900 : 16}
+                max={timeAxis === 'year' ? 2200 : 120}
                 step={1}
                 placeholder={t('Immediately')}
                 onCommit={newValue => onPotChange({ accessAge: newValue })}

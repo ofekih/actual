@@ -21,22 +21,23 @@ import { v4 as uuidv4 } from 'uuid';
 import { FinancialText } from '#components/FinancialText';
 import { LabeledCheckbox } from '#components/forms/LabeledCheckbox';
 import { PrivacyFilter } from '#components/PrivacyFilter';
-import { MonteCarloHelpTooltip } from '#components/reports/reports/monte-carlo/MonteCarloHelpTooltip';
-import { MonteCarloNumberInput } from '#components/reports/reports/monte-carlo/MonteCarloNumberInput';
+import { Field, Row, TableHeader } from '#components/table';
+import { FinancialInput } from '#components/util/FinancialInput';
+import { useFormat } from '#hooks/useFormat';
+
+import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloNumberInput } from './MonteCarloNumberInput';
 import {
   createMonteCarloContribution,
   getMonteCarloPotLabel,
   MAX_AMOUNT,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
+} from './monteCarloSimulation';
 import type {
   MonteCarloConfig,
   MonteCarloContribution,
   MonteCarloIncomeStream,
   MonteCarloPot,
-} from '#components/reports/reports/monte-carlo/monteCarloSimulation';
-import { Field, Row, TableHeader } from '#components/table';
-import { FinancialInput } from '#components/util/FinancialInput';
-import { useFormat } from '#hooks/useFormat';
+} from './monteCarloSimulation';
 
 const CONTRIBUTION_ROW_HEIGHT = 43;
 
@@ -50,6 +51,7 @@ type MonteCarloContributionsProps = {
   incomeStreams: MonteCarloIncomeStream[];
   currentAge: number;
   targetAge: number;
+  timeAxis?: 'age' | 'year';
   onConfigChange: (changes: Partial<MonteCarloConfig>) => void;
 };
 
@@ -59,6 +61,7 @@ export function MonteCarloContributions({
   incomeStreams,
   currentAge,
   targetAge,
+  timeAxis = 'age',
   onConfigChange,
 }: MonteCarloContributionsProps) {
   const { t } = useTranslation();
@@ -161,10 +164,18 @@ export function MonteCarloContributions({
               <Trans>Paid from</Trans>
             </Field>
             <Field width="flex" style={{ minWidth: 100 }}>
-              <Trans>From age</Trans>
+              {timeAxis === 'year' ? (
+                <Trans>From year</Trans>
+              ) : (
+                <Trans>From age</Trans>
+              )}
             </Field>
             <Field width="flex" style={{ minWidth: 100 }}>
-              <Trans>To age</Trans>
+              {timeAxis === 'year' ? (
+                <Trans>To year</Trans>
+              ) : (
+                <Trans>To age</Trans>
+              )}
             </Field>
             <Field width="flex" style={{ minWidth: 140 }}>
               <Trans>Amount (per year)</Trans>
@@ -292,7 +303,9 @@ export function MonteCarloContributions({
                   >
                     <MonteCarloNumberInput
                       value={contribution.fromAge}
-                      aria-label={t('From age')}
+                      aria-label={
+                        timeAxis === 'year' ? t('From year') : t('From age')
+                      }
                       allowEmpty
                       roundToInteger
                       min={currentAge}
@@ -314,7 +327,9 @@ export function MonteCarloContributions({
                   >
                     <MonteCarloNumberInput
                       value={contribution.toAge}
-                      aria-label={t('To age')}
+                      aria-label={
+                        timeAxis === 'year' ? t('To year') : t('To age')
+                      }
                       allowEmpty
                       roundToInteger
                       min={contribution.fromAge ?? currentAge}

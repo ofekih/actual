@@ -30,6 +30,7 @@ import { AISettings } from './AI';
 import { AuthSettings } from './AuthSettings';
 import { Backups } from './Backups';
 import { BudgetTypeSettings } from './BudgetTypeSettings';
+import { CspSettings } from './CspSettings';
 import { CurrencySettings } from './Currency';
 import { EncryptionSettings } from './Encryption';
 import { ExperimentalFeatures } from './Experimental';
@@ -266,6 +267,7 @@ export function Settings() {
         <AuthSettings />
         <EncryptionSettings />
         <BudgetTypeSettings />
+        <CspSettings />
         {isElectron() && <Backups />}
         <ExportBudget />
         <AdvancedToggle>
