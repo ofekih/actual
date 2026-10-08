@@ -11,6 +11,7 @@ import type {
 } from '@actual-app/core/types/models';
 
 import { useCspBudgetComponents } from '#components/csp/CspComponentsContext';
+import { CspFooterRow } from '#components/csp/CspFooterRow';
 import { DropHighlightPosContext } from '#components/sort';
 import type { DragState, OnDropCallback } from '#components/sort';
 import { Row } from '#components/table';
@@ -37,6 +38,7 @@ type BudgetItem =
   | { type: 'income-separator' }
   | { type: 'income-group'; value: CategoryGroupEntity }
   | { type: 'income-category'; value: CategoryEntity }
+  | { type: 'csp-footer' }
   | { type: 'add-group-button' };
 
 type LocalDragState =
@@ -175,6 +177,7 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
       }
 
       if (cspOverride) {
+        items.push({ type: 'csp-footer' });
         items.push({ type: 'add-group-button' });
       }
 
@@ -395,6 +398,9 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
                 />
               );
               break;
+            case 'csp-footer':
+              content = <CspFooterRow />;
+              break;
             case 'add-group-button':
               content = (
                 <View style={{ padding: 10, alignItems: 'flex-start' }}>
@@ -419,7 +425,9 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
                   ? item.value.id
                   : item.type === 'income-separator'
                     ? 'separator'
-                    : idx
+                    : item.type === 'csp-footer'
+                      ? 'csp-footer'
+                      : idx
               }
               value={pos}
             >

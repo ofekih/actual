@@ -1485,3 +1485,5 @@ export function Csp() {
     </CspComponentsProvider>
   );
 }
+
+export { CspFooterRow } from './CspFooterRow';
