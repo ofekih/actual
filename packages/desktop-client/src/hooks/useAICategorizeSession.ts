@@ -97,8 +97,12 @@ export function useAICategorizeSession({
     Record<string, UncategorizedTransaction>
   >({});
 
-  // Use a Ref to ensure async fetchPrediction updates selection states correctly for current transaction
+  // Refs to ensure synchronous state transitions and async callbacks never read stale closures
   const currentTxIdRef = useRef<string | null>(null);
+  const txCacheRef = useRef<Record<string, UncategorizedTransaction>>({});
+  const predictionCacheRef = useRef<Record<string, CategorizeResult>>({});
+  const fetchingIdsRef = useRef<Set<string>>(new Set());
+  const acceptedIdsRef = useRef<Set<string>>(new Set());
 
   // Predictions cache
   const [predictionCache, setPredictionCache] = useState<
@@ -117,6 +121,87 @@ export function useAICategorizeSession({
   const [conditionAccount, setConditionAccount] = useState(false);
   const [ruleExpanded, setRuleExpanded] = useState(false);
 
+  function getPredictedStandardCategoryId(
+    res: CategorizeResult,
+  ): string | null {
+    if (
+      res.suggested_new_standard_category &&
+      res.suggested_standard_category_group_id &&
+      !res.standard_category_id
+    ) {
+      return 'new-standard-category-placeholder';
+    }
+    return res.standard_category_id ?? null;
+  }
+
+  function getPredictedCspCategoryId(res: CategorizeResult): string | null {
+    if (
+      res.suggested_new_csp_category &&
+      res.suggested_csp_category_group_id &&
+      !res.csp_category_id
+    ) {
+      return 'new-csp-category-placeholder';
+    }
+    return res.csp_category_id ?? null;
+  }
+
+  function applySelectionForTransaction(
+    txId: string | null,
+    options?: { ignoreExistingCategories?: boolean },
+  ) {
+    if (!txId) {
+      setSelectedStandardId(null);
+      setSelectedCspId(null);
+      setCreateRule(false);
+      setConditionPayee(true);
+      setConditionAccount(false);
+      setRuleExpanded(false);
+      return;
+    }
+
+    const tx = txCacheRef.current[txId];
+    const res = predictionCacheRef.current[txId];
+    const isAccepted = acceptedIdsRef.current.has(txId);
+    const ignoreExisting = options?.ignoreExistingCategories ?? false;
+
+    if (isAccepted && tx && !ignoreExisting) {
+      setSelectedStandardId(tx.category ?? null);
+      setSelectedCspId(tx.csp_category ?? null);
+      setCreateRule(false);
+      setRuleExpanded(false);
+      return;
+    }
+
+    if (res) {
+      const predictedStandardId = getPredictedStandardCategoryId(res);
+      const predictedCspId = getPredictedCspCategoryId(res);
+
+      setSelectedStandardId(
+        !ignoreExisting && bulk && tx?.category != null
+          ? tx.category
+          : (predictedStandardId ?? tx?.category ?? null),
+      );
+      setSelectedCspId(
+        !ignoreExisting && bulk && tx?.csp_category != null
+          ? tx.csp_category
+          : (predictedCspId ?? tx?.csp_category ?? null),
+      );
+
+      setCreateRule(res.confidence === 'certain');
+      setConditionPayee(res.suggest_rule_condition !== 'account');
+      setConditionAccount(res.suggest_rule_condition !== 'payee');
+      setRuleExpanded(false);
+      return;
+    }
+
+    setSelectedStandardId(tx?.category ?? null);
+    setSelectedCspId(tx?.csp_category ?? null);
+    setCreateRule(false);
+    setConditionPayee(true);
+    setConditionAccount(false);
+    setRuleExpanded(false);
+  }
+
   // Initialize transactions list
   useEffect(() => {
     async function init() {
@@ -128,17 +213,18 @@ export function useAICategorizeSession({
           setUncategorizedTransactions(typedData || []);
           setInitialTotal((data || []).length);
           if (data && data.length > 0) {
+            const initialCache = (typedData || []).reduce(
+              (acc, tx) => {
+                acc[tx.id] = tx;
+                return acc;
+              },
+              {} as Record<string, UncategorizedTransaction>,
+            );
+            txCacheRef.current = initialCache;
+            setTxCache(initialCache);
             currentTxIdRef.current = data[0].id;
             setCurrentTxId(data[0].id);
-            setTxCache(
-              (typedData || []).reduce(
-                (acc, tx) => {
-                  acc[tx.id] = tx;
-                  return acc;
-                },
-                {} as Record<string, UncategorizedTransaction>,
-              ),
-            );
+            applySelectionForTransaction(data[0].id);
           }
         } else if (initialTransactionId) {
           const { data } = await send(
@@ -153,9 +239,12 @@ export function useAICategorizeSession({
             const typedData = data as UncategorizedTransaction[];
             setUncategorizedTransactions(typedData);
             setInitialTotal(1);
+            const initialCache = { [initialTransactionId]: typedData[0] };
+            txCacheRef.current = initialCache;
+            setTxCache(initialCache);
             currentTxIdRef.current = initialTransactionId;
             setCurrentTxId(initialTransactionId);
-            setTxCache({ [initialTransactionId]: typedData[0] });
+            applySelectionForTransaction(initialTransactionId);
           } else {
             setError(t('Transaction not found.'));
           }
@@ -167,6 +256,7 @@ export function useAICategorizeSession({
       }
     }
     void init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bulk, initialTransactionId, t]);
 
   const currentTx = currentTxId ? txCache[currentTxId] || null : null;
@@ -268,61 +358,21 @@ export function useAICategorizeSession({
   }, [bulk, currentTx, uncategorizedTransactions, skippedIds, PRELOAD_COUNT]);
 
   // Helper to transition selection form states synchronously when changing active transaction
-  const advanceToTransaction = (
-    txId: string | null,
-    currentPredictions = predictionCache,
-  ) => {
+  const advanceToTransaction = (txId: string | null) => {
     currentTxIdRef.current = txId;
     setCurrentTxId(txId);
-
-    if (txId) {
-      const tx = txCache[txId];
-      if (tx && (tx.category != null || tx.csp_category != null)) {
-        setSelectedStandardId(tx.category ?? null);
-        setSelectedCspId(tx.csp_category ?? null);
-        setCreateRule(false);
-        setRuleExpanded(false);
-      } else if (currentPredictions[txId]) {
-        const res = currentPredictions[txId];
-        if (res.suggested_new_standard_category) {
-          setSelectedStandardId('new-standard-category-placeholder');
-        } else {
-          setSelectedStandardId(res.standard_category_id ?? null);
-        }
-
-        if (res.suggested_new_csp_category) {
-          setSelectedCspId('new-csp-category-placeholder');
-        } else {
-          setSelectedCspId(res.csp_category_id ?? null);
-        }
-
-        setCreateRule(res.confidence === 'certain');
-        setConditionPayee(res.suggest_rule_condition !== 'account');
-        setConditionAccount(res.suggest_rule_condition !== 'payee');
-        setRuleExpanded(false);
-      } else {
-        setSelectedStandardId(null);
-        setSelectedCspId(null);
-        setCreateRule(false);
-        setConditionPayee(true);
-        setConditionAccount(false);
-        setRuleExpanded(false);
-      }
-    } else {
-      setSelectedStandardId(null);
-      setSelectedCspId(null);
-      setCreateRule(false);
-      setConditionPayee(true);
-      setConditionAccount(false);
-      setRuleExpanded(false);
-    }
+    setError(null);
+    applySelectionForTransaction(txId);
   };
 
   const fetchPrediction = async (
     txId: string,
     payeeName: string | undefined,
   ) => {
-    if (predictionCache[txId] || fetchingIds.has(txId)) return;
+    if (predictionCacheRef.current[txId] || fetchingIdsRef.current.has(txId)) {
+      return;
+    }
+    fetchingIdsRef.current.add(txId);
     setFetchingIds(prev => {
       const next = new Set(prev);
       next.add(txId);
@@ -333,35 +383,22 @@ export function useAICategorizeSession({
         transactionId: txId,
         payeeName,
       });
-      setPredictionCache(prev => {
-        const nextCache = { ...prev, [txId]: res };
-        return nextCache;
-      });
+      predictionCacheRef.current = {
+        ...predictionCacheRef.current,
+        [txId]: res,
+      };
+      setPredictionCache(predictionCacheRef.current);
 
       // Synchronize state if the prediction fetched was for the current active transaction
       if (txId === currentTxIdRef.current) {
-        if (res.suggested_new_standard_category) {
-          setSelectedStandardId('new-standard-category-placeholder');
-        } else {
-          setSelectedStandardId(res.standard_category_id ?? null);
-        }
-
-        if (res.suggested_new_csp_category) {
-          setSelectedCspId('new-csp-category-placeholder');
-        } else {
-          setSelectedCspId(res.csp_category_id ?? null);
-        }
-
-        setCreateRule(res.confidence === 'certain');
-        setConditionPayee(res.suggest_rule_condition !== 'account');
-        setConditionAccount(res.suggest_rule_condition !== 'payee');
-        setRuleExpanded(false);
+        applySelectionForTransaction(txId);
       }
     } catch (err) {
       if (txId === currentTxIdRef.current) {
         setError(getErrorMessage(err));
       }
     } finally {
+      fetchingIdsRef.current.delete(txId);
       setFetchingIds(prev => {
         const next = new Set(prev);
         next.delete(txId);
@@ -378,7 +415,7 @@ export function useAICategorizeSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTx?.id]);
 
-  // Pre-load predictions for the next two lookahead transactions in the background
+  // Pre-load predictions for the next lookahead transactions in the background
   useEffect(() => {
     lookaheadTxs.forEach(tx => {
       void fetchPrediction(tx.id, tx['payee.name'] ?? undefined);
@@ -432,18 +469,20 @@ export function useAICategorizeSession({
 
       await send('transaction-update', updates);
 
-      setTxCache(prev => {
-        const tx = prev[currentTx.id];
-        if (!tx) return prev;
-        return {
-          ...prev,
-          [currentTx.id]: {
-            ...tx,
-            category: standard_category_id ?? undefined,
-            csp_category: csp_category_id ?? undefined,
-          },
+      acceptedIdsRef.current.add(currentTx.id);
+      const existingCachedTx = txCacheRef.current[currentTx.id];
+      if (existingCachedTx) {
+        const updatedTx: UncategorizedTransaction = {
+          ...existingCachedTx,
+          category: standard_category_id ?? undefined,
+          csp_category: csp_category_id ?? undefined,
         };
-      });
+        txCacheRef.current = {
+          ...txCacheRef.current,
+          [currentTx.id]: updatedTx,
+        };
+        setTxCache(txCacheRef.current);
+      }
 
       if (createRule && (conditionPayee || conditionAccount)) {
         await send(
@@ -462,11 +501,24 @@ export function useAICategorizeSession({
           const filters: Record<string, unknown> = { is_parent: false };
           if (conditionPayee) filters.payee = currentTx.payee;
           if (conditionAccount) filters.account = currentTx.account;
-          if (standard_category_id) filters.category = null;
-          if (csp_category_id) filters.csp_category = null;
+
+          const missingCategoryConditions: Array<Record<string, null>> = [];
+          if (standard_category_id) {
+            missingCategoryConditions.push({ category: null });
+          }
+          if (csp_category_id) {
+            missingCategoryConditions.push({ csp_category: null });
+          }
+          if (missingCategoryConditions.length > 0) {
+            filters.$or = missingCategoryConditions;
+          }
+
           const { data: existing } = await send(
             'query',
-            q('transactions').filter(filters).select('id').serialize(),
+            q('transactions')
+              .filter(filters)
+              .select(['id', 'category', 'csp_category'])
+              .serialize(),
           );
           if (existing && existing.length > 0) {
             setSavingProgress({ current: 0, total: existing.length });
@@ -474,10 +526,10 @@ export function useAICategorizeSession({
               const tx = existing[i];
               // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
               const txUpdates = { id: tx.id } as unknown as TransactionEntity;
-              if (standard_category_id) {
+              if (standard_category_id && tx.category == null) {
                 txUpdates.category = standard_category_id ?? undefined;
               }
-              if (csp_category_id) {
+              if (csp_category_id && tx.csp_category == null) {
                 txUpdates.csp_category = csp_category_id ?? undefined;
               }
               await send('transaction-update', txUpdates);
@@ -502,13 +554,12 @@ export function useAICategorizeSession({
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const typedData = data as UncategorizedTransaction[];
       setUncategorizedTransactions(typedData || []);
-      setTxCache(prev => {
-        const next = { ...prev };
-        (typedData || []).forEach(tx => {
-          next[tx.id] = tx;
-        });
-        return next;
+      const nextCache = { ...txCacheRef.current };
+      (typedData || []).forEach(tx => {
+        nextCache[tx.id] = tx;
       });
+      txCacheRef.current = nextCache;
+      setTxCache(nextCache);
 
       const nextTx =
         lookaheadTxs.find(
@@ -624,7 +675,8 @@ export function useAICategorizeSession({
   }
 
   const refinePrediction = async (txId: string, followUpMessage: string) => {
-    if (fetchingIds.has(txId)) return;
+    if (fetchingIdsRef.current.has(txId)) return;
+    fetchingIdsRef.current.add(txId);
     setFetchingIds(prev => {
       const next = new Set(prev);
       next.add(txId);
@@ -632,9 +684,11 @@ export function useAICategorizeSession({
     });
     setError(null);
     try {
-      const currentTx = uncategorizedTransactions.find(tx => tx.id === txId);
-      const payeeName = currentTx ? currentTx['payee.name'] : undefined;
-      const previousResult = predictionCache[txId] || null;
+      const targetTx =
+        txCacheRef.current[txId] ||
+        uncategorizedTransactions.find(tx => tx.id === txId);
+      const payeeName = targetTx ? targetTx['payee.name'] : undefined;
+      const previousResult = predictionCacheRef.current[txId] || null;
 
       const res = await send('ai-categorize-transaction', {
         transactionId: txId,
@@ -643,35 +697,22 @@ export function useAICategorizeSession({
         followUpMessage,
       });
 
-      setPredictionCache(prev => {
-        const nextCache = { ...prev, [txId]: res };
-        return nextCache;
-      });
+      predictionCacheRef.current = {
+        ...predictionCacheRef.current,
+        [txId]: res,
+      };
+      setPredictionCache(predictionCacheRef.current);
 
       // Synchronize state if the prediction fetched was for the current active transaction
       if (txId === currentTxIdRef.current) {
-        if (res.suggested_new_standard_category) {
-          setSelectedStandardId('new-standard-category-placeholder');
-        } else {
-          setSelectedStandardId(res.standard_category_id ?? null);
-        }
-
-        if (res.suggested_new_csp_category) {
-          setSelectedCspId('new-csp-category-placeholder');
-        } else {
-          setSelectedCspId(res.csp_category_id ?? null);
-        }
-
-        setCreateRule(res.confidence === 'certain');
-        setConditionPayee(res.suggest_rule_condition !== 'account');
-        setConditionAccount(res.suggest_rule_condition !== 'payee');
-        setRuleExpanded(false);
+        applySelectionForTransaction(txId, { ignoreExistingCategories: true });
       }
     } catch (err) {
       if (txId === currentTxIdRef.current) {
         setError(getErrorMessage(err));
       }
     } finally {
+      fetchingIdsRef.current.delete(txId);
       setFetchingIds(prev => {
         const next = new Set(prev);
         next.delete(txId);

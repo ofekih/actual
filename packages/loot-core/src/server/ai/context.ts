@@ -57,38 +57,89 @@ export async function getTaxonomies(): Promise<TaxonomyContext> {
   return { standard, csp };
 }
 
-export async function getPayeeHistory(payeeId: string) {
-  const { data } = await aqlQuery(
+const HISTORY_SELECT_FIELDS = [
+  'date',
+  'amount',
+  'payee.name',
+  'notes',
+  'category.name',
+  'csp_category.name',
+] as const;
+
+export async function getPayeeHistory(
+  payeeId: string,
+  excludeTransactionId?: string,
+) {
+  const baseFilter = {
+    payee: payeeId,
+    is_parent: false,
+    ...(excludeTransactionId ? { id: { $ne: excludeTransactionId } } : {}),
+  };
+
+  const { data: fullData } = await aqlQuery(
     q('transactions')
-      .filter({ payee: payeeId, is_parent: false, category: { $ne: null } })
+      .filter({
+        ...baseFilter,
+        category: { $ne: null },
+        csp_category: { $ne: null },
+      })
       .orderBy({ date: 'desc' })
       .limit(10)
-      .select([
-        'date',
-        'amount',
-        'payee.name',
-        'notes',
-        'category.name',
-        'csp_category.name',
-      ]),
+      .select([...HISTORY_SELECT_FIELDS]),
+  );
+
+  if (fullData && fullData.length > 0) {
+    return fullData;
+  }
+
+  const { data } = await aqlQuery(
+    q('transactions')
+      .filter({
+        ...baseFilter,
+        $or: [{ category: { $ne: null } }, { csp_category: { $ne: null } }],
+      })
+      .orderBy({ date: 'desc' })
+      .limit(10)
+      .select([...HISTORY_SELECT_FIELDS]),
   );
   return data;
 }
 
-export async function getAccountHistory(accountId: string) {
-  const { data } = await aqlQuery(
+export async function getAccountHistory(
+  accountId: string,
+  excludeTransactionId?: string,
+) {
+  const baseFilter = {
+    account: accountId,
+    is_parent: false,
+    ...(excludeTransactionId ? { id: { $ne: excludeTransactionId } } : {}),
+  };
+
+  const { data: fullData } = await aqlQuery(
     q('transactions')
-      .filter({ account: accountId, is_parent: false, category: { $ne: null } })
+      .filter({
+        ...baseFilter,
+        category: { $ne: null },
+        csp_category: { $ne: null },
+      })
       .orderBy({ date: 'desc' })
       .limit(10)
-      .select([
-        'date',
-        'amount',
-        'payee.name',
-        'notes',
-        'category.name',
-        'csp_category.name',
-      ]),
+      .select([...HISTORY_SELECT_FIELDS]),
+  );
+
+  if (fullData && fullData.length > 0) {
+    return fullData;
+  }
+
+  const { data } = await aqlQuery(
+    q('transactions')
+      .filter({
+        ...baseFilter,
+        $or: [{ category: { $ne: null } }, { csp_category: { $ne: null } }],
+      })
+      .orderBy({ date: 'desc' })
+      .limit(10)
+      .select([...HISTORY_SELECT_FIELDS]),
   );
   return data;
 }

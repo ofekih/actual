@@ -46,7 +46,13 @@ app.method(
     const { data } = await aqlQuery(
       q('transactions')
         .filter({ id: transactionId })
-        .select(['*', 'account.name', 'account.offbudget']),
+        .select([
+          '*',
+          'account.name',
+          'account.offbudget',
+          'category.name',
+          'csp_category.name',
+        ]),
     );
     if (!data || data.length === 0) {
       throw new Error('Transaction not found');

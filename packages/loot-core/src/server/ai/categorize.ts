@@ -38,6 +38,8 @@ type TransactionInput = {
   date: string;
   imported_payee?: string | null;
   transfer_id?: string | null;
+  'category.name'?: string | null;
+  'csp_category.name'?: string | null;
 };
 
 function formatAmount(amount: number): string {
@@ -49,7 +51,7 @@ function formatAmount(amount: number): string {
 /**
  * Builds the system prompt with transaction data, context histories, taxonomy, and instructions.
  */
-function buildSystemPrompt(params: {
+export function buildSystemPrompt(params: {
   taxonomies: TaxonomyContext;
   formattedPayeeHistory: unknown[];
   formattedAccountHistory: unknown[];
@@ -61,6 +63,17 @@ function buildSystemPrompt(params: {
   previousResult?: CategorizeResult | null;
   followUpMessage?: string;
 }): string {
+  const existingCategoryLines = [
+    params.transaction['category.name']
+      ? `Current Standard Category: ${params.transaction['category.name']}`
+      : null,
+    params.transaction['csp_category.name']
+      ? `Current CSP Category: ${params.transaction['csp_category.name']}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   let systemPrompt = `You are an AI assistant integrated into Actual Budget, a local-first personal finance app.
 Your task is to categorize a bank transaction into the user's specific taxonomy.
 You must return a strict JSON response.
@@ -84,11 +97,11 @@ Original bank description: ${params.transaction.imported_payee || '(none)'}
 Account: ${params.accountName || params.transaction.account}${params.accountOffBudget ? ' [OFF-BUDGET / tracking account]' : ''}
 Amount: ${formatAmount(params.transaction.amount)}
 Notes: ${params.transaction.notes || '(none)'}
-Is transfer: ${params.transaction.transfer_id ? 'yes' : 'no'}
+Is transfer: ${params.transaction.transfer_id ? 'yes' : 'no'}${existingCategoryLines ? `\n${existingCategoryLines}` : ''}
 
 Instructions:
-1. Select the BEST 'standard_category_name' from the standard taxonomy. Use null if nothing fits.
-2. Select the BEST 'csp_category_name' from the CSP taxonomy. Use null if nothing fits.
+1. Select the BEST 'standard_category_name' from the standard taxonomy. Use null only if no existing standard category fits and you are suggesting a new one via 'suggested_new_standard_category'.
+2. Select the BEST 'csp_category_name' from the CSP taxonomy. Whenever the CSP taxonomy has categories, you MUST always select a 'csp_category_name' (or suggest a new one via 'suggested_new_csp_category' if none fit) — never leave both 'csp_category_name' and 'suggested_new_csp_category' as null.
    - NOTE: If the transaction is a transfer, off-budget, or should be ignored, you MUST select the category name of 'Ignored' from the CSP taxonomy instead of returning null (if an 'Ignored' category is present in the taxonomy).
 3. IF no existing categories fit, you may suggest a NEW category to be created. To do so:
    - Understand that categories are structured under Category Groups. Group definitions include "isIncome: true" (for income, initial setup funding, or inflows) or "isIncome: false" (for standard spending and expenses).
@@ -127,17 +140,77 @@ Please adjust your categorization (standard_category_name, csp_category_name, su
 }
 
 /**
- * Resolves a category name to its corresponding UUID from the provided taxonomy list.
+ * Resolves a category name (or ID / group-qualified name) to its corresponding UUID from the provided taxonomy list.
  */
-function resolveCategoryId(
+export function resolveCategoryId(
   categoryName: string | null,
   categories: Array<{ id: string; name: string }>,
 ): string | null {
   if (!categoryName) {
     return null;
   }
-  const lowerName = categoryName.toLowerCase();
-  return categories.find(c => c.name.toLowerCase() === lowerName)?.id || null;
+  const trimmed = categoryName.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const lowerName = trimmed.toLowerCase();
+
+  const exactMatch = categories.find(
+    c =>
+      c.name.trim().toLowerCase() === lowerName ||
+      c.id.toLowerCase() === lowerName,
+  );
+  if (exactMatch) {
+    return exactMatch.id;
+  }
+
+  // Handle "Group > Category", "Group: Category", "Group - Category", "Group / Category"
+  const separatorParts = trimmed.split(/\s*(?:>|→|:|\/|-|—)\s*/);
+  if (separatorParts.length > 1) {
+    const lastPart = separatorParts[separatorParts.length - 1]
+      .trim()
+      .toLowerCase();
+    const byLastPart = categories.find(
+      c => c.name.trim().toLowerCase() === lastPart,
+    );
+    if (byLastPart) {
+      return byLastPart.id;
+    }
+  }
+
+  // Handle "Category (Group)"
+  const parenMatch = trimmed.match(/^(.+?)\s*\([^)]+\)$/);
+  if (parenMatch) {
+    const baseName = parenMatch[1].trim().toLowerCase();
+    const byBaseName = categories.find(
+      c => c.name.trim().toLowerCase() === baseName,
+    );
+    if (byBaseName) {
+      return byBaseName.id;
+    }
+  }
+
+  return null;
+}
+
+export function resolveGroupId(
+  groupIdOrName: string | null,
+  groups: Array<{ groupId: string; groupName: string }>,
+): string | null {
+  if (!groupIdOrName) {
+    return null;
+  }
+  const trimmed = groupIdOrName.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const lower = trimmed.toLowerCase();
+  const match = groups.find(
+    g =>
+      g.groupId.toLowerCase() === lower ||
+      g.groupName.trim().toLowerCase() === lower,
+  );
+  return match ? match.groupId : null;
 }
 
 /**
@@ -156,10 +229,13 @@ export async function categorizeTransaction(
 
   const taxonomies = await getTaxonomies();
   const payeeHistory = (
-    transaction.payee ? await getPayeeHistory(transaction.payee) : []
+    transaction.payee
+      ? await getPayeeHistory(transaction.payee, transaction.id)
+      : []
   ) as TransactionHistoryItem[];
   const accountHistory = (await getAccountHistory(
     transaction.account,
+    transaction.id,
   )) as TransactionHistoryItem[];
 
   const formattedPayeeHistory = payeeHistory.map(h => ({
@@ -187,6 +263,15 @@ export async function categorizeTransaction(
     followUpMessage,
   });
 
+  const allStandardCategories = taxonomies.standard.flatMap(g => g.categories);
+  const allCspCategories = taxonomies.csp.flatMap(g => g.categories);
+  const standardCategoryNames = [
+    ...new Set(allStandardCategories.map(c => c.name)),
+  ];
+  const cspCategoryNames = [...new Set(allCspCategories.map(c => c.name))];
+  const standardGroupIds = taxonomies.standard.map(g => g.groupId);
+  const cspGroupIds = taxonomies.csp.map(g => g.groupId);
+
   const response = await ai.models.generateContent({
     model: 'gemini-3.8-flash',
     contents: systemPrompt,
@@ -197,8 +282,18 @@ export async function categorizeTransaction(
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          standard_category_name: { type: Type.STRING, nullable: true },
-          csp_category_name: { type: Type.STRING, nullable: true },
+          standard_category_name: {
+            type: Type.STRING,
+            nullable: true,
+            ...(standardCategoryNames.length > 0
+              ? { enum: standardCategoryNames }
+              : {}),
+          },
+          csp_category_name: {
+            type: Type.STRING,
+            nullable: true,
+            ...(cspCategoryNames.length > 0 ? { enum: cspCategoryNames } : {}),
+          },
           suggested_new_standard_category: {
             type: Type.STRING,
             nullable: true,
@@ -206,11 +301,13 @@ export async function categorizeTransaction(
           suggested_standard_category_group_id: {
             type: Type.STRING,
             nullable: true,
+            ...(standardGroupIds.length > 0 ? { enum: standardGroupIds } : {}),
           },
           suggested_new_csp_category: { type: Type.STRING, nullable: true },
           suggested_csp_category_group_id: {
             type: Type.STRING,
             nullable: true,
+            ...(cspGroupIds.length > 0 ? { enum: cspGroupIds } : {}),
           },
           confidence: {
             type: Type.STRING,
@@ -253,29 +350,54 @@ export async function categorizeTransaction(
       reasoning: string;
     };
 
-    // Flatten standard and csp categories for name-to-ID lookup
-    const allStandardCategories = taxonomies.standard.flatMap(
-      g => g.categories,
-    );
-    const allCspCategories = taxonomies.csp.flatMap(g => g.categories);
-
-    const standard_category_id = resolveCategoryId(
+    let standard_category_id = resolveCategoryId(
       parsed.standard_category_name,
       allStandardCategories,
     );
-    const csp_category_id = resolveCategoryId(
+    if (!standard_category_id && parsed.suggested_new_standard_category) {
+      standard_category_id = resolveCategoryId(
+        parsed.suggested_new_standard_category,
+        allStandardCategories,
+      );
+    }
+
+    let csp_category_id = resolveCategoryId(
       parsed.csp_category_name,
       allCspCategories,
     );
+    if (!csp_category_id && parsed.suggested_new_csp_category) {
+      csp_category_id = resolveCategoryId(
+        parsed.suggested_new_csp_category,
+        allCspCategories,
+      );
+    }
+
+    const suggested_standard_category_group_id = standard_category_id
+      ? null
+      : resolveGroupId(
+          parsed.suggested_standard_category_group_id,
+          taxonomies.standard,
+        );
+    const suggested_new_standard_category =
+      !standard_category_id && suggested_standard_category_group_id
+        ? parsed.suggested_new_standard_category
+        : null;
+
+    const suggested_csp_category_group_id = csp_category_id
+      ? null
+      : resolveGroupId(parsed.suggested_csp_category_group_id, taxonomies.csp);
+    const suggested_new_csp_category =
+      !csp_category_id && suggested_csp_category_group_id
+        ? parsed.suggested_new_csp_category
+        : null;
 
     return {
       standard_category_id,
       csp_category_id,
-      suggested_new_standard_category: parsed.suggested_new_standard_category,
-      suggested_standard_category_group_id:
-        parsed.suggested_standard_category_group_id,
-      suggested_new_csp_category: parsed.suggested_new_csp_category,
-      suggested_csp_category_group_id: parsed.suggested_csp_category_group_id,
+      suggested_new_standard_category,
+      suggested_standard_category_group_id,
+      suggested_new_csp_category,
+      suggested_csp_category_group_id,
       confidence: parsed.confidence,
       suggest_rule_condition: parsed.suggest_rule_condition,
       reasoning: parsed.reasoning,
