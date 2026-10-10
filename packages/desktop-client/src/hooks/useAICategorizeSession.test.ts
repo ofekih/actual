@@ -283,4 +283,106 @@ describe('useAICategorizeSession', () => {
     expect(result.current.selectedCspId).toBe('csp-misc');
     expect(result.current.createRule).toBe(false);
   });
+
+  it('upgrades an existing single-action payee rule via rule-update instead of creating a duplicate rule', async () => {
+    const existingRule = {
+      id: 'rule-cvs',
+      stage: null,
+      conditionsOp: 'and' as const,
+      conditions: [
+        {
+          op: 'is' as const,
+          field: 'payee' as const,
+          value: 'payee-cvs',
+          type: 'id' as const,
+        },
+      ],
+      actions: [
+        {
+          op: 'set' as const,
+          field: 'category' as const,
+          value: 'cat-pharmacy',
+          type: 'id' as const,
+        },
+      ],
+    };
+
+    vi.mocked(send).mockImplementation(async (name, args) => {
+      if (name === 'query') {
+        return {
+          data: [
+            {
+              id: 'tx-cvs',
+              date: '2026-10-08',
+              amount: -600,
+              payee: 'payee-cvs',
+              'payee.name': 'CVS',
+              account: 'acct-1',
+              'account.name': 'Visa 9970',
+              notes: 'CVS PHARMACY ##09725',
+              category: 'cat-pharmacy',
+              csp_category: undefined,
+            },
+          ],
+          dependencies: [],
+        };
+      }
+      if (name === 'ai-categorize-transaction') {
+        return cvsPrediction;
+      }
+      if (name === 'ai-apply-categorization') {
+        const payload = args as {
+          standard_category_id: string | null;
+          csp_category_id: string | null;
+        };
+        return {
+          standard_category_id: payload.standard_category_id,
+          csp_category_id: payload.csp_category_id,
+        };
+      }
+      if (name === 'rules-get') {
+        return [existingRule] as never;
+      }
+      if (name === 'rule-update') {
+        return args as never;
+      }
+      return undefined as never;
+    });
+
+    const { result } = renderHook(() => useAICategorizeSession({ bulk: true }));
+
+    await waitFor(() => {
+      expect(result.current.selectedStandardId).toBe('cat-pharmacy');
+      expect(result.current.selectedCspId).toBe('csp-misc');
+      expect(result.current.createRule).toBe(true);
+    });
+
+    act(() => {
+      result.current.setApplyToExisting(false);
+    });
+
+    const modalClose = vi.fn();
+    await act(async () => {
+      await result.current.handleAcceptAndNext(modalClose);
+    });
+
+    expect(send).toHaveBeenCalledWith('rule-update', {
+      ...existingRule,
+      actions: [
+        {
+          op: 'set',
+          field: 'category',
+          value: 'cat-pharmacy',
+          type: 'id',
+        },
+        {
+          op: 'set',
+          field: 'csp_category',
+          value: 'csp-misc',
+          type: 'id',
+        },
+      ],
+    });
+    expect(send).not.toHaveBeenCalledWith('rule-add', expect.anything());
+  });
 });

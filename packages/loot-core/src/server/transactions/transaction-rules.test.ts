@@ -1316,6 +1316,72 @@ describe('Learning categories', () => {
     expect(rule.actions[0].field).toBe('payee');
   });
 
+  test('learns csp_category alongside category when inserting transactions', async () => {
+    await loadData();
+    await db.insertWithUUID('csp_categories', {
+      id: 'csp-fixed',
+      name: 'Fixed',
+      cat_group: 'csp-grp',
+    });
+
+    const baseTx = {
+      date: '2016-12-01',
+      account: 'acct',
+      payee: 'foo',
+      category: 'food',
+      csp_category: 'csp-fixed',
+    };
+    await db.insertTransaction({ ...baseTx, id: 'one' });
+    await db.insertTransaction({ ...baseTx, id: 'two' });
+    await db.insertTransaction({ ...baseTx, id: 'three' });
+    await updateCategoryRules([{ ...baseTx, id: 'three' }]);
+
+    const rules = getRules();
+    expect(rules.length).toBe(1);
+    expect(rules[0].conditions.map(c => c.serialize())).toEqual([
+      { op: 'is', field: 'payee', value: 'foo', type: 'id' },
+    ]);
+    expect(rules[0].actions.map(a => a.serialize())).toEqual([
+      { op: 'set', field: 'category', value: 'food', type: 'id' },
+      { op: 'set', field: 'csp_category', value: 'csp-fixed', type: 'id' },
+    ]);
+  });
+
+  test('upgrades an existing single-action category rule to also include csp_category', async () => {
+    await loadData();
+    await db.insertWithUUID('csp_categories', {
+      id: 'csp-fixed',
+      name: 'Fixed',
+      cat_group: 'csp-grp',
+    });
+
+    await insertRule({
+      stage: null,
+      conditionsOp: 'and',
+      conditions: [{ op: 'is', field: 'payee', value: 'foo' }],
+      actions: [{ op: 'set', field: 'category', value: 'food' }],
+    });
+
+    const baseTx = {
+      date: '2016-12-01',
+      account: 'acct',
+      payee: 'foo',
+      category: 'food',
+      csp_category: 'csp-fixed',
+    };
+    await db.insertTransaction({ ...baseTx, id: 'one' });
+    await db.insertTransaction({ ...baseTx, id: 'two' });
+    await db.insertTransaction({ ...baseTx, id: 'three' });
+    await updateCategoryRules([{ ...baseTx, id: 'three' }]);
+
+    const rules = getRules();
+    expect(rules.length).toBe(1);
+    expect(rules[0].actions.map(a => a.serialize())).toEqual([
+      { op: 'set', field: 'category', value: 'food', type: 'id' },
+      { op: 'set', field: 'csp_category', value: 'csp-fixed', type: 'id' },
+    ]);
+  });
+
   // TODO: write tests for split transactions
 });
 

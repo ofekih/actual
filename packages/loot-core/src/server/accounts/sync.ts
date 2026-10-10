@@ -891,6 +891,7 @@ export async function reconcileTransactions(
         imported_id: trans.imported_id || null,
         payee: existing.payee || trans.payee || null,
         category: existing.category || trans.category || null,
+        csp_category: existing.csp_category || trans.csp_category || null,
         imported_payee: trans.imported_payee || null,
         notes: existing.notes || trans.notes || null,
         cleared: existing.cleared || trans.cleared || false,
@@ -962,6 +963,7 @@ export async function reconcileTransactions(
         ...newTrans,
         id: uuidv4(),
         category: trans.category || null,
+        csp_category: trans.csp_category || null,
         cleared: trans.cleared ?? defaultCleared,
       };
 
@@ -1083,13 +1085,14 @@ export async function matchTransactions(
             | 'payee'
             | 'imported_payee'
             | 'category'
+            | 'csp_category'
             | 'notes'
             | 'reconciled'
             | 'cleared'
             | 'amount'
           >
         >(
-          `SELECT id, is_parent, date, imported_id, payee, imported_payee, category, notes, reconciled, cleared, amount
+          `SELECT id, is_parent, date, imported_id, payee, imported_payee, category, csp_category, notes, reconciled, cleared, amount
           FROM v_transactions
           WHERE
             -- If both ids are set, and we didn't match earlier then skip dedup
@@ -1115,13 +1118,14 @@ export async function matchTransactions(
             | 'payee'
             | 'imported_payee'
             | 'category'
+            | 'csp_category'
             | 'notes'
             | 'reconciled'
             | 'cleared'
             | 'amount'
           >
         >(
-          `SELECT id, is_parent, date, imported_id, payee, imported_payee, category, notes, reconciled, cleared, amount
+          `SELECT id, is_parent, date, imported_id, payee, imported_payee, category, csp_category, notes, reconciled, cleared, amount
           FROM v_transactions
           WHERE date >= ? AND date <= ? AND amount = ? AND account = ?`,
           [sevenDaysBefore, sevenDaysAfter, trans.amount || 0, acctId],

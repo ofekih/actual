@@ -175,9 +175,15 @@ export async function batchUpdateTransactions({
     // Analyze any updated categories and update rules to learn from
     // the user's activity
     const ids = new Set([
-      ...(added ? added.filter(add => add.category).map(add => add.id) : []),
+      ...(added
+        ? added
+            .filter(add => add.category || add.csp_category)
+            .map(add => add.id)
+        : []),
       ...(updated
-        ? updated.filter(update => update.category).map(update => update.id)
+        ? updated
+            .filter(update => update.category || update.csp_category)
+            .map(update => update.id)
         : []),
     ]);
     await rules.updateCategoryRules(

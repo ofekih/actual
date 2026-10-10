@@ -57,7 +57,13 @@ async function addTransaction(transaction: TransactionEntity) {
 }
 
 async function updateTransaction(transaction: TransactionEntity) {
-  await handleBatchUpdateTransactions({ updated: [transaction] });
+  const learnCategories = await aqlQuery(
+    q('preferences').filter({ id: 'learn-categories' }).select('value'),
+  ).then(data => String(data?.data?.[0]?.value ?? 'true') === 'true');
+  await handleBatchUpdateTransactions({
+    updated: [transaction],
+    learnCategories,
+  });
   return {};
 }
 

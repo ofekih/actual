@@ -485,17 +485,57 @@ export function useAICategorizeSession({
       }
 
       if (createRule && (conditionPayee || conditionAccount)) {
-        await send(
-          'rule-add',
-          buildRule(
-            selectedStandardId === 'new-standard-category-placeholder'
-              ? standard_category_id
-              : selectedStandardId,
-            selectedCspId === 'new-csp-category-placeholder'
-              ? csp_category_id
-              : selectedCspId,
-          ),
+        const candidateRule = buildRule(
+          selectedStandardId === 'new-standard-category-placeholder'
+            ? standard_category_id
+            : selectedStandardId,
+          selectedCspId === 'new-csp-category-placeholder'
+            ? csp_category_id
+            : selectedCspId,
         );
+        const existingRules = (await send('rules-get')) ?? [];
+        const matchingRule = existingRules.find(
+          rule =>
+            rule.stage === candidateRule.stage &&
+            rule.conditionsOp === candidateRule.conditionsOp &&
+            rule.conditions.length === candidateRule.conditions.length &&
+            candidateRule.conditions.every(c =>
+              rule.conditions.some(
+                rc =>
+                  rc.field === c.field &&
+                  rc.op === c.op &&
+                  rc.value === c.value,
+              ),
+            ) &&
+            rule.actions.length >= 1 &&
+            rule.actions.every(
+              a =>
+                a.op === 'set' &&
+                (a.field === 'category' || a.field === 'csp_category'),
+            ),
+        );
+
+        if (matchingRule) {
+          const mergedActions = matchingRule.actions.map(a => ({ ...a }));
+          for (const newAction of candidateRule.actions) {
+            if (newAction.op === 'set') {
+              const existingAction = mergedActions.find(
+                a => a.op === 'set' && a.field === newAction.field,
+              );
+              if (existingAction && existingAction.op === 'set') {
+                existingAction.value = newAction.value;
+              } else {
+                mergedActions.push(newAction);
+              }
+            }
+          }
+          await send('rule-update', {
+            ...matchingRule,
+            actions: mergedActions,
+          });
+        } else {
+          await send('rule-add', candidateRule);
+        }
 
         if (applyToExisting) {
           const filters: Record<string, unknown> = { is_parent: false };

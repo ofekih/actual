@@ -829,33 +829,6 @@ export function getRulesForPayee(payeeId) {
   return rankRules([...rules]);
 }
 
-function* getIsSetterRules(
-  stage,
-  condField,
-  actionField,
-  { condValue, actionValue }: { condValue?: string; actionValue?: string },
-) {
-  const rules = getRules();
-  for (let i = 0; i < rules.length; i++) {
-    const rule = rules[i];
-
-    if (
-      rule.stage === stage &&
-      rule.actions.length === 1 &&
-      rule.actions[0].op === 'set' &&
-      rule.actions[0].field === actionField &&
-      (actionValue === undefined || rule.actions[0].value === actionValue) &&
-      rule.conditions.length === 1 &&
-      (rule.conditions[0].op === 'is' || rule.conditions[0].op === 'isNot') &&
-      rule.conditions[0].field === condField &&
-      (condValue === undefined || rule.conditions[0].value === condValue)
-    ) {
-      yield rule.serialize();
-    }
-  }
-
-  return null;
-}
 function* getOneOfSetterRules(
   stage,
   condField,
@@ -920,24 +893,57 @@ export async function updatePayeeRenameRule(fromNames: string[], to: string) {
   }
 }
 
-export function getProbableCategory(transactions) {
+function* getPayeeCategorySetterRules(stage, payeeId) {
+  const rules = getRules();
+  for (let i = 0; i < rules.length; i++) {
+    const rule = rules[i];
+
+    if (
+      rule.stage === stage &&
+      rule.actions.length >= 1 &&
+      rule.actions.every(
+        action =>
+          action.op === 'set' &&
+          (action.field === 'category' || action.field === 'csp_category'),
+      ) &&
+      rule.conditions.length === 1 &&
+      (rule.conditions[0].op === 'is' || rule.conditions[0].op === 'isNot') &&
+      rule.conditions[0].field === 'payee' &&
+      (payeeId === undefined || rule.conditions[0].value === payeeId)
+    ) {
+      yield rule.serialize();
+    }
+  }
+
+  return null;
+}
+
+export function getProbableCategory(
+  transactions,
+  field: 'category' | 'csp_category' = 'category',
+) {
   const scores = new Map();
 
   transactions.forEach(trans => {
-    if (trans.category) {
-      scores.set(trans.category, (scores.get(trans.category) || 0) + 1);
+    const value = trans[field];
+    if (value) {
+      scores.set(value, (scores.get(value) || 0) + 1);
     }
   });
 
   const winner = transactions.reduce((winner, trans) => {
-    const score = scores.get(trans.category);
+    const value = trans[field];
+    if (!value) {
+      return winner;
+    }
+    const score = scores.get(value);
     if (!winner || score > winner.score) {
-      return { score, category: trans.category };
+      return { score, category: value };
     }
     return winner;
   }, null);
 
-  return winner.score >= 3 ? winner.category : null;
+  return winner && winner.score >= 3 ? winner.category : null;
 }
 
 export async function updateCategoryRules(transactions) {
@@ -975,55 +981,107 @@ export async function updateCategoryRules(transactions) {
   );
 
   const allTransactions = partitionByField(register, 'payee');
-  const categoriesToSet = new Map();
+  const categoriesToSet = new Map<
+    string,
+    { category: string | null; cspCategory: string | null }
+  >();
 
   for (const payeeId of payeeIds) {
     // Don't do anything if payee is null
-    if (payeeId) {
+    if (typeof payeeId === 'string' && payeeId) {
       const latestTrans = (allTransactions.get(payeeId) || []).slice(0, 5);
 
       // Check if one of the latest transactions was one that was
       // updated. We only want to update anything if so.
       if (latestTrans.find(trans => transIds.has(trans.id))) {
-        const category = getProbableCategory(latestTrans);
-        if (category) {
-          categoriesToSet.set(payeeId, category);
+        const category = getProbableCategory(latestTrans, 'category');
+        const cspCategory = getProbableCategory(latestTrans, 'csp_category');
+        if (category || cspCategory) {
+          categoriesToSet.set(payeeId, { category, cspCategory });
         }
       }
     }
   }
 
   await batchMessages(async () => {
-    for (const [payeeId, category] of categoriesToSet.entries()) {
-      const ruleSetters = [
-        ...getIsSetterRules(null, 'payee', 'category', {
-          condValue: payeeId,
-        }),
-      ];
+    for (const [
+      payeeId,
+      { category, cspCategory },
+    ] of categoriesToSet.entries()) {
+      const ruleSetters = [...getPayeeCategorySetterRules(null, payeeId)];
 
       if (ruleSetters.length > 0) {
         // If there are existing rules, change all of them to the new
-        // category (if they aren't already using it). We set all of
-        // them because it's possible that multiple rules exist
-        // because 2 clients made them independently. Not really a big
-        // deal, but to make sure our update gets applied set it to
-        // all of them
+        // category / csp_category (if they aren't already using it).
         for (const rule of ruleSetters) {
-          const action = rule.actions[0];
-          if (action.value !== category) {
+          const nextActions = rule.actions.map(action => ({ ...action }));
+          let changed = false;
+
+          if (category) {
+            const catAction = nextActions.find(
+              action => action.op === 'set' && action.field === 'category',
+            );
+            if (catAction) {
+              if (catAction.value !== category) {
+                catAction.value = category;
+                changed = true;
+              }
+            } else {
+              nextActions.push({
+                op: 'set',
+                field: 'category',
+                value: category,
+                type: 'id',
+              });
+              changed = true;
+            }
+          }
+
+          if (cspCategory) {
+            const cspAction = nextActions.find(
+              action => action.op === 'set' && action.field === 'csp_category',
+            );
+            if (cspAction) {
+              if (cspAction.value !== cspCategory) {
+                cspAction.value = cspCategory;
+                changed = true;
+              }
+            } else {
+              nextActions.push({
+                op: 'set',
+                field: 'csp_category',
+                value: cspCategory,
+                type: 'id',
+              });
+              changed = true;
+            }
+          }
+
+          if (changed) {
             await updateRule({
               ...rule,
-              actions: [{ ...action, value: category }],
+              actions: nextActions,
             });
           }
         }
       } else {
         // No existing rules, so create one
+        const actions = [];
+        if (category) {
+          actions.push({ op: 'set', field: 'category', value: category });
+        }
+        if (cspCategory) {
+          actions.push({
+            op: 'set',
+            field: 'csp_category',
+            value: cspCategory,
+          });
+        }
         const newRule = new Rule({
           stage: null,
           conditionsOp: 'and',
           conditions: [{ op: 'is', field: 'payee', value: payeeId }],
-          actions: [{ op: 'set', field: 'category', value: category }],
+          actions,
         });
         await insertRule(newRule.serialize());
       }
