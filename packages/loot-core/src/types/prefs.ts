@@ -83,6 +83,17 @@ export type SyncedPrefs = Partial<
   >
 >;
 
+export type DemoModeOptions = {
+  months: number;
+  scaleEnabled: boolean;
+  targetMonthlyIncome: number;
+  savingsBalance: number;
+  investmentsBalance: number;
+  debtBalance: number;
+  hideClosedAccounts: boolean;
+  stripTransactionNotes: boolean;
+};
+
 /**
  * Preferences that are stored in the `metadata.json` file along with the
  * core database.
@@ -98,6 +109,8 @@ export type MetadataPrefs = Partial<{
   resetClock: boolean;
   lastScheduleRun: string;
   userId: string; // TODO: delete this (unused)
+  demoSourceBudgetId: string;
+  demoOptions: DemoModeOptions;
 }>;
 
 /**

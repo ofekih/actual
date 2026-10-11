@@ -9,9 +9,10 @@ import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { spacing } from '@actual-app/components/tokens';
+import { DEMO_BUDGET_ID } from '@actual-app/core/shared/constants';
 import { isElectron } from '@actual-app/core/shared/environment';
 
-import { closeBudget } from '#budgetfiles/budgetfilesSlice';
+import { closeBudget, exitDemoMode } from '#budgetfiles/budgetfilesSlice';
 import { useContextMenu } from '#hooks/useContextMenu';
 import { useMetadataPref } from '#hooks/useMetadataPref';
 import { useNavigate } from '#hooks/useNavigate';
@@ -21,10 +22,13 @@ import { useDispatch } from '#redux';
 export function SidebarBudgetName() {
   const { t } = useTranslation();
   const [budgetName, setBudgetNamePref] = useMetadataPref('budgetName');
+  const [budgetId] = useMetadataPref('id');
+  const [sourceBudgetId] = useMetadataPref('demoSourceBudgetId');
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const isCustomDemo = budgetId === DEMO_BUDGET_ID && Boolean(sourceBudgetId);
   const { handleContextMenu } = useContextMenu({
     triggerRef,
     items: [
@@ -37,6 +41,16 @@ export function SidebarBudgetName() {
         name: 'settings',
         text: t('Settings'),
         onClick: () => void navigate('/settings'),
+      },
+      {
+        name: 'demoMode',
+        text: isCustomDemo ? t('Demo Mode Settings…') : t('Demo Mode…'),
+        onClick: () => dispatch(pushModal({ modal: { name: 'demo-mode' } })),
+      },
+      isCustomDemo && {
+        name: 'exitDemoMode',
+        text: t('Exit Demo Mode'),
+        onClick: () => void dispatch(exitDemoMode()),
       },
       isElectron() && {
         name: 'loadBackup',

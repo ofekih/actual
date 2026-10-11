@@ -736,6 +736,9 @@ export type Modal =
         templates: Template[];
         cleanup: CleanupTemplate[];
       };
+    }
+  | {
+      name: 'demo-mode';
     };
 
 type OpenAccountCloseModalPayload = {

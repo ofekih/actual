@@ -41,6 +41,7 @@ import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
 import { CspBudgetSummaryModal } from './modals/CspBudgetSummaryModal';
 import { CspCategoryAutocompleteModal } from './modals/CspCategoryAutocompleteModal';
 import { CspCategorySettingsModal } from './modals/CspCategorySettingsModal';
+import { DemoModeModal } from './modals/DemoModeModal';
 import { EditUserAccess } from './modals/EditAccess';
 import { EditFieldModal } from './modals/EditFieldModal';
 import { EditRuleModal } from './modals/EditRuleModal';
@@ -457,6 +458,9 @@ export function Modals() {
 
         case 'enable-password-auth':
           return <PasswordEnableModal key={key} {...modal.options} />;
+
+        case 'demo-mode':
+          return budgetId ? <DemoModeModal key={key} /> : null;
 
         default:
           throw new Error('Unknown modal');

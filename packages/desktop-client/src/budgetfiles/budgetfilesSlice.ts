@@ -4,6 +4,7 @@ import { getUnsafeZipMeta } from '@actual-app/core/shared/errors';
 import type { Budget } from '@actual-app/core/types/budget';
 import type { File } from '@actual-app/core/types/file';
 import type { Handlers } from '@actual-app/core/types/handlers';
+import type { DemoModeOptions } from '@actual-app/core/types/prefs';
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { t } from 'i18next';
@@ -169,6 +170,49 @@ export const createBudget = createAppAsyncThunk(
     // Set the loadingText to null after we've loaded the budget prefs
     // so that the existing manager page doesn't flash
     dispatch(setAppState({ loadingText: null }));
+  },
+);
+
+type EnterDemoModePayload = {
+  options: DemoModeOptions;
+};
+
+export const enterDemoMode = createAppAsyncThunk(
+  `${sliceName}/enterDemoMode`,
+  async (
+    { options }: EnterDemoModePayload,
+    { dispatch, getState, extra: { queryClient } },
+  ) => {
+    const currentPrefs = getState().prefs.local;
+    const sourceBudgetId =
+      currentPrefs?.id === '_demo-budget'
+        ? currentPrefs.demoSourceBudgetId
+        : currentPrefs?.id;
+
+    dispatch(closeModal());
+    dispatch(resetApp());
+    queryClient.clear();
+    dispatch(setAppState({ loadingText: t('Preparing demo mode...') }));
+
+    await send('create-demo-budget', { options, sourceBudgetId });
+
+    await dispatch(loadAllFiles());
+    await dispatch(loadPrefs());
+
+    dispatch(setAppState({ loadingText: null }));
+  },
+);
+
+export const exitDemoMode = createAppAsyncThunk(
+  `${sliceName}/exitDemoMode`,
+  async (_, { dispatch, getState }) => {
+    const sourceBudgetId = getState().prefs.local?.demoSourceBudgetId;
+    dispatch(closeModal());
+    if (sourceBudgetId) {
+      await dispatch(closeAndLoadBudget({ fileId: sourceBudgetId }));
+    } else {
+      await dispatch(closeBudget());
+    }
   },
 );
 
@@ -489,6 +533,8 @@ export const actions = {
   downloadBudget,
   loadBackup,
   makeBackup,
+  enterDemoMode,
+  exitDemoMode,
 };
 
 export const { setBudgets, setRemoteFiles, setAllFiles } = actions;

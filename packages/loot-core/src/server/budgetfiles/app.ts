@@ -37,6 +37,7 @@ import {
 } from '#server/util/budget-name';
 import * as Platform from '#shared/platform';
 import type { Budget } from '#types/budget';
+import type { DemoModeOptions } from '#types/prefs';
 
 import {
   loadBackup as _loadBackup,
@@ -45,6 +46,7 @@ import {
   startBackupService,
   stopBackupService,
 } from './backups';
+import { normalizeDemoModeOptions, sanitizeDemoDatabase } from './demo-mode';
 
 const DEMO_BUDGET_ID = '_demo-budget';
 const TEST_BUDGET_ID = '_test-budget';
@@ -243,11 +245,94 @@ async function loadBudget({ id }: { id: Budget['id'] }) {
   return res;
 }
 
-async function createDemoBudget() {
+async function createDemoBudget({
+  options,
+  sourceBudgetId,
+}: {
+  options?: Partial<DemoModeOptions>;
+  sourceBudgetId?: Budget['id'];
+} = {}) {
   // Make sure the read only flag isn't leftover (normally it's
   // reset when signing in, but you don't have to sign in for the
   // demo budget)
   await asyncStorage.setItem('readOnly', '');
+
+  const currentPrefs = prefs.getPrefs();
+  const resolvedSourceId =
+    sourceBudgetId ||
+    (currentPrefs?.id === DEMO_BUDGET_ID
+      ? currentPrefs.demoSourceBudgetId
+      : currentPrefs?.id);
+
+  if (options && resolvedSourceId && resolvedSourceId !== DEMO_BUDGET_ID) {
+    const sourceDir = fs.getBudgetDir(resolvedSourceId);
+    if (await fs.exists(sourceDir)) {
+      const normalizedOptions = normalizeDemoModeOptions(options);
+
+      if (currentPrefs?.id === resolvedSourceId) {
+        await prefs.savePrefs({ demoOptions: normalizedOptions });
+      }
+
+      if (prefs.getPrefs()) {
+        await closeBudget();
+      }
+
+      const demoDir = fs.getBudgetDir(DEMO_BUDGET_ID);
+      if (await fs.exists(demoDir)) {
+        await fs.removeDirRecursively(demoDir);
+      }
+      await fs.mkdir(demoDir);
+
+      const sourceMetadataPath = fs.join(sourceDir, 'metadata.json');
+      const metadataText = await fs.readFile(sourceMetadataPath);
+      const sourceMetadata = JSON.parse(metadataText);
+
+      // Persist demoOptions on the source budget metadata as well
+      sourceMetadata.demoOptions = normalizedOptions;
+      await fs.writeFile(sourceMetadataPath, JSON.stringify(sourceMetadata));
+
+      const demoMetadata = { ...sourceMetadata };
+      const baseName = (demoMetadata.budgetName || 'Budget').replace(
+        /\s*\(Demo\)$/,
+        '',
+      );
+      demoMetadata.id = DEMO_BUDGET_ID;
+      demoMetadata.budgetName = `${baseName} (Demo)`;
+      demoMetadata.demoSourceBudgetId = resolvedSourceId;
+      demoMetadata.demoOptions = normalizedOptions;
+      demoMetadata.resetClock = true;
+      [
+        'cloudFileId',
+        'groupId',
+        'lastUploaded',
+        'encryptKeyId',
+        'lastSyncedTimestamp',
+      ].forEach(item => {
+        if (demoMetadata[item]) delete demoMetadata[item];
+      });
+
+      await fs.writeFile(
+        fs.join(demoDir, 'metadata.json'),
+        JSON.stringify(demoMetadata),
+      );
+      await fs.copyFile(
+        fs.join(sourceDir, 'db.sqlite'),
+        fs.join(demoDir, 'db.sqlite'),
+      );
+
+      await db.openDatabase(DEMO_BUDGET_ID);
+      try {
+        await updateVersion();
+        sanitizeDemoDatabase(normalizedOptions);
+      } finally {
+        db.closeDatabase();
+      }
+
+      const res = await _loadBudget(DEMO_BUDGET_ID);
+      await asyncStorage.setItem('lastBudget', resolvedSourceId);
+      return res;
+    }
+  }
 
   return createBudget({
     budgetName: 'Demo Budget',

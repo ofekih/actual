@@ -596,7 +596,10 @@ export function createCoordinator({
               targetPort.postMessage(workerMsg);
 
               const name = group.requestNames.get(workerMsg.id as string);
-              if (workerMsg.type === 'reply' && name === 'load-budget') {
+              if (
+                workerMsg.type === 'reply' &&
+                (name === 'load-budget' || name === 'create-demo-budget')
+              ) {
                 const budgetId = group.requestBudgetIds.get(
                   workerMsg.id as string,
                 );
@@ -802,7 +805,9 @@ export function createCoordinator({
           msg.name === 'delete-budget'
         ) {
           if (msg.name === 'create-demo-budget') {
-            evictGroup('_demo-budget', port);
+            if (portBudget !== '_demo-budget') {
+              evictGroup('_demo-budget', port);
+            }
           } else if (
             msg.name === 'create-budget' &&
             msg.args &&
@@ -821,6 +826,9 @@ export function createCoordinator({
                 `[SharedWorker] Budget-replacing "${msg.name}" — pushed ${group.followers.size} tab(s) off "${portBudget}"`,
               );
               group.followers.clear();
+            }
+            if (msg.name === 'create-demo-budget' && msg.id) {
+              group.requestBudgetIds.set(msg.id as string, '_demo-budget');
             }
           } else {
             if (group) {
