@@ -12,6 +12,13 @@ This guide provides comprehensive information for AI agents (like Cursor) workin
 - **Primary Language**: TypeScript (with React)
 - **Build System**: Yarn 4 workspaces (monorepo)
 
+> **This checkout is a personal fork** (web app branded "NO Finances") that adds
+> a **Conscious Spending Plan (CSP)** tab (`/csp`, the default route), a second
+> CSP category taxonomy on every transaction, Gemini-based AI categorization,
+> and CSP integrations in reports and Monte Carlo. **Read
+> [`.github/agents/AI_CONTEXT.md`](.github/agents/AI_CONTEXT.md) before touching
+> CSP, AI categorization, budget-table, or report code.**
+
 ## Quick Start Commands
 
 ### Essential Commands (Run from Root)
@@ -598,6 +605,10 @@ Standard commands documented in `package.json` scripts and the Quick Start secti
 ### Testing and previewing the app
 
 When running the app for manual testing or demos, use **"View demo"** on the initial setup screen (after selecting "Don't use a server"). This creates a test budget pre-populated with realistic sample data (accounts, transactions, categories, and budgeted amounts), which is far more useful than starting with an empty budget.
+
+The demo budget has no CSP categories. For CSP work, run `yarn start:server-dev`
+and open the user's own budget from the local sync server (it opens on `/csp`).
+See [AI_CONTEXT.md](.github/agents/AI_CONTEXT.md).
 
 ### Gotchas
 
