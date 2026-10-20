@@ -36,6 +36,7 @@ type MonteCarloInvestmentPhaseRowProps = {
   /** The plan's ages, bounding the from-age */
   currentAge: number;
   targetAge: number;
+  timeAxis?: 'age' | 'year';
   /** True when a historical return model is active */
   usesHistoricalReturns: boolean;
   onPhaseChange: (changes: Partial<MonteCarloInvestmentPhase>) => void;
@@ -51,6 +52,7 @@ export function MonteCarloInvestmentPhaseRow({
   phase,
   currentAge,
   targetAge,
+  timeAxis = 'age',
   usesHistoricalReturns,
   onPhaseChange,
   onRemove,
@@ -83,12 +85,16 @@ export function MonteCarloInvestmentPhaseRow({
         <View style={{ width: 110 }}>
           <View style={FIELD_LABEL_ROW_STYLE}>
             <Text style={FIELD_LABEL_STYLE}>
-              <Trans>From age</Trans>
+              {timeAxis === 'year' ? (
+                <Trans>From year</Trans>
+              ) : (
+                <Trans>From age</Trans>
+              )}
             </Text>
           </View>
           <MonteCarloNumberInput
             value={phase.fromAge}
-            aria-label={t('From age')}
+            aria-label={timeAxis === 'year' ? t('From year') : t('From age')}
             roundToInteger
             min={currentAge + 1}
             max={targetAge}

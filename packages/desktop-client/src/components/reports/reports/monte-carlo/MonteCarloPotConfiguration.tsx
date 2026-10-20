@@ -823,6 +823,7 @@ export function MonteCarloPotConfiguration({
                 phase={phase}
                 currentAge={currentAge}
                 targetAge={targetAge}
+                timeAxis={timeAxis}
                 usesHistoricalReturns={usesHistoricalReturns}
                 onPhaseChange={changes =>
                   updateInvestmentPhase(phase.id, changes)
