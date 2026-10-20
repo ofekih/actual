@@ -555,6 +555,12 @@ export function AccountHeader({
                             : t('Show balance chart'),
                         },
                         {
+                          name: 'toggle-reconciled',
+                          text: showReconciled
+                            ? t('Hide reconciled transactions')
+                            : t('Show reconciled transactions'),
+                        },
+                        {
                           name: 'manage-columns',
                           text: t('Manage table columns'),
                         },
@@ -854,10 +860,10 @@ function MileageWidget({ accountId }: { accountId: string }) {
     setInputValue(mileage !== null ? String(mileage) : '');
   }, [mileage]);
 
+  const [now] = useState(() => Date.now());
   const isStale =
     mileage !== null &&
-    (!updatedAt ||
-      Date.now() - updatedAt.getTime() > 6 * 30 * 24 * 60 * 60 * 1000);
+    (!updatedAt || now - updatedAt.getTime() > 6 * 30 * 24 * 60 * 60 * 1000);
 
   const handleSave = () => {
     const nextMileage = parseInt(inputValue, 10);

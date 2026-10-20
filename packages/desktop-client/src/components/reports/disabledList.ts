@@ -111,6 +111,7 @@ const totalGraphOptions: graphOptions[] = [
       'Account',
       'CspCategory',
       'CspGroup',
+      'Tag',
     ],
     defaultSplit: 'Interval',
     disabledType: [],
@@ -220,11 +221,9 @@ export function disabledLegendLabel(
   return disableLegendLabel[type];
 }
 
-export function defaultsGraphList(
-  item: string,
-  newGraph: string,
-  type: 'defaultSplit' | 'defaultType' | 'defaultSort',
-) {
+export function defaultsGraphList<
+  K extends 'defaultSplit' | 'defaultType' | 'defaultSort',
+>(item: string, newGraph: string, type: K) {
   const graphList = modeOptions.find(d => d.description === item);
   if (!graphList) {
     return '';

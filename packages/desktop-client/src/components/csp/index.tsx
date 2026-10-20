@@ -1208,29 +1208,25 @@ export function useCspCategoryGroups(): CategoryGroupEntity[] {
           g.categories.length > 0,
       );
 
-    const mapped = filteredGroups.map(
-      (g): CategoryGroupEntity => ({
-        id: g.id,
-        name: g.name,
-        sort_order: g.sort_order,
-        tombstone: g.tombstone,
-        is_income: false, // Map them all as expense groups so they render consecutively in their custom order
+    const mapped = filteredGroups.map((g): CategoryGroupEntity => ({
+      id: g.id,
+      name: g.name,
+      sort_order: g.sort_order,
+      tombstone: g.tombstone,
+      is_income: false, // Map them all as expense groups so they render consecutively in their custom order
+      hidden: false,
+      categories: (g.categories ?? []).map((c): CategoryEntity => ({
+        id: c.id,
+        name: c.name,
+        group: c.group,
+        sort_order: c.sort_order,
+        tombstone: c.tombstone,
+        is_income: false,
         hidden: false,
-        categories: (g.categories ?? []).map(
-          (c): CategoryEntity => ({
-            id: c.id,
-            name: c.name,
-            group: c.group,
-            sort_order: c.sort_order,
-            tombstone: c.tombstone,
-            is_income: false,
-            hidden: false,
-            planned_amount: c.planned_amount,
-            moving_average_months: c.moving_average_months,
-          }),
-        ),
-      }),
-    );
+        planned_amount: c.planned_amount,
+        moving_average_months: c.moving_average_months,
+      })),
+    }));
 
     // Sort income group to the top
     mapped.sort((a, b) => {

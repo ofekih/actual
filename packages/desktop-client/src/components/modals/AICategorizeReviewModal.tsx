@@ -66,15 +66,19 @@ const dotStyle = (status: 'loaded' | 'loading' | 'pending') => css`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: ${status === 'loaded'
-    ? theme.noticeTextLight
-    : status === 'loading'
-      ? theme.warningText
-      : theme.tableBorder};
+  background-color: ${
+    status === 'loaded'
+      ? theme.noticeTextLight
+      : status === 'loading'
+        ? theme.warningText
+        : theme.tableBorder
+  };
   transition: all 0.3s ease;
   ${status === 'loading' && `animation: ${pulse} 0.8s infinite alternate;`}
-  ${status === 'loaded' &&
-  `transform: scale(1.25); box-shadow: 0 0 6px ${theme.noticeTextLight};`}
+  ${
+    status === 'loaded' &&
+    `transform: scale(1.25); box-shadow: 0 0 6px ${theme.noticeTextLight};`
+  }
 `;
 
 export function AICategorizeReviewModal(props: AICategorizeReviewModalProps) {

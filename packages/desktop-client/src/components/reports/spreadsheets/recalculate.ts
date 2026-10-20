@@ -23,7 +23,8 @@ type RecalculateProps = {
     | 'payee'
     | 'account'
     | 'cspCategory'
-    | 'cspCategoryGroup';
+    | 'cspCategoryGroup'
+    | 'tagBucketId';
   showOffBudget?: boolean;
   showHiddenCategories?: boolean;
   showUncategorized?: boolean;
@@ -115,6 +116,7 @@ export function recalculate({
     id: item.id || '',
     name: item.name,
     uncategorizedId: item.uncategorized_id,
+    bucketTagNames: item.bucketTagNames,
     totalAssets,
     totalDebts,
     netAssets: totalTotals > 0 ? totalTotals : 0,

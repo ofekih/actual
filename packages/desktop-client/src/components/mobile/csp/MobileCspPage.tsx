@@ -221,9 +221,9 @@ function CspExpenseGroupListItem({
 
   const shouldHideCategory = useCallback(
     (category: CategoryEntity) => {
-      return !!(category.hidden || categoryGroup?.hidden);
+      return !!(category.hidden || categoryGroup.hidden);
     },
-    [categoryGroup?.hidden],
+    [categoryGroup.hidden],
   );
 
   return (

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { Input } from '@actual-app/components/input';
@@ -9,7 +10,7 @@ import { View } from '@actual-app/components/view';
 import { FormField, FormLabel } from '#components/forms';
 import { useSyncedPref } from '#hooks/useSyncedPref';
 
-import { Column, Setting } from './UI';
+import { Setting } from './UI';
 
 function calculateAge(birthDateStr: string): number | null {
   if (!birthDateStr) return null;
@@ -161,5 +162,23 @@ export function CspSettings() {
         </Trans>
       </Text>
     </Setting>
+  );
+}
+
+function Column({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View
+      style={{
+        alignItems: 'flex-start',
+        flexGrow: 1,
+        gap: '0.5em',
+        width: '100%',
+      }}
+    >
+      <Text style={{ fontWeight: 500 }}>{title}</Text>
+      <View style={{ alignItems: 'flex-start', gap: '1em', width: '100%' }}>
+        {children}
+      </View>
+    </View>
   );
 }

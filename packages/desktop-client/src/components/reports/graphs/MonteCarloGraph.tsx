@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { CSSProperties } from '@actual-app/components/styles';
@@ -76,7 +77,7 @@ export function MonteCarloGraph({
 
   // Construct historical data points (year < 0)
   const historicalPoints: FanChartDataPoint[] = [];
-  const currentCalendarYear = new Date().getFullYear();
+  const [currentCalendarYear] = useState(() => new Date().getFullYear());
 
   if (history && history.length > 0) {
     history

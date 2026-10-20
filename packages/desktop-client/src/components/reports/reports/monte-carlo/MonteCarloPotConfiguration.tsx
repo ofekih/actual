@@ -6,6 +6,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Button } from '@actual-app/components/button';
 import { SvgDelete } from '@actual-app/components/icons/v0';
 import {
+  SvgAdd,
   SvgCheveronDown,
   SvgCheveronRight,
 } from '@actual-app/components/icons/v1';
@@ -16,6 +17,7 @@ import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import type { MonteCarloAllocationPreset } from '@actual-app/core/types/models';
 import { css } from '@emotion/css';
+import { v4 as uuidv4 } from 'uuid';
 
 import { FinancialText } from '#components/FinancialText';
 import { LabeledCheckbox } from '#components/forms/LabeledCheckbox';
@@ -24,17 +26,25 @@ import { FinancialInput } from '#components/util/FinancialInput';
 import { useAccounts } from '#hooks/useAccounts';
 
 import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
+import { MonteCarloInvestmentPhaseRow } from './MonteCarloInvestmentPhaseRow';
 import { MonteCarloNumberInput } from './MonteCarloNumberInput';
 import { POT_COLUMNS } from './MonteCarloPotsTableHeader';
 import {
-  ALLOCATION_PRESETS,
+  createMonteCarloInvestmentPhase,
+  getAllocationChange,
   getHistoricalMixStats,
+  getMixShareTotal,
   getPotAssetWeights,
+  isMixIncomplete,
   MAX_AMOUNT,
   MAX_ANNUAL_FEE_RATE,
   MAX_WITHDRAWAL_TAX_RATE,
+  resolveInvestmentPhases,
 } from './monteCarloSimulation';
-import type { MonteCarloPot } from './monteCarloSimulation';
+import type {
+  MonteCarloInvestmentPhase,
+  MonteCarloPot,
+} from './monteCarloSimulation';
 import {
   FIELD_LABEL_ROW_STYLE,
   FIELD_LABEL_STYLE,
@@ -55,6 +65,9 @@ type MonteCarloPotConfigurationProps = ComponentPropsWithoutRef<
   /** True when the bands tax model is active */
   usesTaxBands: boolean;
   timeAxis?: 'age' | 'year';
+  /** The plan's ages, bounding the investment phases' from-ages */
+  currentAge: number;
+  targetAge: number;
   onPotChange: (changes: Partial<MonteCarloPot>) => void;
   onRemove: () => void;
 };
@@ -66,6 +79,8 @@ export function MonteCarloPotConfiguration({
   usesHistoricalReturns,
   usesTaxBands,
   timeAxis = 'age',
+  currentAge,
+  targetAge,
   onPotChange,
   onRemove,
   ...props
@@ -85,15 +100,41 @@ export function MonteCarloPotConfiguration({
   // A custom mix only counts once its shares total 100% (matching
   // getPotAssetWeights, tolerance included); until then the pot falls
   // back to its manual return/volatility and the UI warns
-  const sanitizeShare = (share: number) =>
-    Number.isFinite(share) && share > 0 ? share : 0;
-  const mixShareTotal =
-    sanitizeShare(pot.allocationStocks) +
-    sanitizeShare(pot.allocationBonds) +
-    sanitizeShare(pot.allocationCash);
-  const isMixIncomplete =
-    pot.allocationPreset === 'custom-mix' &&
-    Math.abs(mixShareTotal - 1) >= 1e-9;
+  const mixShareTotal = getMixShareTotal(pot);
+  const mixIsIncomplete = isMixIncomplete(pot);
+
+  function updateInvestmentPhase(
+    phaseId: string,
+    changes: Partial<MonteCarloInvestmentPhase>,
+  ) {
+    onPotChange({
+      investmentPhases: pot.investmentPhases.map(phase =>
+        phase.id === phaseId ? { ...phase, ...changes } : phase,
+      ),
+    });
+  }
+
+  // Once a phase starts at the plan's end there is nowhere later to put
+  // another one
+  const sortedPhases = resolveInvestmentPhases(pot, currentAge);
+  const latestPhase = sortedPhases[sortedPhases.length - 1];
+  const canAddInvestmentPhase =
+    latestPhase == null || latestPhase.fromAge < targetAge;
+
+  function addInvestmentPhase() {
+    // Start from the latest phase so only the differences need typing,
+    // ten years on (or at the plan's end if that's sooner)
+    const fromAge = Math.min(
+      targetAge,
+      (latestPhase?.fromAge ?? currentAge) + 10,
+    );
+    onPotChange({
+      investmentPhases: [
+        ...pot.investmentPhases,
+        createMonteCarloInvestmentPhase(uuidv4(), latestPhase ?? pot, fromAge),
+      ],
+    });
+  }
 
   // A linked account that has since been closed or deleted isn't in the
   // open-accounts list; keep it represented so the stored link doesn't
@@ -353,31 +394,9 @@ export function MonteCarloPotConfiguration({
             value={pot.allocationPreset}
             onChange={value => {
               const preset = value as MonteCarloAllocationPreset;
-              if (preset === 'custom') {
-                onPotChange({ allocationPreset: preset });
-              } else if (preset === 'custom-mix') {
-                // Seed the mix from the preset being left, so tweaking
-                // a preset (e.g. 80/20 to 85/15) starts from its shares
-                const presetWeights =
-                  pot.allocationPreset !== 'custom-mix'
-                    ? getPotAssetWeights(pot)
-                    : null;
-                onPotChange({
-                  allocationPreset: preset,
-                  ...(presetWeights != null && {
-                    allocationStocks: presetWeights.stocks,
-                    allocationBonds: presetWeights.bonds,
-                    allocationCash: presetWeights.cash,
-                  }),
-                });
-                // The mix's share inputs live in the expanded panel
+              onPotChange(getAllocationChange(preset, pot));
+              if (preset === 'custom-mix') {
                 setIsExpanded(true);
-              } else {
-                onPotChange({
-                  allocationPreset: preset,
-                  expectedReturnMean: ALLOCATION_PRESETS[preset].mean,
-                  returnStdDev: ALLOCATION_PRESETS[preset].stdDev,
-                });
               }
             }}
             options={[
@@ -575,7 +594,7 @@ export function MonteCarloPotConfiguration({
                   />
                 </View>
               </View>
-              {isMixIncomplete && (
+              {mixIsIncomplete && (
                 // width 0 keeps the message from widening the group (it
                 // would push the other groups aside); minWidth stretches
                 // it back to the share inputs' width, wrapping the text
@@ -771,6 +790,61 @@ export function MonteCarloPotConfiguration({
                 />
               </View>
             </View>
+          </View>
+
+          <View style={{ gap: 10, flexBasis: '100%' }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            >
+              <Text style={GROUP_HEADING_STYLE}>
+                <Trans>Investment phases</Trans>
+              </Text>
+              <MonteCarloHelpTooltip>
+                <Trans>
+                  Change what this pot is invested in - its allocation or return
+                  and volatility, and its fees - from a given age. The settings
+                  above apply until the first phase begins.
+                  <br />
+                  <br />
+                  At once switches on that birthday. Gradually moves there in a
+                  straight line from the previous phase&apos;s start age,
+                  arriving at the age you set - the classic glide path, such as
+                  60% stocks / 40% bonds by 65. The cost of switching
+                  investments isn&apos;t modelled.
+                </Trans>
+              </MonteCarloHelpTooltip>
+            </View>
+            <Text style={{ color: theme.pageText }}>
+              <Trans>From now: the settings above.</Trans>
+            </Text>
+            {resolveInvestmentPhases(pot, -Infinity).map(phase => (
+              <MonteCarloInvestmentPhaseRow
+                key={phase.id}
+                phase={phase}
+                currentAge={currentAge}
+                targetAge={targetAge}
+                usesHistoricalReturns={usesHistoricalReturns}
+                onPhaseChange={changes =>
+                  updateInvestmentPhase(phase.id, changes)
+                }
+                onRemove={() =>
+                  onPotChange({
+                    investmentPhases: pot.investmentPhases.filter(
+                      other => other.id !== phase.id,
+                    ),
+                  })
+                }
+              />
+            ))}
+            <Button
+              variant="bare"
+              isDisabled={!canAddInvestmentPhase}
+              onPress={addInvestmentPhase}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              <SvgAdd width={10} height={10} style={{ marginRight: 5 }} />
+              <Trans>Add investment phase</Trans>
+            </Button>
           </View>
         </View>
       )}

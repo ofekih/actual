@@ -67,6 +67,8 @@ type AmountInputRef = HTMLInputElement & {
 
 let isDatepickerClick = false;
 
+const PARSE_REFERENCE_DATE = new Date(0);
+
 const filterFields = [
   'date',
   'account',
@@ -141,7 +143,7 @@ function ConfigureField<T extends RuleConditionEntity>({
       typeof value === 'string' &&
       /^\d{4}-\d{2}$/.test(value)
     ) {
-      const date = parseDate(value, 'yyyy-MM', new Date());
+      const date = parseDate(value, 'yyyy-MM', PARSE_REFERENCE_DATE);
       if (isDateValid(date)) {
         return formatDate(date, getMonthYearFormat(dateFormat));
       }

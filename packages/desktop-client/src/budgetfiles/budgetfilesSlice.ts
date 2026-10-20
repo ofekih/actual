@@ -330,25 +330,30 @@ export const closeAndLoadBudget = createAppAsyncThunk(
 
 type CloseAndDownloadBudgetPayload = {
   cloudFileId: string;
+  localId?: string;
 };
 
 export const closeAndDownloadBudget = createAppAsyncThunk(
   `${sliceName}/closeAndDownloadBudget`,
-  async ({ cloudFileId }: CloseAndDownloadBudgetPayload, { dispatch }) => {
+  async (
+    { cloudFileId, localId }: CloseAndDownloadBudgetPayload,
+    { dispatch },
+  ) => {
     await dispatch(closeBudget());
-    await dispatch(downloadBudget({ cloudFileId, replace: true }));
+    await dispatch(downloadBudget({ cloudFileId, localId, replace: true }));
   },
 );
 
 type DownloadBudgetPayload = {
   cloudFileId: string;
+  localId?: string;
   replace?: boolean;
 };
 
 export const downloadBudget = createAppAsyncThunk(
   `${sliceName}/downloadBudget`,
   async (
-    { cloudFileId, replace = false }: DownloadBudgetPayload,
+    { cloudFileId, localId, replace = false }: DownloadBudgetPayload,
     { dispatch },
   ): Promise<string | null> => {
     dispatch(
@@ -359,6 +364,7 @@ export const downloadBudget = createAppAsyncThunk(
 
     const { id, error } = await send('download-budget', {
       cloudFileId,
+      localId,
     });
 
     if (error) {
@@ -372,7 +378,7 @@ export const downloadBudget = createAppAsyncThunk(
           ),
           cloudFileId,
           onSuccess: () => {
-            void dispatch(downloadBudget({ cloudFileId, replace }));
+            void dispatch(downloadBudget({ cloudFileId, localId, replace }));
           },
         };
 
@@ -402,7 +408,7 @@ export const downloadBudget = createAppAsyncThunk(
         );
 
         return await dispatch(
-          downloadBudget({ cloudFileId, replace: true }),
+          downloadBudget({ cloudFileId, localId, replace: true }),
         ).unwrap();
       } else {
         dispatch(setAppState({ loadingText: null }));
