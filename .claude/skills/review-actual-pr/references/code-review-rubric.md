@@ -67,7 +67,8 @@ These are mandatory for AI-authored PRs. Verify and flag misses as Important.
 
 - `packages/loot-core/src/server/migrations/` — schema migrations. Must be idempotent; flag any that aren't, and any that drop or rewrite data without a backfill story. **Critical** by default.
 - `packages/loot-core/src/server/budget/` — budget math. Off-by-one or rounding errors here directly cost users money in their reports. Read carefully.
-- `packages/desktop-client/src/components/budget/` — main UI surface. Re-render patterns and selector usage matter here.
+- `packages/desktop-client/src/components/budget/` — main UI surface. Re-render patterns and selector usage matter here. The CSP tab reuses these components through `CategoriesOverrideContext` / `CspComponentsContext`, so budget changes can break `/csp` too.
+- `packages/desktop-client/src/components/csp/` and `reports/reports/monte-carlo/csp/` — fork-specific CSP math (targets that carry forward, forward amortization, the automatic first Guilt-Free category, on-budget-only actuals, logic keyed off group names). See `.github/agents/AI_CONTEXT.md` §3.
 - `packages/sync-server/` — server-side; review CRDT / sync changes carefully for ordering and race conditions.
 - `packages/desktop-client/e2e/*-snapshots/` — VRT snapshots. If the PR updates these, the diff itself is the review: open the new PNG, confirm the visual change matches the PR's stated intent.
 
