@@ -5,6 +5,7 @@ import { Select } from '@actual-app/components/select';
 import { SpaceBetween } from '@actual-app/components/space-between';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
+import { spacing } from '@actual-app/components/tokens';
 import { View } from '@actual-app/components/view';
 import { tsToRelativeTime } from '@actual-app/core/shared/util';
 import type { AccountEntity } from '@actual-app/core/types/models';
@@ -68,21 +69,21 @@ export function BankSyncAccountsListItem({
         borderBottomWidth: 1,
         borderBottomColor: theme.tableBorder,
         borderBottomStyle: 'solid',
-        padding: 16,
+        padding: spacing.lg,
         width: '100%',
         cursor: 'pointer',
       }}
       onClick={() => onAction(account, isLinked ? 'edit' : 'link')}
     >
-      <SpaceBetween gap={20}>
+      <SpaceBetween gap={spacing.lg}>
         <SpaceBetween
           direction="vertical"
           gap={5}
           style={{ flex: 1, alignItems: 'flex-start' }}
         >
           <Text
+            size="large"
             style={{
-              fontSize: 15,
               fontWeight: 500,
               color: theme.tableText,
             }}
@@ -91,8 +92,8 @@ export function BankSyncAccountsListItem({
           </Text>
           {isLinked && (
             <Text
+              size="medium"
               style={{
-                fontSize: 13,
                 color: theme.pageTextSubdued,
               }}
             >
@@ -101,8 +102,8 @@ export function BankSyncAccountsListItem({
           )}
           {isLinked && lastSyncString && (
             <Text
+              size="medium"
               style={{
-                fontSize: 13,
                 color: theme.pageTextSubdued,
               }}
               data-vrt-mask

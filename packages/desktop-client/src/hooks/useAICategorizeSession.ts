@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { send } from '@actual-app/core/platform/client/connection';
@@ -203,60 +203,59 @@ export function useAICategorizeSession({
   }
 
   // Initialize transactions list
-  useEffect(() => {
-    async function init() {
-      try {
-        if (bulk) {
-          const { data } = await send('query', uncategorizedQuery);
+  const init = useEffectEvent(async () => {
+    try {
+      if (bulk) {
+        const { data } = await send('query', uncategorizedQuery);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+        const typedData = data as UncategorizedTransaction[];
+        setUncategorizedTransactions(typedData || []);
+        setInitialTotal((data || []).length);
+        if (data && data.length > 0) {
+          const initialCache = (typedData || []).reduce(
+            (acc, tx) => {
+              acc[tx.id] = tx;
+              return acc;
+            },
+            {} as Record<string, UncategorizedTransaction>,
+          );
+          txCacheRef.current = initialCache;
+          setTxCache(initialCache);
+          currentTxIdRef.current = data[0].id;
+          setCurrentTxId(data[0].id);
+          applySelectionForTransaction(data[0].id);
+        }
+      } else if (initialTransactionId) {
+        const { data } = await send(
+          'query',
+          q('transactions')
+            .filter({ id: initialTransactionId })
+            .select(['*', 'payee.name', 'account.name', 'account.offbudget'])
+            .serialize(),
+        );
+        if (data && data.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           const typedData = data as UncategorizedTransaction[];
-          setUncategorizedTransactions(typedData || []);
-          setInitialTotal((data || []).length);
-          if (data && data.length > 0) {
-            const initialCache = (typedData || []).reduce(
-              (acc, tx) => {
-                acc[tx.id] = tx;
-                return acc;
-              },
-              {} as Record<string, UncategorizedTransaction>,
-            );
-            txCacheRef.current = initialCache;
-            setTxCache(initialCache);
-            currentTxIdRef.current = data[0].id;
-            setCurrentTxId(data[0].id);
-            applySelectionForTransaction(data[0].id);
-          }
-        } else if (initialTransactionId) {
-          const { data } = await send(
-            'query',
-            q('transactions')
-              .filter({ id: initialTransactionId })
-              .select(['*', 'payee.name', 'account.name', 'account.offbudget'])
-              .serialize(),
-          );
-          if (data && data.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            const typedData = data as UncategorizedTransaction[];
-            setUncategorizedTransactions(typedData);
-            setInitialTotal(1);
-            const initialCache = { [initialTransactionId]: typedData[0] };
-            txCacheRef.current = initialCache;
-            setTxCache(initialCache);
-            currentTxIdRef.current = initialTransactionId;
-            setCurrentTxId(initialTransactionId);
-            applySelectionForTransaction(initialTransactionId);
-          } else {
-            setError(t('Transaction not found.'));
-          }
+          setUncategorizedTransactions(typedData);
+          setInitialTotal(1);
+          const initialCache = { [initialTransactionId]: typedData[0] };
+          txCacheRef.current = initialCache;
+          setTxCache(initialCache);
+          currentTxIdRef.current = initialTransactionId;
+          setCurrentTxId(initialTransactionId);
+          applySelectionForTransaction(initialTransactionId);
+        } else {
+          setError(t('Transaction not found.'));
         }
-      } catch (err) {
-        setError(getErrorMessage(err));
-      } finally {
-        setIsLocalLoading(false);
       }
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsLocalLoading(false);
     }
+  });
+  useEffect(() => {
     void init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bulk, initialTransactionId, t]);
 
   const currentTx = currentTxId ? txCache[currentTxId] || null : null;
@@ -408,19 +407,23 @@ export function useAICategorizeSession({
   };
 
   // Fetch prediction for the current active transaction
-  useEffect(() => {
+  const fetchCurrentPrediction = useEffectEvent(() => {
     if (currentTx) {
       void fetchPrediction(currentTx.id, currentTx['payee.name'] ?? undefined);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    fetchCurrentPrediction();
   }, [currentTx?.id]);
 
   // Pre-load predictions for the next lookahead transactions in the background
-  useEffect(() => {
+  const fetchLookaheadPredictions = useEffectEvent(() => {
     lookaheadTxs.forEach(tx => {
       void fetchPrediction(tx.id, tx['payee.name'] ?? undefined);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    fetchLookaheadPredictions();
   }, [lookaheadTxs]);
 
   const onAccept = async () => {

@@ -12,17 +12,12 @@ export function filterHiddenItems(
   showUncategorized?: boolean,
   groupByLabel?: string,
 ) {
-  const showHide = data
-    .filter(
-      e =>
-        showHiddenCategories ||
-        (e.categoryHidden === false && e.categoryGroupHidden === false),
-    )
-    .filter(e => showOffBudget || e.accountOffBudget === false)
-    .filter(
-      e =>
-        showUncategorized || e.category !== null || e.accountOffBudget === true,
-    );
+  const showHide = filterReportTransactions(
+    data,
+    showOffBudget,
+    showHiddenCategories,
+    showUncategorized,
+  );
 
   const groupsByCategory = isCategoryGroup(groupByLabel);
 
@@ -52,4 +47,23 @@ export function filterHiddenItems(
         return false;
     }
   });
+}
+
+export function filterReportTransactions(
+  data: QueryDataEntity[],
+  showOffBudget?: boolean,
+  showHiddenCategories?: boolean,
+  showUncategorized?: boolean,
+) {
+  return data
+    .filter(
+      e =>
+        showHiddenCategories ||
+        (e.categoryHidden === false && e.categoryGroupHidden === false),
+    )
+    .filter(e => showOffBudget || e.accountOffBudget === false)
+    .filter(
+      e =>
+        showUncategorized || e.category !== null || e.accountOffBudget === true,
+    );
 }

@@ -7,9 +7,11 @@ import {
   SvgCheveronDown,
   SvgCheveronRight,
 } from '@actual-app/components/icons/v1';
+import { ModeButton } from '@actual-app/components/mode-button';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
+import { spacing } from '@actual-app/components/tokens';
 import { View } from '@actual-app/components/view';
 
 import { FinancialText } from '#components/FinancialText';
@@ -20,6 +22,7 @@ import { MonteCarloHelpTooltip } from './MonteCarloHelpTooltip';
 import {
   getMonteCarloPotLabel,
   getMonteCarloSurplusPotLabel,
+  getPotInvestmentAtAge,
 } from './monteCarloSimulation';
 import type {
   MonteCarloIncomeStream,
@@ -64,6 +67,8 @@ type MonteCarloRunDetailTableProps = {
   withdrawalRule: MonteCarloWithdrawalRuleConfig;
   /** Rendered between the header row and the table - the cashflow chart */
   cashflowGraph?: ReactNode;
+  /** The pot balances chart; with both charts given, buttons switch between them */
+  potBalancesGraph?: ReactNode;
   onBack: () => void;
 };
 
@@ -78,6 +83,7 @@ export function MonteCarloRunDetailTable({
   incomeStreams,
   withdrawalRule,
   cashflowGraph,
+  potBalancesGraph,
   onBack,
 }: MonteCarloRunDetailTableProps) {
   const { t } = useTranslation();
@@ -85,10 +91,45 @@ export function MonteCarloRunDetailTable({
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   // Years whose detailed working is shown under the summary
   const [workingYears, setWorkingYears] = useState<Set<number>>(new Set());
+  // Which of the two single-run charts sits above the table; one at a
+  // time keeps the table within reach
+  const [chartView, setChartView] = useState<'cashflow' | 'pots'>('cashflow');
 
   const hasIncome = incomeStreams.length > 0;
   const surplusPotName = getMonteCarloSurplusPotLabel(pots, t);
   const hasSurplusPot = pots.some(pot => pot.isSurplus);
+  // Only worth a column when something changes over the plan
+  const hasInvestmentPhases = pots.some(pot => pot.investmentPhases.length > 0);
+
+  // "72% stocks, 28% bonds" for a mix (only the parts the pot holds), or
+  // the return a mix-less pot draws around, in the year of the given age
+  function getAllocationText(pot: MonteCarloPot, age: number) {
+    const investment = getPotInvestmentAtAge(pot, startAge, age);
+    if (investment.weights == null) {
+      return t('Custom, {{mean}} return', {
+        mean: `${(investment.mean * 100).toFixed(1)}%`,
+      });
+    }
+    const percent = (share: number) => Math.round(share * 100);
+    const parts: string[] = [];
+    if (percent(investment.weights.stocks) > 0) {
+      parts.push(
+        t('{{share}}% stocks', { share: percent(investment.weights.stocks) }),
+      );
+    }
+    if (percent(investment.weights.bonds) > 0) {
+      parts.push(
+        t('{{share}}% bonds', { share: percent(investment.weights.bonds) }),
+      );
+    }
+    if (percent(investment.weights.cash) > 0) {
+      parts.push(
+        t('{{share}}% cash', { share: percent(investment.weights.cash) }),
+      );
+    }
+    return parts.join(', ');
+  }
+
   const lastRow = rows[rows.length - 1];
   const hasSurvived = lastRow != null && lastRow.endBalance > 0;
   // Present whenever the plan has inflation enabled
@@ -432,9 +473,27 @@ export function MonteCarloRunDetailTable({
         </Button>
       </View>
 
-      {cashflowGraph}
+      {cashflowGraph != null && potBalancesGraph != null && (
+        <View style={{ flexDirection: 'row', gap: 5, marginBottom: 10 }}>
+          <ModeButton
+            selected={chartView === 'cashflow'}
+            onSelect={() => setChartView('cashflow')}
+          >
+            <Trans>Cashflow</Trans>
+          </ModeButton>
+          <ModeButton
+            selected={chartView === 'pots'}
+            onSelect={() => setChartView('pots')}
+          >
+            <Trans>Pots</Trans>
+          </ModeButton>
+        </View>
+      )}
+      {chartView === 'pots' && potBalancesGraph != null
+        ? potBalancesGraph
+        : (cashflowGraph ?? potBalancesGraph)}
 
-      <Text style={{ fontSize: 13, color: theme.pageText, marginBottom: 10 }}>
+      <Text size="medium" style={{ color: theme.pageText, marginBottom: 10 }}>
         <PrivacyFilter>
           <FinancialText as="span">{getTotalsSentence()}</FinancialText>
         </PrivacyFilter>
@@ -670,10 +729,10 @@ export function MonteCarloRunDetailTable({
                     style={{
                       borderBottom: `1px solid ${theme.tableBorder}`,
                       padding: '10px 12px 12px 46px',
-                      gap: 4,
+                      gap: spacing.xs,
                     }}
                   >
-                    <Text style={{ fontSize: 13, color: theme.pageText }}>
+                    <Text size="medium" style={{ color: theme.pageText }}>
                       <PrivacyFilter>
                         <FinancialText as="span">
                           {buildMonteCarloYearStory({
@@ -704,9 +763,9 @@ export function MonteCarloRunDetailTable({
                       )}
                     </Button>
                     {showsWorking && (
-                      <View style={{ gap: 4, marginTop: 6 }}>
+                      <View style={{ gap: spacing.xs, marginTop: 6 }}>
                         {row.ruleExplanation != null && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {getRuleExplanationSentence(
@@ -717,7 +776,7 @@ export function MonteCarloRunDetailTable({
                           </Text>
                         )}
                         {row.minimumApplied && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {t(
@@ -734,7 +793,7 @@ export function MonteCarloRunDetailTable({
                           </Text>
                         )}
                         {row.income > 0 && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {row.incomeTax > 0
@@ -768,7 +827,7 @@ export function MonteCarloRunDetailTable({
                             </PrivacyFilter>
                           </Text>
                         )}
-                        <Text style={{ fontSize: 13, color: theme.pageText }}>
+                        <Text size="medium" style={{ color: theme.pageText }}>
                           <PrivacyFilter>
                             <FinancialText as="span">
                               {row.taxPaid > 0
@@ -789,7 +848,7 @@ export function MonteCarloRunDetailTable({
                             </FinancialText>
                           </PrivacyFilter>
                         </Text>
-                        <Text style={{ fontSize: 13, color: theme.pageText }}>
+                        <Text size="medium" style={{ color: theme.pageText }}>
                           <PrivacyFilter>
                             <FinancialText as="span">
                               {getSpentSentence(row)}
@@ -797,7 +856,7 @@ export function MonteCarloRunDetailTable({
                           </PrivacyFilter>
                         </Text>
                         {row.surplusSaved > 0 && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {getSavedSentence(row)}
@@ -806,7 +865,7 @@ export function MonteCarloRunDetailTable({
                           </Text>
                         )}
                         {row.unspentIncome > 0 && row.surplusSaved === 0 && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {t(
@@ -823,7 +882,7 @@ export function MonteCarloRunDetailTable({
                           </Text>
                         )}
                         {row.contributions > 0 && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {t(
@@ -840,7 +899,7 @@ export function MonteCarloRunDetailTable({
                           </Text>
                         )}
                         {row.feesPaid > 0 && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {t(
@@ -854,7 +913,7 @@ export function MonteCarloRunDetailTable({
                           </Text>
                         )}
                         {row.inaccessibleBalance != null && (
-                          <Text style={{ fontSize: 13, color: theme.pageText }}>
+                          <Text size="medium" style={{ color: theme.pageText }}>
                             <PrivacyFilter>
                               <FinancialText as="span">
                                 {t(
@@ -877,7 +936,9 @@ export function MonteCarloRunDetailTable({
                       <View
                         style={{
                           marginTop: 14,
-                          maxWidth: hasContributions ? 1150 : 1010,
+                          maxWidth:
+                            (hasContributions ? 1150 : 1010) +
+                            (hasInvestmentPhases ? 170 : 0),
                         }}
                       >
                         <View
@@ -897,6 +958,27 @@ export function MonteCarloRunDetailTable({
                           >
                             <Trans>Pot</Trans>
                           </Text>
+                          {hasInvestmentPhases && (
+                            <View
+                              style={{
+                                width: 160,
+                                flexShrink: 0,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <Text style={GROUP_HEADING_STYLE}>
+                                <Trans>Allocation</Trans>
+                              </Text>
+                              <MonteCarloHelpTooltip placement="bottom start">
+                                <Trans>
+                                  What the pot was invested in that year,
+                                  following its investment phases.
+                                </Trans>
+                              </MonteCarloHelpTooltip>
+                            </View>
+                          )}
                           <Text
                             style={{
                               ...GROUP_HEADING_STYLE,
@@ -1030,6 +1112,14 @@ export function MonteCarloRunDetailTable({
                               <Text style={{ flex: 1, minWidth: 120 }}>
                                 {getMonteCarloPotLabel(pots, potIndex, t)}
                               </Text>
+                              {hasInvestmentPhases && (
+                                <Text style={{ width: 160, flexShrink: 0 }}>
+                                  {getAllocationText(
+                                    pot,
+                                    startAge + row.year - 1,
+                                  )}
+                                </Text>
+                              )}
                               <Text style={{ ...POT_CELL_STYLE, width: 130 }}>
                                 <PrivacyFilter>
                                   <FinancialText as="span">

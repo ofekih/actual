@@ -162,8 +162,10 @@ import {
   makeTemporaryTransactions,
   selectAscDesc,
   serializeTransaction,
+  trackClearedField,
 } from './table/utils';
 import type {
+  ClearedFieldsByTransaction,
   SerializedTransaction,
   TransactionEditFunction,
   TransactionUpdateFunction,
@@ -704,7 +706,7 @@ function PayeeCell({
               modal: {
                 name: 'payee-autocomplete',
                 options: {
-                  onSelect: (payeeId: PayeeEntity['id']) => {
+                  onSelect: (payeeId: PayeeEntity['id'] | null) => {
                     onUpdate('payee', payeeId);
                   },
                 },
@@ -1424,8 +1426,23 @@ const Transaction = memo(function Transaction({
   // Row-level drag must not compete with inline editors (notes, amounts,
   // payee, etc.): otherwise clicks/drags inside inputs start a reorder drag
   // instead of moving the caret or selecting text (see GH #7567).
+  // The running balance is read-only, so pause the drag while the mouse is
+  // pressed on it to let the user select and copy the value (see GH #7833).
+  const [isSelectingBalance, setIsSelectingBalance] = useState(false);
+  useEffect(() => {
+    if (!isSelectingBalance) return;
+    const stopSelecting = () => setIsSelectingBalance(false);
+    // `blur` covers a mouseup the window never gets (e.g. alt-tab while pressed)
+    window.addEventListener('mouseup', stopSelecting);
+    window.addEventListener('blur', stopSelecting);
+    return () => {
+      window.removeEventListener('mouseup', stopSelecting);
+      window.removeEventListener('blur', stopSelecting);
+    };
+  }, [isSelectingBalance]);
   const allowRowDrag =
     canDrag &&
+    !isSelectingBalance &&
     !isOnlyTransactionOnDate &&
     (!editing || focusedField === 'select' || focusedField === 'cleared');
   const { dragRef, dragProps } = useDrag<TransactionEntity>({
@@ -2144,6 +2161,11 @@ const Transaction = memo(function Transaction({
             width={amountColumnWidths.balance}
             textAlign="right"
             privacyFilter
+            onMouseDown={e => {
+              // Only the primary button selects text; a right-click opens the
+              // context menu, which can swallow the mouseup
+              if (e.button === 0) setIsSelectingBalance(true);
+            }}
           />
         );
       case 'cleared':
@@ -2707,6 +2729,7 @@ type TransactionTableInnerProps = {
   onApplyRules: (
     transaction: TransactionEntity,
     field: string,
+    clearedFields?: ClearedFieldsByTransaction,
   ) => Promise<TransactionEntity>;
   onSplit: (id: TransactionEntity['id']) => void;
   onAddSplit: (id: TransactionEntity['id']) => void;
@@ -3121,6 +3144,7 @@ export type TransactionTableProps = {
   onApplyRules: (
     transaction: TransactionEntity,
     field: string | null,
+    clearedFields?: ClearedFieldsByTransaction,
   ) => Promise<TransactionEntity>;
   onSplit: (id: TransactionEntity['id']) => TransactionEntity['id'];
   onAddSplit: (id: TransactionEntity['id']) => TransactionEntity['id'];
@@ -3307,7 +3331,7 @@ export const TransactionTable = forwardRef(
 
       prevSplitsExpanded.current = splitsExpanded;
       return result;
-    }, [props.transactions, splitsExpanded]);
+    }, [prevSplitsExpanded, props.transactions, splitsExpanded]);
 
     const transactionMap = useMemo(() => {
       return new Map(
@@ -3387,6 +3411,14 @@ export const TransactionTable = forwardRef(
     const afterSaveFunc = useRef<null | (() => void)>(null);
     const [_, forceRerender] = useState({});
     const selectedItems = useSelectedItems();
+    // Fields the user explicitly emptied while entering the new transaction,
+    // tracked per row id so a clear on one split row doesn't affect its
+    // siblings. Rules re-run on every field commit, and they may not re-fill
+    // these (e.g. a cleared pre-assigned category must stay cleared until the
+    // row is added or reset).
+    const clearedFields = useRef(
+      new Map<TransactionEntity['id'], Set<string>>(),
+    );
 
     latestState.current = {
       newTransactions: newTransactions ?? [],
@@ -3398,6 +3430,7 @@ export const TransactionTable = forwardRef(
     // Derive new transactions from the `isAdding` prop
     if (prevIsAdding !== props.isAdding) {
       if (!prevIsAdding && props.isAdding) {
+        clearedFields.current.clear();
         setNewTransactions(
           makeTemporaryTransactions(
             props.currentAccountId,
@@ -3428,6 +3461,7 @@ export const TransactionTable = forwardRef(
         } else {
           const lastDate =
             transactions.length > 0 ? transactions[0].date : null;
+          clearedFields.current.clear();
           setNewTransactions(
             makeTemporaryTransactions(
               props.currentAccountId,
@@ -3480,6 +3514,7 @@ export const TransactionTable = forwardRef(
                 }),
               );
               // Reset form like onAddTemporary does
+              clearedFields.current.clear();
               setNewTransactions(
                 makeTemporaryTransactions(
                   props.currentAccountId,
@@ -3558,17 +3593,34 @@ export const TransactionTable = forwardRef(
     }
 
     function getFieldsNewTransaction(item?: TransactionEntity) {
+      const rows = newTransactions ?? [];
+      // Action buttons render under the split lines, after the last child.
+      const hasSplitChildren =
+        item?.is_parent === true && rows.some(row => row.parent_id === item.id);
       const fields = [
         'select',
         ...getFocusableFields(),
-        'cancel',
-        'schedule',
-        'add',
+        ...(hasSplitChildren ? [] : ['cancel', 'schedule', 'add']),
       ];
 
-      return getFields(item, fields).filter(
+      const resolved = getFields(item, fields).filter(
         f => f !== 'schedule' || (item ? isFutureTransaction(item) : false),
       );
+
+      const isLastSplitChild =
+        item?.is_child === true && rows[rows.length - 1]?.id === item.id;
+      if (!isLastSplitChild || !item) {
+        return resolved;
+      }
+
+      const parent = rows.find(row => row.id === item.parent_id);
+      const showSchedule = isFutureTransaction(parent ?? item);
+      return [
+        ...resolved,
+        'cancel',
+        ...(showSchedule ? ['schedule'] : []),
+        'add',
+      ];
     }
 
     function getFieldsTableTransaction(item?: TransactionEntity) {
@@ -3695,14 +3747,14 @@ export const TransactionTable = forwardRef(
       }
     }
 
-    const onScheduleTemporary = useCallback(() => {
+    const onScheduleTemporary = () => {
       afterSave(() => {
         shouldSchedule.current = true;
         forceRerender({});
       });
-    }, []);
+    };
 
-    const onAddTemporary = useCallback(() => {
+    const onAddTemporary = () => {
       afterSave(() => {
         shouldAdd.current = true;
         // A little hacky - this forces a rerender which will cause the
@@ -3710,14 +3762,14 @@ export const TransactionTable = forwardRef(
         // committed (the input could still be saving a value).
         forceRerender({});
       });
-    }, []);
+    };
 
-    const onAddAndCloseTemporary = useCallback(() => {
+    const onAddAndCloseTemporary = () => {
       afterSave(() => {
         shouldAddAndClose.current = true;
         forceRerender({});
       });
-    }, []);
+    };
 
     const {
       onSave: onSaveProp,
@@ -3746,9 +3798,22 @@ export const TransactionTable = forwardRef(
 
         if (isTemporaryId(transaction.id)) {
           if (onApplyRulesProp) {
+            // Remember fields the user explicitly emptied so later rule runs
+            // (triggered by edits to other fields) can't re-fill them either.
+            // `transaction` is the row that was actually edited (a split
+            // child or the parent), so track the clear against its own id.
+            if (updatedFieldName !== null) {
+              trackClearedField(
+                clearedFields.current,
+                transaction,
+                updatedFieldName,
+              );
+            }
+
             groupedTransaction = await onApplyRulesProp(
               groupedTransaction,
               updatedFieldName,
+              clearedFields.current,
             );
           }
 
@@ -3764,23 +3829,26 @@ export const TransactionTable = forwardRef(
           onSaveProp(groupedTransaction);
         }
       },
-      [onSaveProp, onApplyRulesProp],
+      [latestState, onSaveProp, onApplyRulesProp],
     );
 
-    const onDelete = useCallback((id: TransactionEntity['id']) => {
-      const temporary = isTemporaryId(id);
+    const onDelete = useCallback(
+      (id: TransactionEntity['id']) => {
+        const temporary = isTemporaryId(id);
 
-      if (temporary) {
-        const newTrans = latestState.current.newTransactions;
+        if (temporary) {
+          const newTrans = latestState.current.newTransactions;
 
-        if (id === newTrans[0].id) {
-          // You can never delete the parent new transaction
-          return;
+          if (id === newTrans[0].id) {
+            // You can never delete the parent new transaction
+            return;
+          }
+
+          setNewTransactions(deleteTransaction(newTrans, id).data);
         }
-
-        setNewTransactions(deleteTransaction(newTrans, id).data);
-      }
-    }, []);
+      },
+      [latestState],
+    );
 
     const onBatchDelete = useCallback(
       (ids: TransactionEntity['id'][]) => {
@@ -3843,24 +3911,19 @@ export const TransactionTable = forwardRef(
         if (isTemporaryId(id)) {
           const { newNavigator } = latestState.current;
           const newTrans = latestState.current.newTransactions;
-          const { data, diff } = splitTransaction(
+          const { data } = splitTransaction(
             newTrans,
             id,
             makeEmptySplitSubtransactions,
           );
           setNewTransactions(data);
 
-          // Jump next to "debit" field if it is empty
-          // Otherwise jump to the same field as before, but downwards
-          // to the added split transaction
-          if (newTrans[0].amount === null) {
-            newNavigator.onEdit(newTrans[0].id, 'debit');
-          } else {
-            newNavigator.onEdit(
-              diff.added[0].id,
-              latestState.current.newNavigator.focusedField,
-            );
-          }
+          // Stay on the parent amount field when split is first enabled
+          // so the user can enter the parent amount before the split lines.
+          newNavigator.onEdit(
+            newTrans[0].id,
+            newTrans[0].amount > 0 ? 'credit' : 'debit',
+          );
         } else {
           const trans = latestState.current.transactions.find(t => t.id === id);
           const newId = onSplitProp(id);
@@ -3878,7 +3941,7 @@ export const TransactionTable = forwardRef(
           }
         }
       };
-    }, [onSplitProp, splitsExpandedDispatch]);
+    }, [latestState, onSplitProp, splitsExpandedDispatch]);
 
     const { onAddSplit: onAddSplitProp } = props;
 
@@ -3905,7 +3968,7 @@ export const TransactionTable = forwardRef(
           );
         }
       },
-      [onAddSplitProp],
+      [latestState, onAddSplitProp],
     );
 
     const onDistributeRemainder = useCallback(
@@ -4035,10 +4098,11 @@ export const TransactionTable = forwardRef(
           }
         }
       },
-      [onSave],
+      [latestState, onSave],
     );
 
     function onCloseAddTransaction() {
+      clearedFields.current.clear();
       setNewTransactions(
         makeTemporaryTransactions(
           props.currentAccountId,

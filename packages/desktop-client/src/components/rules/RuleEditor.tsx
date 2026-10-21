@@ -241,8 +241,8 @@ function EditorButtons({ onAdd, onDelete }) {
 function FieldError({ type }) {
   return (
     <Text
+      size="small"
       style={{
-        fontSize: 12,
         textAlign: 'center',
         color: theme.errorText,
         marginBottom: 5,
@@ -558,8 +558,8 @@ function ActionEditor({
             </View>
             {templated && (
               <Text
+                size="medium"
                 style={{
-                  ...styles.smallText,
                   color: theme.warningText,
                   marginTop: 3,
                 }}
@@ -1448,8 +1448,8 @@ export function RuleEditor({
                       style={{ justifyContent: 'space-between' }}
                     >
                       <Text
+                        size="medium"
                         style={{
-                          ...styles.smallText,
                           marginBottom: '10px',
                         }}
                       >

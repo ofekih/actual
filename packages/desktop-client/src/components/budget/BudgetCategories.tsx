@@ -131,13 +131,11 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
             ...(collapsedGroupIds.includes(group.id)
               ? []
               : groupCategories || []
-            ).map(
-              (cat): BudgetItem => ({
-                type: 'expense-category',
-                value: cat,
-                group,
-              }),
-            ),
+            ).map((cat): BudgetItem => ({
+              type: 'expense-category',
+              value: cat,
+              group,
+            })),
           ];
         }),
       );
@@ -161,12 +159,10 @@ export const BudgetCategories = memo<BudgetCategoriesProps>(
             : incomeGroup.categories?.filter(
                 cat => showHiddenCategories || !cat.hidden,
               ) || []
-          ).map(
-            (cat): BudgetItem => ({
-              type: 'income-category',
-              value: cat,
-            }),
-          ),
+          ).map((cat): BudgetItem => ({
+            type: 'income-category',
+            value: cat,
+          })),
         );
 
         if (!cspOverride) {

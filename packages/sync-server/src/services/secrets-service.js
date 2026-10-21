@@ -42,7 +42,7 @@ class SecretsDb {
     }
 
     const secretKey = getSecretKey(name, fileId);
-    this.debug(`setting secret '${name}' to '${value}'`);
+    this.debug(`setting secret '${name}'`);
     return this.db.mutate(
       `INSERT OR REPLACE INTO secrets (name, value) VALUES (?, ?)`,
       [secretKey, value],
