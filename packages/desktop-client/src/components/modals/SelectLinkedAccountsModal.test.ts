@@ -9,6 +9,7 @@ import {
   getDefaultStartingSettings,
   getSelectableAccountOptions,
   resolveStartingSettings,
+  toStartingBalanceSetting,
 } from './SelectLinkedAccountsModal';
 
 function makeLocalAccount(
@@ -203,5 +204,19 @@ describe('resolveStartingSettings', () => {
 describe('getDefaultStartingSettings', () => {
   it('does not include a starting balance', () => {
     expect(getDefaultStartingSettings().amount).toBeUndefined();
+  });
+});
+
+describe('toStartingBalanceSetting', () => {
+  it('treats 0 as automatic so focusing the field cannot override the bank balance', () => {
+    expect(toStartingBalanceSetting(0)).toBeUndefined();
+    expect(
+      resolveStartingSettings({ date: '2026-01-01', amount: undefined }),
+    ).toEqual({ startingDate: '2026-01-01', startingBalance: undefined });
+  });
+
+  it('keeps a balance the user entered', () => {
+    expect(toStartingBalanceSetting(123456)).toBe(123456);
+    expect(toStartingBalanceSetting(-5000)).toBe(-5000);
   });
 });

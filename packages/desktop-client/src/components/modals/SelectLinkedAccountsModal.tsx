@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
 import { useResponsive } from '@actual-app/components/hooks/useResponsive';
-import { Input } from '@actual-app/components/input';
+import { baseInputStyle, Input } from '@actual-app/components/input';
 import { Select } from '@actual-app/components/select';
 import { SpaceBetween } from '@actual-app/components/space-between';
 import { styles } from '@actual-app/components/styles';
@@ -755,6 +755,16 @@ export function resolveStartingSettings(
   };
 }
 
+/**
+ * Map what the user entered in the starting balance field to the setting we
+ * keep. Zero means "automatic" (the server derives the opening balance from
+ * the bank), so focusing and leaving the field cannot silently override the
+ * real balance with 0, and entering 0 is the way back to automatic.
+ */
+export function toStartingBalanceSetting(amount: number): number | undefined {
+  return amount === 0 ? undefined : amount;
+}
+
 type SharedAccountRowProps = {
   externalAccount: ExternalAccount;
   chosenAccount: { id: string; name: string } | undefined;
@@ -1041,8 +1051,8 @@ function StartingOptionsFields({
         </Field>
         {/* Starting Balance */}
         <Field width={110} truncate={false} style={{ textAlign: 'right' }}>
-          <AmountInput
-            value={customStartingDate.amount ?? 0}
+          <StartingBalanceInput
+            amount={customStartingDate.amount}
             zeroSign={zeroSign}
             onUpdate={amount =>
               onSetCustomStartingDate(accountId, {
@@ -1050,7 +1060,6 @@ function StartingOptionsFields({
                 amount,
               })
             }
-            style={{ width: '100%' }}
           />
         </Field>
       </>
@@ -1099,8 +1108,8 @@ function StartingOptionsFields({
           >
             <Trans>Balance on that date:</Trans>
           </Text>
-          <AmountInput
-            value={customStartingDate.amount ?? 0}
+          <StartingBalanceInput
+            amount={customStartingDate.amount}
             zeroSign={zeroSign}
             onUpdate={amount =>
               onSetCustomStartingDate(accountId, {
@@ -1108,11 +1117,65 @@ function StartingOptionsFields({
                 amount,
               })
             }
-            style={{ width: '100%' }}
           />
         </View>
       </View>
     </View>
+  );
+}
+
+type StartingBalanceInputProps = {
+  amount: number | undefined;
+  zeroSign: '-' | '+';
+  onUpdate: (amount: number | undefined) => void;
+};
+
+function StartingBalanceInput({
+  amount,
+  zeroSign,
+  onUpdate,
+}: StartingBalanceInputProps) {
+  const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (amount === undefined && !isEditing) {
+    return (
+      <Tooltip
+        content={t(
+          'Calculated from the balance your bank reports and the imported transactions. Click to enter a balance yourself.',
+        )}
+      >
+        <Button
+          variant="bare"
+          aria-label={t('Enter a starting balance')}
+          onPress={() => setIsEditing(true)}
+          style={{
+            ...baseInputStyle,
+            width: '100%',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Text style={{ color: theme.pageTextSubdued, fontStyle: 'italic' }}>
+            <Trans>Auto</Trans>
+          </Text>
+        </Button>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip content={t('Enter 0 to calculate the balance automatically.')}>
+      <AmountInput
+        focused={isEditing}
+        value={amount ?? 0}
+        zeroSign={zeroSign}
+        onUpdate={next => {
+          setIsEditing(false);
+          onUpdate(toStartingBalanceSetting(next));
+        }}
+        style={{ width: '100%' }}
+      />
+    </Tooltip>
   );
 }
 
