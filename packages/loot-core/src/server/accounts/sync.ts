@@ -552,7 +552,7 @@ async function downloadAutohubAssetValue(id: string, acctId: string) {
 
     const data = await res.json();
 
-    // Autohub proxy returns: body: { depreciation_data: [ { private_party_value: 12345 } ] }
+    // Autohub proxy returns: body: { depreciation_data: [ { trade_in_value: 12345, private_party_value: 13000 } ] }
     const depreciationData = data?.body?.depreciation_data;
     if (!depreciationData || !depreciationData.length) {
       throw BankSyncError(
@@ -561,8 +561,10 @@ async function downloadAutohubAssetValue(id: string, acctId: string) {
       );
     }
 
-    // Get the current year's private party value (first item in the array)
-    const currentValue = depreciationData[0].private_party_value;
+    // Use the current year's trade-in value (first item in the array). It is a
+    // more conservative estimate of what the asset is worth than the
+    // private-party value, which can exceed the original sticker price.
+    const currentValue = depreciationData[0].trade_in_value;
     if (typeof currentValue !== 'number') {
       throw BankSyncError('API_ERROR', 'Invalid value returned from Autohub');
     }

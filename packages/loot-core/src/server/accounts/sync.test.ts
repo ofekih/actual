@@ -1241,7 +1241,9 @@ describe('SimpleFin batch sync', () => {
         ok: true,
         json: async () => ({
           body: {
-            depreciation_data: [{ private_party_value: 15000 }],
+            depreciation_data: [
+              { trade_in_value: 15000, private_party_value: 18000 },
+            ],
           },
         }),
       });
@@ -1266,7 +1268,9 @@ describe('SimpleFin batch sync', () => {
         ok: true,
         json: async () => ({
           body: {
-            depreciation_data: [{ private_party_value: 14000 }],
+            depreciation_data: [
+              { trade_in_value: 14000, private_party_value: 17000 },
+            ],
           },
         }),
       });
@@ -1300,7 +1304,9 @@ describe('SimpleFin batch sync', () => {
         ok: true,
         json: async () => ({
           body: {
-            depreciation_data: [{ private_party_value: 12000 }],
+            depreciation_data: [
+              { trade_in_value: 12000, private_party_value: 14000 },
+            ],
           },
         }),
       });
