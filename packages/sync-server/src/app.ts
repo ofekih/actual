@@ -21,6 +21,7 @@ import * as secretApp from './app-secrets';
 import * as simpleFinApp from './app-simplefin/app-simplefin';
 import * as syncApp from './app-sync';
 import { config } from './load-config';
+import { listen } from './util/server-listen';
 
 const debugSensitive = createDebug('actual-sensitive:server');
 
@@ -183,21 +184,21 @@ if (isDev) {
   );
 }
 
-function parseHTTPSConfig(value: string) {
+export function parseHTTPSConfig(value: string) {
   if (value.startsWith('-----BEGIN')) {
-    return value;
+    // Values passed via environment variables may escape newlines as `\n`.
+    // Restore them so the PEM data is valid.
+    return value.replace(/\\n/g, '\n');
   }
   return fs.readFileSync(value);
 }
 
-function sendServerStartedMessage() {
+function sendServerStartedMessage(address: string) {
   // Signify to any parent process that the server has started. Used in electron desktop app
   // oxlint-disable-next-line typescript/ban-ts-comment
   // @ts-ignore-error electron types
   process.parentPort?.postMessage({ type: 'server-started' });
-  console.log(
-    'Listening on ' + config.get('hostname') + ':' + config.get('port') + '...',
-  );
+  console.log('Listening on ' + address + ':' + config.get('port') + '...');
 }
 
 export async function run() {
@@ -229,12 +230,14 @@ export async function run() {
       key: parseHTTPSConfig(config.get('https.key')),
       cert: parseHTTPSConfig(config.get('https.cert')),
     };
-    https.createServer(httpsOptions, app).listen(port, hostname, () => {
-      sendServerStartedMessage();
-    });
+    listen(
+      https.createServer(httpsOptions, app),
+      port,
+      hostname,
+      sendServerStartedMessage,
+    );
   } else {
-    app.listen(port, hostname, () => {
-      sendServerStartedMessage();
-    });
+    const http = await import('node:http');
+    listen(http.createServer(app), port, hostname, sendServerStartedMessage);
   }
 }

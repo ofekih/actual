@@ -353,7 +353,11 @@ function CustomReportInner({
         interval === 'Weekly'
           ? 'dayFromDate'
           : (((ReportOptions.intervalMap.get(interval) || 'Day').toLowerCase() +
-              'FromDate') as 'dayFromDate' | 'monthFromDate' | 'yearFromDate');
+              'FromDate') as
+              | 'dayFromDate'
+              | 'monthFromDate'
+              | 'quarterFromDate'
+              | 'yearFromDate');
 
       const earliestInterval =
         interval === 'Weekly'
@@ -378,7 +382,9 @@ function CustomReportInner({
             ? monthUtils.currentDay()
             : interval === 'Yearly'
               ? monthUtils.currentYear()
-              : monthUtils.currentMonth();
+              : interval === 'Quarterly'
+                ? monthUtils.currentQuarter()
+                : monthUtils.currentMonth();
 
       const maxInterval =
         latestInterval > currentInterval ? latestInterval : currentInterval;
