@@ -90,6 +90,7 @@ export type dateRangeProps = {
   Daily: boolean;
   Weekly: boolean;
   Monthly: boolean;
+  Quarterly: boolean;
   Yearly: boolean;
 };
 
@@ -102,6 +103,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: false,
+    Quarterly: false,
     Yearly: false,
   },
   {
@@ -112,6 +114,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: false,
+    Quarterly: false,
     Yearly: false,
   },
   {
@@ -122,6 +125,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: true,
+    Quarterly: false,
     Yearly: false,
   },
   {
@@ -132,6 +136,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: true,
+    Quarterly: false,
     Yearly: false,
   },
   {
@@ -142,6 +147,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: true,
+    Quarterly: true,
     Yearly: false,
   },
   {
@@ -152,6 +158,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: true,
+    Quarterly: true,
     Yearly: false,
   },
   {
@@ -162,6 +169,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: true,
+    Quarterly: false,
     Yearly: false,
   },
   {
@@ -172,6 +180,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: true,
     Weekly: true,
     Monthly: true,
+    Quarterly: false,
     Yearly: false,
   },
   {
@@ -182,6 +191,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: false,
     Weekly: false,
     Monthly: true,
+    Quarterly: true,
     Yearly: false,
   },
   {
@@ -192,6 +202,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: false,
     Weekly: false,
     Monthly: true,
+    Quarterly: true,
     Yearly: false,
   },
   {
@@ -202,6 +213,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: false,
     Weekly: true,
     Monthly: true,
+    Quarterly: true,
     Yearly: true,
   },
   {
@@ -212,6 +224,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: false,
     Weekly: true,
     Monthly: true,
+    Quarterly: true,
     Yearly: true,
   },
   {
@@ -222,6 +235,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: false,
     Weekly: true,
     Monthly: true,
+    Quarterly: true,
     Yearly: true,
   },
   {
@@ -232,6 +246,7 @@ const dateRangeOptions: dateRangeProps[] = [
     Daily: false,
     Weekly: true,
     Monthly: true,
+    Quarterly: true,
     Yearly: true,
   },
 ];
@@ -239,12 +254,13 @@ const dateRangeOptions: dateRangeProps[] = [
 type intervalOptionsProps = {
   description: string;
   key: string;
-  name: 'Day' | 'Week' | 'Month' | 'Year';
+  name: 'Day' | 'Week' | 'Month' | 'Quarter' | 'Year';
   format: string;
   range:
     | 'dayRangeInclusive'
     | 'weekRangeInclusive'
     | 'rangeInclusive'
+    | 'quarterRangeInclusive'
     | 'yearRangeInclusive';
 };
 
@@ -271,6 +287,13 @@ const intervalOptions: intervalOptionsProps[] = [
     range: 'rangeInclusive',
   },
   {
+    description: t('Quarterly'),
+    key: 'Quarterly',
+    name: 'Quarter',
+    format: "QQQ ''yy",
+    range: 'quarterRangeInclusive',
+  },
+  {
     description: t('Yearly'),
     key: 'Yearly',
     name: 'Year',
@@ -292,7 +315,7 @@ export const ReportOptions = {
   dateRangeMap: new Map(dateRangeOptions.map(item => [item.key, item.name])),
   dateRangeType: new Map(dateRangeOptions.map(item => [item.key, item.type])),
   interval: intervalOptions,
-  intervalMap: new Map<string, 'Day' | 'Week' | 'Month' | 'Year'>(
+  intervalMap: new Map<string, 'Day' | 'Week' | 'Month' | 'Quarter' | 'Year'>(
     intervalOptions.map(item => [item.key, item.name]),
   ),
   intervalFormat: new Map(intervalOptions.map(item => [item.key, item.format])),
@@ -301,13 +324,15 @@ export const ReportOptions = {
     | 'dayRangeInclusive'
     | 'weekRangeInclusive'
     | 'rangeInclusive'
+    | 'quarterRangeInclusive'
     | 'yearRangeInclusive'
   >(intervalOptions.map(item => [item.key, item.range])),
 };
 
 // Only Daily and Weekly labels spell out a day and a month, so they are the
 // only intervals whose ordering a date-format preference can disagree with.
-// Monthly ("MMM ''yy") and Yearly ("yyyy") are unambiguous either way.
+// Monthly ("MMM ''yy"), Quarterly ("QQQ ''yy") and Yearly ("yyyy") are
+// unambiguous either way.
 const dayLevelIntervals = new Set(['Daily', 'Weekly']);
 
 /**

@@ -119,3 +119,5 @@ actual.config.js
 
 # SimpleFIN Mock Data for local testing
 packages/loot-core/src/server/accounts/simplefin-mock-data.json
+# Mac App Store provisioning profiles, downloaded per machine
+packages/desktop-electron/mas/*.provisionprofile
