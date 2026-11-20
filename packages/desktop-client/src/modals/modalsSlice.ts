@@ -1,4 +1,5 @@
 import { send } from '@actual-app/core/platform/client/connection';
+import type { ApiKey } from '@actual-app/core/server/auth/api-keys';
 import type { IntegerAmount } from '@actual-app/core/shared/util';
 import type { File } from '@actual-app/core/types/file';
 import type {
@@ -43,6 +44,10 @@ export type ConfirmTransactionEditReason =
   | 'deleteReconciled';
 
 export type Modal =
+  | {
+      name: 'api-key';
+      options: { fileId: string; apiKey?: ApiKey; onChange: () => void };
+    }
   | {
       name: 'import-transactions';
       options: {
@@ -144,7 +149,8 @@ export type Modal =
   | {
       name: 'simplefin-init';
       options: {
-        onSuccess: () => void;
+        onSuccess: (perBudgetFile: boolean) => void;
+        credentialSource: BankSyncCredentialSource;
       };
     }
   | {
@@ -493,6 +499,14 @@ export type Modal =
       };
     }
   | {
+      name: 'tag-color';
+      options: {
+        tagName: string;
+        color: string | null;
+        onSelect: (color: string | null) => void;
+      };
+    }
+  | {
       name: 'notes';
       options: {
         id: NoteEntity['id'];
@@ -537,6 +551,7 @@ export type Modal =
         onCarryover?: (carryover: boolean) => void;
         onTransfer?: () => void;
         onCover?: () => void;
+        onFundGoal?: (amount: IntegerAmount) => void;
       };
     }
   | {

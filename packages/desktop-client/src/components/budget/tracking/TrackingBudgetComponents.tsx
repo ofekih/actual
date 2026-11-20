@@ -19,12 +19,14 @@ import { t } from 'i18next';
 
 import { BalanceWithCarryover } from '#components/budget/BalanceWithCarryover';
 import { ClickableCell } from '#components/budget/ClickableCell';
+import { GoalStatus } from '#components/budget/GoalStatus';
 import { makeAmountGrey } from '#components/budget/util';
 import { NotesButton } from '#components/NotesButton';
 import { CellValue, CellValueText } from '#components/spreadsheet/CellValue';
 import { Field, SheetCell } from '#components/table';
 import type { SheetCellProps } from '#components/table';
 import { useCategoryScheduleGoalTemplateIndicator } from '#hooks/useCategoryScheduleGoalTemplateIndicator';
+import { useFeatureFlag } from '#hooks/useFeatureFlag';
 import { useFormat } from '#hooks/useFormat';
 import { useNavigate } from '#hooks/useNavigate';
 import { useSheetValue } from '#hooks/useSheetValue';
@@ -232,6 +234,12 @@ export const CategoryMonth = memo(function CategoryMonth({
 
   const showScheduleIndicator = schedule && scheduleStatus;
 
+  const isGoalTemplatesEnabled = useFeatureFlag('goalTemplatesEnabled');
+  const goal = useTrackingSheetValue(trackingBudget.catGoal(category.id));
+  // Income rows without a goal keep their plain received amount
+  const showsIncomeGoal =
+    category.is_income && isGoalTemplatesEnabled && goal != null;
+
   return (
     <View
       style={{
@@ -408,6 +416,7 @@ export const CategoryMonth = memo(function CategoryMonth({
       </View>
       <Field name="spent" width="flex" style={{ textAlign: 'right' }}>
         <ClickableCell
+          data-testid="category-month-spent"
           onClick={() => onShowActivity(category.id, month)}
           style={{
             justifyContent: showScheduleIndicator
@@ -443,14 +452,29 @@ export const CategoryMonth = memo(function CategoryMonth({
               </Button>
             </View>
           )}
-          <TrackingCellValue
-            binding={trackingBudget.catSumAmount(category.id)}
-            type="financial"
-          >
-            {props => (
-              <CellValueText {...props} style={makeAmountGrey(props.value)} />
-            )}
-          </TrackingCellValue>
+          {showsIncomeGoal ? (
+            // Shows the income goal on the amount received. The wrapper keeps
+            // the goal ring beside the amount, after any schedule indicator
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <BalanceWithCarryover
+                isIncome
+                carryover={trackingBudget.catCarryover(category.id)}
+                balance={trackingBudget.catSumAmount(category.id)}
+                goal={trackingBudget.catGoal(category.id)}
+                budgeted={trackingBudget.catBudgeted(category.id)}
+                longGoal={trackingBudget.catLongGoal(category.id)}
+              />
+            </View>
+          ) : (
+            <TrackingCellValue
+              binding={trackingBudget.catSumAmount(category.id)}
+              type="financial"
+            >
+              {props => (
+                <CellValueText {...props} style={makeAmountGrey(props.value)} />
+              )}
+            </TrackingCellValue>
+          )}
         </ClickableCell>
       </Field>
 
@@ -489,6 +513,18 @@ export const CategoryMonth = memo(function CategoryMonth({
           >
             <BalanceMenu
               categoryId={category.id}
+              header={
+                <GoalStatus
+                  balance={trackingBudget.catBalance(category.id)}
+                  goal={trackingBudget.catGoal(category.id)}
+                  budgeted={trackingBudget.catBudgeted(category.id)}
+                  longGoal={trackingBudget.catLongGoal(category.id)}
+                  style={{
+                    padding: 10,
+                    borderBottom: '1px solid ' + theme.menuBorder,
+                  }}
+                />
+              }
               onCarryover={carryover => {
                 onMenuAction(month, 'carryover', {
                   category: category.id,

@@ -3,7 +3,6 @@ import * as monthUtils from '@actual-app/core/shared/months';
 import type { GroupedEntity } from '@actual-app/core/types/models';
 
 import {
-  categoryLists,
   cspCategoryLists,
   ReportOptions,
 } from '#components/reports/ReportOptions';
@@ -14,6 +13,7 @@ import type { createCustomSpreadsheetProps } from './custom-spreadsheet';
 import { fetchSpreadsheetQueryData } from './fetchSpreadsheetQueryData';
 import { filterEmptyRows } from './filterEmptyRows';
 import { recalculate } from './recalculate';
+import { reportCategoryLists } from './reportCategoryLists';
 import { sortData } from './sortData';
 import {
   determineIntervalRange,
@@ -39,7 +39,14 @@ export function createGroupedSpreadsheet({
   groupBy = '',
   cspCategories = { list: [], grouped: [] },
 }: createCustomSpreadsheetProps) {
-  const [, categoryGroup] = categoryLists(categories);
+  const [, categoryGroup] = reportCategoryLists({
+    categories,
+    conditions,
+    conditionsOp,
+    showOffBudget,
+    showHiddenCategories,
+    showUncategorized,
+  });
   const [, cspCategoryGroup] = cspCategoryLists(cspCategories);
 
   const groupList = groupBy === 'CspGroup' ? cspCategoryGroup : categoryGroup;
@@ -94,6 +101,17 @@ export function createGroupedSpreadsheet({
           date: monthUtils.weekFromDate(d.date, firstDayOfWeekIdx),
         };
       });
+    }
+
+    if (interval === 'Quarterly' && balanceTypeOp !== 'totalBudgeted') {
+      debts = debts.map(d => ({
+        ...d,
+        date: monthUtils.quarterFromDate(d.date),
+      }));
+      assets = assets.map(d => ({
+        ...d,
+        date: monthUtils.quarterFromDate(d.date),
+      }));
     }
 
     const intervals =

@@ -7,15 +7,18 @@ type ClickableCellProps = {
   onClick: () => void;
   style?: CSSProperties;
   children: ReactNode;
+  'data-testid'?: string;
 };
 
 export function ClickableCell({
   onClick,
   style,
   children,
+  'data-testid': testId,
 }: ClickableCellProps) {
   return (
     <View
+      data-testid={testId}
       onClick={onClick}
       className={css({
         cursor: 'pointer',

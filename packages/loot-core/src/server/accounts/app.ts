@@ -342,6 +342,7 @@ async function linkSimpleFinAccount({
     bank.bank_id,
     startingDate,
     startingBalance,
+    getPrefs()?.cloudFileId,
   );
 
   await handleSyncResponse(syncRes, id);
@@ -942,7 +943,7 @@ async function goCardlessStatus() {
   );
 }
 
-async function simpleFinStatus() {
+async function simpleFinStatus(): Promise<BankSyncProviderStatus> {
   const userToken = await asyncStorage.getItem('user-token');
 
   if (!userToken) {
@@ -954,11 +955,13 @@ async function simpleFinStatus() {
     throw new Error('Failed to get server config.');
   }
 
+  const fileId = getPrefs()?.cloudFileId;
   return post(
     serverConfig.SIMPLEFIN_SERVER + '/status',
     {},
     {
       'X-ACTUAL-TOKEN': userToken,
+      ...(fileId ? { 'X-Actual-File-Id': fileId } : {}),
     },
   );
 }
@@ -1040,12 +1043,14 @@ async function simpleFinAccounts() {
     throw new Error('Failed to get server config.');
   }
 
+  const fileId = getPrefs()?.cloudFileId;
   try {
     const res = await post(
       serverConfig.SIMPLEFIN_SERVER + '/accounts',
       {},
       {
         'X-ACTUAL-TOKEN': userToken,
+        ...(fileId ? { 'X-Actual-File-Id': fileId } : {}),
       },
       60000,
     );
@@ -1161,12 +1166,14 @@ async function enableBankingStartAuth({
   redirectUrl,
   maxConsentValidity,
   psuType = 'personal',
+  returnToApp,
 }: {
   aspspId: string;
   country: string;
   redirectUrl: string;
   maxConsentValidity?: number;
   psuType?: 'personal' | 'business';
+  returnToApp?: boolean;
 }) {
   const userToken = await asyncStorage.getItem('user-token');
 
@@ -1193,9 +1200,14 @@ async function enableBankingStartAuth({
     serverConfig.ENABLEBANKING_SERVER + '/start-auth',
     {
       aspsp: { name: aspspId, country },
-      redirectUrl,
+      // The mobile apps have no web origin the bank could redirect to, so
+      // they finish on the server, which then sends the user back to the app.
+      redirectUrl: returnToApp
+        ? serverConfig.ENABLEBANKING_SERVER + '/auth_callback'
+        : redirectUrl,
       maxConsentValidity,
       psuType,
+      returnToApp,
     },
     {
       'X-ACTUAL-TOKEN': userToken,
@@ -1321,9 +1333,11 @@ async function getGoCardlessBanks(country: string) {
 async function createGoCardlessWebToken({
   institutionId,
   accessValidForDays,
+  returnToApp,
 }: {
   institutionId: string;
   accessValidForDays: number;
+  returnToApp?: boolean;
 }) {
   const userToken = await asyncStorage.getItem('user-token');
 
@@ -1342,6 +1356,7 @@ async function createGoCardlessWebToken({
       {
         institutionId,
         accessValidForDays,
+        returnToApp,
       },
       {
         'X-ACTUAL-TOKEN': userToken,
@@ -1486,6 +1501,10 @@ function getBankSyncStatusFromError(
 
     if (err.category === 'TIMED_OUT') {
       return 'timed-out';
+    }
+
+    if (err.category === 'SERVER_DOWN') {
+      return 'server-down';
     }
 
     if (err.category === 'ACCOUNT_MISSING') {
@@ -1641,6 +1660,7 @@ async function simpleFinBatchSync({
         id: a.id,
         account_id: a.account_id || null,
       })),
+      getPrefs()?.cloudFileId,
     );
     for (const syncResponse of syncResponses) {
       const account = accounts.find(a => a.id === syncResponse.accountId);
