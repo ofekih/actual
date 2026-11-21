@@ -28,7 +28,7 @@ export function useCspInvestmentData() {
 
   const userBirthDate = userBirthDateRaw || '1999-07-10';
   const spouseBirthDate = spouseBirthDateRaw || '2001-10-12';
-  const spouseName = spouseNameRaw || 'Nicole';
+  const spouseName = spouseNameRaw || 'Spouse';
 
   const userBirthYear = useMemo(() => {
     if (userBirthDate) {

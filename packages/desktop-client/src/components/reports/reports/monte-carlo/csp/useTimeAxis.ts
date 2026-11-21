@@ -42,7 +42,7 @@ export function formatTimepointWithAges(
   if (spouseBirthYear != null && spouseBirthYear > 1900) {
     const age = year - spouseBirthYear;
     if (age >= 0 && age <= 130) {
-      hints.push(`${spouseName || 'Nicole'}: ${age}`);
+      hints.push(`${spouseName || 'Spouse'}: ${age}`);
     }
   }
 

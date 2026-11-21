@@ -380,7 +380,7 @@ export function CspSetupModal({
                     values={{
                       userYear: cspData.userBirthYear,
                       partnerPart: cspData.spouseBirthYear
-                        ? `, ${cspData.spouseName || 'Nicole'} (born ${cspData.spouseBirthYear})`
+                        ? `, ${cspData.spouseName || 'Spouse'} (born ${cspData.spouseBirthYear})`
                         : '',
                     }}
                   >

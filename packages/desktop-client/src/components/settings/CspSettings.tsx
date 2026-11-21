@@ -36,8 +36,7 @@ export function CspSettings() {
   const [userBirthDate = '1999-07-10', setUserBirthDate] = useSyncedPref(
     'csp-user-birth-date',
   );
-  const [spouseName = 'Nicole', setSpouseName] =
-    useSyncedPref('csp-spouse-name');
+  const [spouseName = '', setSpouseName] = useSyncedPref('csp-spouse-name');
   const [spouseBirthDate = '2001-10-12', setSpouseBirthDate] = useSyncedPref(
     'csp-spouse-birth-date',
   );
@@ -100,7 +99,7 @@ export function CspSettings() {
                 <FormLabel title={t("Spouse / partner's name")} />
                 <Input
                   type="text"
-                  placeholder={t('Nicole')}
+                  placeholder={t('Spouse')}
                   value={spouseName}
                   onChange={e => setSpouseName(e.currentTarget.value)}
                 />
