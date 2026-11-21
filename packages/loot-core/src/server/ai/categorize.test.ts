@@ -109,7 +109,7 @@ describe('AI categorization helpers', () => {
           'csp_category.name': null,
         },
         payeeName: 'CVS',
-        accountName: 'Visa 9970',
+        accountName: 'Visa 0000',
         customInstructions: null,
       });
 
