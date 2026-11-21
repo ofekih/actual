@@ -26,26 +26,26 @@ export function useCspInvestmentData() {
   const [userBirthYearRaw] = useSyncedPref('csp-user-birth-year');
   const [spouseBirthYearRaw] = useSyncedPref('csp-spouse-birth-year');
 
-  const userBirthDate = userBirthDateRaw || '1999-07-10';
-  const spouseBirthDate = spouseBirthDateRaw || '2001-10-12';
+  const userBirthDate = userBirthDateRaw || '';
+  const spouseBirthDate = spouseBirthDateRaw || '';
   const spouseName = spouseNameRaw || 'Spouse';
 
-  const userBirthYear = useMemo(() => {
+  const userBirthYear = useMemo((): number | null => {
     if (userBirthDate) {
       const parsedYear = parseInt(userBirthDate.slice(0, 4), 10);
       if (!isNaN(parsedYear) && parsedYear > 1900) return parsedYear;
     }
     const parsed = Number(userBirthYearRaw);
-    return !isNaN(parsed) && parsed > 1900 ? parsed : 1999;
+    return !isNaN(parsed) && parsed > 1900 ? parsed : null;
   }, [userBirthDate, userBirthYearRaw]);
 
-  const spouseBirthYear = useMemo(() => {
+  const spouseBirthYear = useMemo((): number | null => {
     if (spouseBirthDate) {
       const parsedYear = parseInt(spouseBirthDate.slice(0, 4), 10);
       if (!isNaN(parsedYear) && parsedYear > 1900) return parsedYear;
     }
     const parsed = Number(spouseBirthYearRaw);
-    return !isNaN(parsed) && parsed > 1900 ? parsed : 2001;
+    return !isNaN(parsed) && parsed > 1900 ? parsed : null;
   }, [spouseBirthDate, spouseBirthYearRaw]);
 
   const accountTypes: Record<string, string> = useMemo(() => {

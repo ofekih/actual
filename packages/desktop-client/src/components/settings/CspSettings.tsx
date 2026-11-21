@@ -33,11 +33,11 @@ function calculateAge(birthDateStr: string): number | null {
 export function CspSettings() {
   const { t } = useTranslation();
 
-  const [userBirthDate = '1999-07-10', setUserBirthDate] = useSyncedPref(
+  const [userBirthDate = '', setUserBirthDate] = useSyncedPref(
     'csp-user-birth-date',
   );
   const [spouseName = '', setSpouseName] = useSyncedPref('csp-spouse-name');
-  const [spouseBirthDate = '2001-10-12', setSpouseBirthDate] = useSyncedPref(
+  const [spouseBirthDate = '', setSpouseBirthDate] = useSyncedPref(
     'csp-spouse-birth-date',
   );
   const [, setUserBirthYear] = useSyncedPref('csp-user-birth-year');

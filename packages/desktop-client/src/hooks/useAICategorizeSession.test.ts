@@ -77,7 +77,7 @@ vi.mock('#hooks/useCspCategories', () => ({
 
 vi.mock('#hooks/useAccounts', () => ({
   useAccounts: () => ({
-    data: [{ id: 'acct-1', name: 'Visa 9970' }],
+    data: [{ id: 'acct-1', name: 'Visa 0000' }],
   }),
 }));
 
@@ -125,7 +125,7 @@ describe('useAICategorizeSession', () => {
         payee: 'payee-cvs',
         'payee.name': 'CVS',
         account: 'acct-1',
-        'account.name': 'Visa 9970',
+        'account.name': 'Visa 0000',
         notes: 'CVS PHARMACY ##09725',
         category: 'cat-pharmacy',
         csp_category: undefined,
@@ -203,7 +203,7 @@ describe('useAICategorizeSession', () => {
         payee: 'payee-cvs',
         'payee.name': 'CVS',
         account: 'acct-1',
-        'account.name': 'Visa 9970',
+        'account.name': 'Visa 0000',
         notes: 'CVS PHARMACY ##09725',
         category: 'cat-pharmacy',
         csp_category: undefined,
@@ -318,7 +318,7 @@ describe('useAICategorizeSession', () => {
               payee: 'payee-cvs',
               'payee.name': 'CVS',
               account: 'acct-1',
-              'account.name': 'Visa 9970',
+              'account.name': 'Visa 0000',
               notes: 'CVS PHARMACY ##09725',
               category: 'cat-pharmacy',
               csp_category: undefined,

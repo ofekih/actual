@@ -144,12 +144,12 @@ describe('cspPotsAndContributions', () => {
     });
 
     // Traditional / 401(k): 15% tax, 100% taxable
-    expect(
-      inferTaxSettingsForAccount('GOOGLE LLC 401(K) SAVINGS PLAN'),
-    ).toEqual({
-      withdrawalTaxRate: 0.15,
-      taxableFraction: 1.0,
-    });
+    expect(inferTaxSettingsForAccount('ACME CORP 401(K) SAVINGS PLAN')).toEqual(
+      {
+        withdrawalTaxRate: 0.15,
+        taxableFraction: 1.0,
+      },
+    );
     expect(inferTaxSettingsForAccount('Jane Doe - Rollover IRA')).toEqual({
       withdrawalTaxRate: 0.15,
       taxableFraction: 1.0,
