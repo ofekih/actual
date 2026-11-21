@@ -24,10 +24,12 @@ import { useServerURL, useServerVersion } from '#components/ServerContext';
 import { useFeatureFlag } from '#hooks/useFeatureFlag';
 import { useGlobalPref } from '#hooks/useGlobalPref';
 import { useMetadataPref } from '#hooks/useMetadataPref';
+import { useSyncedPref } from '#hooks/useSyncedPref';
 import { loadPrefs, saveSyncedPrefs } from '#prefs/prefsSlice';
 import { useDispatch, useSelector } from '#redux';
 
 import { AISettings } from './AI';
+import { ApiKeys } from './ApiKeys';
 import { AuthSettings } from './AuthSettings';
 import { Backups } from './Backups';
 import { BudgetTypeSettings } from './BudgetTypeSettings';
@@ -43,6 +45,7 @@ import { ResetCache, ResetSync } from './Reset';
 import { SettingsBackButton } from './SettingsBackButton';
 import { SettingsGroup } from './SettingsGroup';
 import { SettingsNav } from './SettingsNav';
+import { SettingsPageTitle } from './SettingsPageTitle';
 import { SettingsRow } from './SettingsRow';
 import { SidebarSettings } from './SidebarSettings';
 import { ThemeSettings } from './Themes';
@@ -203,7 +206,12 @@ function SettingsSections({ title, children }: SettingsSectionsProps) {
   );
 
   if (!isNarrowWidth) {
-    return sections;
+    return (
+      <View style={{ flexShrink: 0, gap: spacing.lg }}>
+        <SettingsPageTitle>{title}</SettingsPageTitle>
+        {sections}
+      </View>
+    );
   }
 
   return (
@@ -271,6 +279,7 @@ export function SettingsIndex() {
 export function GeneralSettings() {
   const { t } = useTranslation();
   const { isNarrowWidth } = useResponsive();
+  const [fileId] = useMetadataPref('cloudFileId');
   const isCurrencyExperimentalEnabled = useFeatureFlag('currency');
   const serverURL = useServerURL();
 
@@ -291,6 +300,7 @@ export function GeneralSettings() {
         <SettingsGroup title={t('Security')}>
           <AuthSettings />
           <EncryptionSettings />
+          {fileId && <ApiKeys key={`${serverURL}:${fileId}`} fileId={fileId} />}
         </SettingsGroup>
       )}
       <SettingsGroup title={t('Data')}>
@@ -331,6 +341,9 @@ export function Settings() {
   const { isNarrowWidth } = useResponsive();
   const dispatch = useDispatch();
   const isCurrencyExperimentalEnabled = useFeatureFlag('currency');
+  const [defaultCurrencyCode] = useSyncedPref('defaultCurrencyCode');
+  const hasDefaultCurrencyCode =
+    defaultCurrencyCode != null && defaultCurrencyCode !== '';
 
   useEffect(() => {
     const unlisten = listen('prefs-updated', () => {
@@ -342,10 +355,10 @@ export function Settings() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!isCurrencyExperimentalEnabled) {
+    if (!isCurrencyExperimentalEnabled && hasDefaultCurrencyCode) {
       void dispatch(saveSyncedPrefs({ prefs: { defaultCurrencyCode: '' } }));
     }
-  }, [dispatch, isCurrencyExperimentalEnabled]);
+  }, [dispatch, isCurrencyExperimentalEnabled, hasDefaultCurrencyCode]);
 
   if (isNarrowWidth) {
     return <Outlet />;

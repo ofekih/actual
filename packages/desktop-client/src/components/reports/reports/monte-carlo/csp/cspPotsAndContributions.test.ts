@@ -130,12 +130,12 @@ describe('cspPotsAndContributions', () => {
       withdrawalTaxRate: 0,
       taxableFraction: 0,
     });
-    expect(
-      inferTaxSettingsForAccount('Gina Nicole Kofman - Roth IRA Brokerage'),
-    ).toEqual({
-      withdrawalTaxRate: 0,
-      taxableFraction: 0,
-    });
+    expect(inferTaxSettingsForAccount('Jane Doe - Roth IRA Brokerage')).toEqual(
+      {
+        withdrawalTaxRate: 0,
+        taxableFraction: 0,
+      },
+    );
 
     // HSA: 0% tax, 0% taxable
     expect(inferTaxSettingsForAccount('HealthEquity HSA')).toEqual({
@@ -150,14 +150,12 @@ describe('cspPotsAndContributions', () => {
       withdrawalTaxRate: 0.15,
       taxableFraction: 1.0,
     });
-    expect(
-      inferTaxSettingsForAccount('Gina Nicole Kofman - Rollover IRA'),
-    ).toEqual({
+    expect(inferTaxSettingsForAccount('Jane Doe - Rollover IRA')).toEqual({
       withdrawalTaxRate: 0.15,
       taxableFraction: 1.0,
     });
     expect(
-      inferTaxSettingsForAccount('Ofek Gila - Traditional IRA Brokerage'),
+      inferTaxSettingsForAccount('John Doe - Traditional IRA Brokerage'),
     ).toEqual({
       withdrawalTaxRate: 0.15,
       taxableFraction: 1.0,

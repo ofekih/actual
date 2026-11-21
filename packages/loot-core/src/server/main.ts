@@ -4,6 +4,7 @@ import * as connection from '#platform/server/connection';
 import * as fs from '#platform/server/fs';
 import { logger, setVerboseMode } from '#platform/server/log';
 import * as sqlite from '#platform/server/sqlite';
+import type { StorageBackend } from '#platform/server/sqlite';
 import { q } from '#shared/query';
 import { amountToInteger, integerToAmount } from '#shared/util';
 import type { Handlers } from '#types/handlers';
@@ -37,6 +38,7 @@ import { app as rulesApp } from './rules/app';
 import { app as schedulesApp } from './schedules/app';
 import { getServer, setServer } from './server-config';
 import { app as spreadsheetApp } from './spreadsheet/app';
+import { app as storageApp } from './storage/app';
 import { fullSync, setSyncingMode } from './sync';
 import { app as syncApp } from './sync/app';
 import { app as tagsApp } from './tags/app';
@@ -154,6 +156,7 @@ app.combine(
   encryptionApp,
   tagsApp,
   aiApp,
+  storageApp,
 );
 
 export function getDefaultDocumentDir() {
@@ -213,10 +216,30 @@ async function ensureUsable(dir) {
   await fs.removeDir(probeDir);
 }
 
-export async function initApp(isDev, socketName) {
-  await sqlite.init();
+export async function initApp(
+  isDev,
+  socketName,
+  {
+    storageBackend = 'legacy',
+    isSharedArrayBufferOverrideEnabled = false,
+  }: {
+    storageBackend?: StorageBackend;
+    isSharedArrayBufferOverrideEnabled?: boolean;
+  } = {},
+) {
+  const storage = await sqlite.init({ storage: storageBackend });
+  // Only the legacy engine (absurd-sql) needs SharedArrayBuffer, and
+  // whether it runs is known only now: data already moved to the new
+  // storage wins over the flag
+  if (
+    storage === 'legacy' &&
+    typeof SharedArrayBuffer === 'undefined' &&
+    !isSharedArrayBufferOverrideEnabled
+  ) {
+    throw new Error('shared-array-buffer-missing');
+  }
   asyncStorage.init();
-  await fs.init();
+  await fs.init({ storage });
   await setupDocumentsDir();
 
   const keysStr = await asyncStorage.getItem('encrypt-keys');
@@ -257,6 +280,12 @@ export async function initApp(isDev, socketName) {
 }
 
 type BaseInitConfig = {
+  /**
+   * Browser build only: which storage holds budgets. `opfs` uses the
+   * origin private file system, falling back to `memory-idb` where
+   * unavailable.
+   */
+  storageBackend?: StorageBackend;
   /**
    * Directory where budget data is stored. In Node this is a directory on
    * disk (defaults to the current working directory) and must already exist.
@@ -310,9 +339,9 @@ export async function init(config: InitConfig) {
     serverURL = process.env.ACTUAL_SERVER_URL;
   }
 
-  await sqlite.init();
+  const storage = await sqlite.init({ storage: config?.storageBackend });
   asyncStorage.init({ persist: false });
-  await fs.init();
+  await fs.init({ storage });
   fs._setDocumentDir(dataDir || process.cwd());
 
   if (serverURL) {

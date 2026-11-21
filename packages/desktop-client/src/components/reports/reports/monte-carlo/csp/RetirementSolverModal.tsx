@@ -30,7 +30,7 @@ export function RetirementSolverModal({
   onApplyRetirementYear,
   userBirthYear,
   spouseBirthYear,
-  spouseName = 'Nicole',
+  spouseName = 'Spouse',
 }: RetirementSolverModalProps) {
   const { t } = useTranslation();
   const [targetRate, setTargetRate] = useState(0.85);
@@ -176,7 +176,7 @@ export function RetirementSolverModal({
                     <Text>
                       <Trans
                         values={{
-                          partnerName: spouseName || 'Nicole',
+                          partnerName: spouseName || 'Spouse',
                           age:
                             earliest -
                             (spouseBirthYear ?? config.spouseBirthYear!),

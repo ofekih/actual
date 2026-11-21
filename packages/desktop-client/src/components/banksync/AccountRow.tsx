@@ -5,6 +5,7 @@ import { Button } from '@actual-app/components/button';
 import { Select } from '@actual-app/components/select';
 import { styles } from '@actual-app/components/styles';
 import { theme } from '@actual-app/components/theme';
+import { spacing } from '@actual-app/components/tokens';
 import { Tooltip } from '@actual-app/components/tooltip';
 import { tsToRelativeTime } from '@actual-app/core/shared/util';
 import type { AccountEntity } from '@actual-app/core/types/models';
@@ -92,7 +93,7 @@ export const AccountRow = memo(
           name="accountName"
           width={account.account_sync_source ? 250 : 'flex'}
           plain
-          style={{ color: theme.tableText, padding: '10px' }}
+          style={{ color: theme.tableText, padding: spacing.sm }}
         >
           {potentiallyTruncatedAccountName}
         </Cell>
@@ -102,7 +103,7 @@ export const AccountRow = memo(
             name="bankName"
             width="flex"
             plain
-            style={{ color: theme.tableText, padding: '10px' }}
+            style={{ color: theme.tableText, padding: spacing.sm }}
           >
             {bankName}
           </Cell>
@@ -112,7 +113,7 @@ export const AccountRow = memo(
           name="accountType"
           width={160}
           plain
-          style={{ padding: '5px 10px' }}
+          style={{ paddingBlock: spacing.xs, paddingInline: spacing.sm }}
         >
           <Select
             options={accountTypeOptions}
@@ -136,7 +137,7 @@ export const AccountRow = memo(
               plain
               style={{
                 color: theme.tableText,
-                padding: '11px',
+                padding: spacing.sm,
                 textDecoration: 'underline',
                 textDecorationStyle: 'dashed',
                 textDecorationColor: theme.pageTextSubdued,
@@ -150,13 +151,23 @@ export const AccountRow = memo(
         ) : null}
 
         {account.account_sync_source ? (
-          <Cell name="edit" width={100} plain style={{ paddingRight: '10px' }}>
+          <Cell
+            name="edit"
+            width={100}
+            plain
+            style={{ paddingRight: spacing.sm }}
+          >
             <Button onPress={() => onAction(account, 'edit')}>
               <Trans>Edit</Trans>
             </Button>
           </Cell>
         ) : (
-          <Cell name="link" width={100} plain style={{ paddingRight: '10px' }}>
+          <Cell
+            name="link"
+            width={100}
+            plain
+            style={{ paddingRight: spacing.sm }}
+          >
             <Button onPress={() => onAction(account, 'link')}>
               <Trans>Link account</Trans>
             </Button>

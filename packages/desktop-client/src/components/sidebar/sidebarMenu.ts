@@ -33,15 +33,12 @@ export function isSettingsSection(
 }
 
 export function isSidebarMenuItemLocked(id: SidebarMenuItemId): boolean {
-  return !isSettingsSection(id);
+  // CSP is this fork's default page, so it stays locked alongside budget.
+  return id === 'budget' || id === 'csp';
 }
 
 export function isSettingsSectionOnMobile(id: SettingsSectionId): boolean {
   return id !== 'schedules';
-}
-
-export function isInMobileSettingsNav(id: SettingsSectionId): boolean {
-  return isSettingsSectionOnMobile(id) && id !== 'tags';
 }
 
 function isHiddenByDefault(id: SidebarMenuItemId): boolean {

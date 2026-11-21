@@ -45,13 +45,13 @@ describe('useTimeAxis', () => {
 
   it('formats timepoint with ages for user and spouse', () => {
     expect(formatTimepointWithAges(2030, 1990, 1992)).toBe(
-      '2030 (You: 40 · Nicole: 38)',
+      '2030 (You: 40 · Spouse: 38)',
     );
     expect(formatTimepointWithAges(2030, 1990, 1992, 'Spouse')).toBe(
       '2030 (You: 40 · Spouse: 38)',
     );
     expect(formatTimepointWithAges(2030, 1990, null)).toBe('2030 (You: 40)');
-    expect(formatTimepointWithAges(2030, null, 1992)).toBe('2030 (Nicole: 38)');
+    expect(formatTimepointWithAges(2030, null, 1992)).toBe('2030 (Spouse: 38)');
     expect(formatTimepointWithAges(2030, null, null)).toBe('2030');
     // Ignores unreasonable birth years
     expect(formatTimepointWithAges(2030, 1850, null)).toBe('2030');

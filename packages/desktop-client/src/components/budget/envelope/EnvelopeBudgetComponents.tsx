@@ -522,7 +522,6 @@ export const ExpenseCategoryMonth = memo(function ExpenseCategoryMonth({
             goal={envelopeBudget.catGoal(category.id)}
             budgeted={envelopeBudget.catBudgeted(category.id)}
             longGoal={envelopeBudget.catLongGoal(category.id)}
-            tooltipDisabled={balanceMenuOpen}
           />
         </Button>
 
@@ -662,6 +661,7 @@ export function IncomeCategoryMonth({
             }}
           >
             <BalanceWithCarryover
+              isIncome
               carryover={envelopeBudget.catCarryover(category.id)}
               balance={envelopeBudget.catSumAmount(category.id)}
               goal={envelopeBudget.catGoal(category.id)}
